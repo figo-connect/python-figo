@@ -11,7 +11,7 @@ General notes
 
 *Demo Access*: you can use the following access token to test drive figo connect without any risk or needing to even talk to us.
 
-.. code::
+.. code-block:: python
   
   ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ
 
@@ -21,13 +21,13 @@ Demo Application
 
 You can easily install the binding using pip:
 
-.. code::
+.. code-block:: bash
 
     pip install python-figo
     
 Retrieving some data is very easy using the demo access from above:
 
-.. code:: python
+.. code-block:: python
 
     from figo import FigoSession
 

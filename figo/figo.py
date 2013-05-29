@@ -3,13 +3,12 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
-
 import httplib
 import json
 import logging
-import random
-import string
+import sys
 import urllib
+
 
 from .models import Account, Notification, Transaction
 
@@ -72,12 +71,12 @@ class FigoConnection(object):
         response = connection.getresponse()
 
         if response.status >= 200 and response.status < 300:
-            response_data = response.read()
+            response_data = response.read().decode("utf-8")
             if response_data == "":
                 return {}
             return json.loads(response_data)
         elif response.status == 400:
-            response_data = response.read()
+            response_data = response.read().decode("utf-8")
             return json.loads(response_data)
         elif response.status == 401:
             return {'error': "access_denied", 'error_description': "Access Denied"}
@@ -86,13 +85,13 @@ class FigoConnection(object):
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
 
     @property
-    def login_url(self, scope='accounts=ro', state=''.join(random.choice(string.ascii_letters) for x in range(10))):
+    def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 
         When the process is completed, the user is redirected to the URL provided to the constructor and passes on an authentication code. This code can be converted into an access token for data access.
 
         :Parameters:
-         - `scope` - Scope of data access to ask the user for
+         - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
          - `state` - String passed on through the complete login process and to the redirect target at the end. It should be used to validated the authenticity of the call to the redirect URL
 
         :Returns:
@@ -200,12 +199,12 @@ class FigoSession(object):
         response = connection.getresponse()
 
         if response.status >= 200 and response.status < 300:
-            response_data = response.read()
+            response_data = response.read().decode("utf-8")
             if response_data == "":
                 return {}
             return json.loads(response_data)
         elif response.status == 400:
-            response_data = response.read()
+            response_data = response.read().decode("utf-8")
             return json.loads(response_data)
         elif response.status == 401:
             return {'error': "access_denied", 'error_description': "Access Denied"}

@@ -27,4 +27,5 @@ setup(name='python-figo',
         'Topic :: Internet'
     ],
     use_2to3 = True,
+    test_suite="tests",
 )

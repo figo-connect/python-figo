@@ -43,6 +43,37 @@ Retrieving some data is very easy using the demo access from above:
         print transaction
 
 
+It is just as simple to allow users to login through the API:
+
+.. code-block:: python
+
+    import webbrowser
+    from figo import FigoConnection
+
+    connection = FigoConnection("<client ID>", "<client secret>", "http://my-domain.org/redirect-url")
+
+    def start_login():
+        # open the webbrowser to kick of the login process
+        webbrowser.open(connection.login_url(scope="accounts=ro transactions=ro", state="qweqwe"))
+
+    def process_redirect(authentication_code, state):
+        # handle the redirect url invocation, which gets passed an authentication code and the state (from the initial login_url call)
+
+        # authenticate the call
+        if state != "qweqwe":
+            raise Exception("Bogus redirect, wrong state")
+
+        # trade in authentication code for access token
+        token_dict = connection.convert_authentication_code(authentication_code)
+
+        # start session
+        session = connection.open_session(token_dict["access_token"])
+
+        # access data
+        for account in session.accounts:
+            print account.name
+
+
 Module Documentation
 --------------------
 .. automodule:: figo.figo

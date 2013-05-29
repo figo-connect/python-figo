@@ -3,9 +3,13 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
+import hashlib
 import httplib
+from itertools import izip_longest
 import json
 import logging
+import socket
+import ssl
 import sys
 import urllib
 
@@ -14,6 +18,33 @@ from .models import Account, Notification, Transaction
 
 
 logger = logging.getLogger(__name__)
+
+
+class VerifiedHTTPSConnection(httplib.HTTPSConnection):
+    """HTTPSConnection supporting certificate authentication based on fingerprint"""
+    
+    VALID_FINGERPRINTS = ("A6:FE:08:F4:A8:86:F9:C1:BF:4E:70:0A:BD:72:AE:B8:8E:B7:78:52",
+                          "AD:A0:E3:2B:1F:CE:E8:44:F2:83:BA:AE:E4:7D:F2:AD:44:48:7F:1E")
+    
+    def connect(self):
+        # overrides the version in httplib so that we do certificate verification
+        sock = socket.create_connection((self.host, self.port), self.timeout, self.source_address)
+        if self._tunnel_host:
+            self.sock = sock
+            self._tunnel()
+
+        # wrap the socket
+        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
+        
+        # verify the certificate fingerprint
+        certificate = self.sock.getpeercert(True)
+        if certificate is None:
+            raise ssl.SSLError("Certificate validation failed")
+        else:
+            fingerprint = hashlib.sha1(certificate).hexdigest()
+            fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())]*2)])
+            if not fingerprint in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
+                raise ssl.SSLError("Certificate validation failed")
 
 
 class FigoException(Exception):
@@ -64,7 +95,7 @@ class FigoConnection(object):
             the JSON-parsed result body
         """
 
-        connection = httplib.HTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
+        connection = VerifiedHTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         connection.request("POST", path, urllib.urlencode(data),
                            {'Authorization': "Basic %s" % base64.b64encode(self.client_id + ":" + self.client_secret),
                             'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'})
@@ -193,7 +224,7 @@ class FigoSession(object):
             the JSON-parsed result body
         """
 
-        connection = httplib.HTTPSConnection(FigoConnection.API_ENDPOINT) if FigoConnection.API_SECURE else httplib.HTTPConnection(FigoConnection.API_ENDPOINT)
+        connection = VerifiedHTTPSConnection(FigoConnection.API_ENDPOINT) if FigoConnection.API_SECURE else httplib.HTTPConnection(FigoConnection.API_ENDPOINT)
         connection.request(method, path, None if data is None else json.dumps(data),
                            {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
         response = connection.getresponse()

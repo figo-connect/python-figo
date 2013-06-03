@@ -353,8 +353,10 @@ class FigoSession(object):
             the URL to be opened by the user.
         """
 
-        response = self._query_api("/sync/token", {"grant_type": "sync_token", "state": state, "redirect_uri": redirect_uri})
-        if 'error' in response:
+        response = self._query_api("/rest/sync", {"state": state, "redirect_uri": redirect_uri}, method="POST")
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-
-        return FigoConnection.API_ENDPOINT + "/sync/start?id=" + response['sync_token']
+        else:
+            return FigoConnection.API_ENDPOINT + "/task/start?id=" + response['task_token']

@@ -118,7 +118,6 @@ class FigoConnection(object):
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
 
-    @property
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 

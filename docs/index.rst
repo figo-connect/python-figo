@@ -48,7 +48,7 @@ It is just as simple to allow users to login through the API:
 .. code-block:: python
 
     import webbrowser
-    from figo import FigoConnection
+    from figo import FigoConnection, FigoSession
 
     connection = FigoConnection("<client ID>", "<client secret>", "http://my-domain.org/redirect-url")
 
@@ -67,7 +67,7 @@ It is just as simple to allow users to login through the API:
         token_dict = connection.convert_authentication_code(authentication_code)
 
         # start session
-        session = connection.open_session(token_dict["access_token"])
+        session = FigoSession(token_dict["access_token"])
 
         # access data
         for account in session.accounts:

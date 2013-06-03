@@ -191,17 +191,6 @@ class FigoConnection(object):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-    def open_session(self, access_token):
-        """Open a user-bound figo session using an access token.
-
-        :Parameters:
-         - `access_token` - the access token to be used as the basis for the session
-
-        :Returns:
-            a FigoSession instance bound to the access token
-        """
-        return FigoSession(access_token)
-
 
 class FigoSession(object):
     """Represents a user-bound connection to the figo connect API and allows access to the users data"""
@@ -241,6 +230,8 @@ class FigoSession(object):
             return json.loads(response_data)
         elif response.status == 401:
             return {'error': "access_denied", 'error_description': "Access Denied"}
+        elif response.status == 404:
+            return None
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
@@ -274,9 +265,12 @@ class FigoSession(object):
         """An array of `Notification` objects, one for each registered notification"""
 
         response = self._query_api("/rest/notifications")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return [Notification.from_dict(self, notification_dict) for notification_dict in response['notifications']]
+        else:
+            return [Notification.from_dict(self, notification_dict) for notification_dict in response['notifications']]
 
     def get_notification(self, notification_id):
         """Retrieve a specific notification.
@@ -289,9 +283,12 @@ class FigoSession(object):
         """
 
         response = self._query_api("/rest/notifications/" + str(notification_id))
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return Notification.from_dict(self, response)
+        else:
+            return Notification.from_dict(self, response)
 
     def add_notification(self, **kwargs):
         """Create a new notification.
@@ -304,9 +301,12 @@ class FigoSession(object):
         """
 
         response = self._query_api("/rest/notifications", kwargs, method="POST")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return response['notification_id']
+        else:
+            return response['notification_id']
 
     def modify_notification(self, notification_id, **kwargs):
         """Modify a notification.
@@ -317,7 +317,9 @@ class FigoSession(object):
         """
 
         response = self._query_api("/rest/notifications/" + str(notification_id), kwargs, method="PUT")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
 
     def remove_notification(self, notification_id):
@@ -328,7 +330,9 @@ class FigoSession(object):
         """
 
         response = self._query_api("/rest/notifications/" + str(notification_id), method="DELETE")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
 
     @property
@@ -336,9 +340,12 @@ class FigoSession(object):
         """An array of `Transaction` objects, one for each transaction of the user"""
 
         response = self._query_api("/rest/transactions")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+        else:
+            return [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronisation.

@@ -113,7 +113,15 @@ class FigoConnection(object):
             response_data = response.read().decode("utf-8")
             return json.loads(response_data)
         elif response.status == 401:
-            return {'error': "access_denied", 'error_description': "Access Denied"}
+            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
+        elif response.status == 403:
+            return {'error': "forbidden", 'error_description': "Insufficient permission."}
+        elif response.status == 404:
+            return None
+        elif response.status == 405:
+            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
+        elif response.status == 503:
+            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
@@ -229,9 +237,15 @@ class FigoSession(object):
             response_data = response.read().decode("utf-8")
             return json.loads(response_data)
         elif response.status == 401:
-            return {'error': "access_denied", 'error_description': "Access Denied"}
+            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
+        elif response.status == 403:
+            return {'error': "forbidden", 'error_description': "Insufficient permission."}
         elif response.status == 404:
             return None
+        elif response.status == 405:
+            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
+        elif response.status == 503:
+            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}

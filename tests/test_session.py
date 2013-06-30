@@ -33,7 +33,7 @@ class TestSession(unittest.TestCase):
 
     def test_notifications(self):
         notifications = self.sut.notifications
-        self.assertGreater(len(notifications), 0)
+        self.assertGreaterEqual(len(notifications), 0)
 
     def test_sync_uri(self):
         self.sut.get_sync_url("qwe", "qew")

@@ -25,15 +25,15 @@ class TestSession(unittest.TestCase):
         self.assertTrue(balance.balance_date)
         
         transactions = self.sut.get_account("A1.2").transactions
-        self.assertGreater(len(transactions), 0)
+        self.assertTrue(len(transactions) > 0)
 
     def test_global_transactions(self):
         transactions = self.sut.transactions
-        self.assertGreater(len(transactions), 0)
+        self.assertTrue(len(transactions) > 0)
 
     def test_notifications(self):
         notifications = self.sut.notifications
-        self.assertGreaterEqual(len(notifications), 0)
+        self.assertTrue(len(notifications) >= 0)
 
     def test_sync_uri(self):
         self.sut.get_sync_url("qwe", "qew")

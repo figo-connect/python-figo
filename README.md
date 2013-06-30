@@ -1,15 +1,19 @@
 python-figo [![Build Status](https://travis-ci.org/figo-connect/python-figo.png)](https://travis-ci.org/figo-connect/python-figo)
 ===========
 
-Python bindings for the figo connect API: http://figo.me
+Python bindings for the figo Connect API: http://developer.figo.me
 
-Simply install them with pip:
+Usage
+=====
+
+First, you've to install the package:
 
 ```bash
 pip install python-figo
 ```
 
-And just as easy to use:
+Now you can create a new session and access data:
+
 ```python
 from figo import FigoSession
 
@@ -23,6 +27,36 @@ for account in session.accounts:
 # print out the list of all transactions on a specific account
 for transaction in session.get_account("A1.2").transactions:
     print transaction
+```
+
+It is just as simple to allow users to login through the API:
+
+```python
+import webbrowser
+from figo import FigoConnection, FigoSession
+
+connection = FigoConnection("<client ID>", "<client secret>", "http://my-domain.org/redirect-url")
+
+def start_login():
+    # open the webbrowser to kick of the login process
+    webbrowser.open(connection.login_url(scope="accounts=ro transactions=ro", state="qweqwe"))
+
+def process_redirect(authentication_code, state):
+    # handle the redirect url invocation, which gets passed an authentication code and the state (from the initial login_url call)
+
+    # authenticate the call
+    if state != "qweqwe":
+        raise Exception("Bogus redirect, wrong state")
+
+    # trade in authentication code for access token
+    token_dict = connection.convert_authentication_code(authentication_code)
+
+    # start session
+    session = FigoSession(token_dict["access_token"])
+
+    # access data
+    for account in session.accounts:
+        print account.name
 ```
 
 You can find more documentation at http://python-figo.readthedocs.org

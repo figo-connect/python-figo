@@ -55,7 +55,7 @@ class Account(ModelBase):
     """BIC"""
     
     type = None
-    """Account type: Giro account, Savings account, Credit card, Loan account, PayPal or Unknown"""
+    """Account type: Giro account, Savings account, Credit card, Loan account, PayPal, Cash book or Unknown"""
     
     icon = None
     """Account icon URL"""

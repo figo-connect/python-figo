@@ -60,6 +60,9 @@ class FigoException(Exception):
         self.error = error
         self.error_description = error_description
 
+    def __str__(self):
+        return repr(self.error_description)
+
     @classmethod
     def from_dict(cls, dictionary):
         return cls(dictionary['error'], dictionary['error_description'])

@@ -15,6 +15,7 @@ import urllib
 
 
 from .models import Account, Notification, Transaction
+from .exception import FigoException
 
 
 logger = logging.getLogger(__name__)
@@ -48,24 +49,6 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
             fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())]*2)])
             if not fingerprint in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
                 raise ssl.SSLError("Certificate validation failed")
-
-
-class FigoException(Exception):
-    """Base class for all exceptions transported via the figo connect API.
-
-    They consist of a code-like `error` and a human readable `error_description`.
-    """
-
-    def __init__(self, error, error_description):
-        self.error = error
-        self.error_description = error_description
-
-    def __str__(self):
-        return repr(self.error_description)
-
-    @classmethod
-    def from_dict(cls, dictionary):
-        return cls(dictionary['error'], dictionary['error_description'])
 
 
 class FigoConnection(object):

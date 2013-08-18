@@ -3,6 +3,7 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
+from .exception import FigoException
 
 class ModelBase(object):
     

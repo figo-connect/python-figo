@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='python-figo',
-      version='1.0.1',
+      version='1.0.2',
       description='Library to easily use the API of http://www.figo.me',
       author='Stefan Richter',
       author_email='stefan.richter@figo.me',

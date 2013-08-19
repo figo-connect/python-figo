@@ -61,7 +61,7 @@ class FigoException(Exception):
         self.error_description = error_description
 
     def __str__(self):
-        return repr(self.error_description)
+        return "FigoException: %s(%s)" % (repr(self.error_description), repr(self.error))
 
     @classmethod
     def from_dict(cls, dictionary):

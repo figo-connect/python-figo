@@ -8,8 +8,9 @@ import unittest
 
 from figo import FigoSession
 
+
 class TestSession(unittest.TestCase):
-    
+
     def setUp(self):
         self.sut = FigoSession("ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ")
 
@@ -18,12 +19,12 @@ class TestSession(unittest.TestCase):
         self.sut.get_account("A1.1")
         account = self.sut.get_account("A1.2")
         self.assertEqual(account.account_id, "A1.2")
-        
+
         # account sub-resources
         balance = self.sut.get_account("A1.2").balance
         self.assertTrue(balance.balance)
         self.assertTrue(balance.balance_date)
-        
+
         transactions = self.sut.get_account("A1.2").transactions
         self.assertTrue(len(transactions) > 0)
 

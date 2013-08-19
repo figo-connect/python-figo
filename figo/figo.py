@@ -21,11 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class VerifiedHTTPSConnection(httplib.HTTPSConnection):
+
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
-    
+
     VALID_FINGERPRINTS = ("A6:FE:08:F4:A8:86:F9:C1:BF:4E:70:0A:BD:72:AE:B8:8E:B7:78:52",
                           "AD:A0:E3:2B:1F:CE:E8:44:F2:83:BA:AE:E4:7D:F2:AD:44:48:7F:1E")
-    
+
     def connect(self):
         # overrides the version in httplib so that we do certificate verification
         if sys.hexversion >= 0x02070000:
@@ -38,19 +39,20 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
 
         # wrap the socket
         self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
-        
+
         # verify the certificate fingerprint
         certificate = self.sock.getpeercert(True)
         if certificate is None:
             raise ssl.SSLError("Certificate validation failed")
         else:
             fingerprint = hashlib.sha1(certificate).hexdigest()
-            fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())]*2)])
+            fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
             if not fingerprint in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
                 raise ssl.SSLError("Certificate validation failed")
 
 
 class FigoException(Exception):
+
     """Base class for all exceptions transported via the figo connect API.
 
     They consist of a code-like `error` and a human readable `error_description`.
@@ -69,6 +71,7 @@ class FigoException(Exception):
 
 
 class FigoConnection(object):
+
     """Representing a not user-bound connection to the figo connect API.
 
     Its main purpose is to let user login via the OAuth2 API.
@@ -159,7 +162,8 @@ class FigoConnection(object):
         if authentication_code[0] != "O":
             raise Exception("Invalid authentication code")
 
-        response = self._query_api("/auth/token", data={'code': authorization_code, 'redirect_uri': self.redirect_uri, 'grant_type': 'authorization_code'})
+        response = self._query_api("/auth/token", data={
+                                   'code': authorization_code, 'redirect_uri': self.redirect_uri, 'grant_type': 'authorization_code'})
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -182,7 +186,8 @@ class FigoConnection(object):
         if refresh_token[0] != "R":
             raise Exception("Invalid refresh token")
 
-        response = self._query_api("/auth/token", data={'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri, 'grant_type': 'refresh_token'})
+        response = self._query_api("/auth/token", data={
+                                   'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri, 'grant_type': 'refresh_token'})
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -204,6 +209,7 @@ class FigoConnection(object):
 
 
 class FigoSession(object):
+
     """Represents a user-bound connection to the figo connect API and allows access to the users data"""
 
     def __init__(self, access_token):
@@ -226,7 +232,8 @@ class FigoSession(object):
             the JSON-parsed result body
         """
 
-        connection = VerifiedHTTPSConnection(FigoConnection.API_ENDPOINT) if FigoConnection.API_SECURE else httplib.HTTPConnection(FigoConnection.API_ENDPOINT)
+        connection = VerifiedHTTPSConnection(
+            FigoConnection.API_ENDPOINT) if FigoConnection.API_SECURE else httplib.HTTPConnection(FigoConnection.API_ENDPOINT)
         connection.request(method, path, None if data is None else json.dumps(data),
                            {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
         response = connection.getresponse()

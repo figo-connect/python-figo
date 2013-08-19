@@ -84,6 +84,10 @@ class Account(ModelBase):
 
         return Transaction.from_dict(self.session, self.session._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (str(self.account_id), str(transaction_id))))
 
+    def __str__(self):
+        return "Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+
+
 
 class AccountBalance(ModelBase):
     """Object representing the balance of a certain bank account of the user"""
@@ -99,6 +103,10 @@ class AccountBalance(ModelBase):
     
     monthly_spending_limit = None
     """User-defined spending limit"""
+
+    def __str__(self):
+        return "Balance: %d at %s" % (self.balance, str(self.balance_date))
+
 
 class Transaction(ModelBase):
     """Object representing one bank transaction on a certain bank account of the user"""
@@ -145,6 +153,10 @@ class Transaction(ModelBase):
     booked = None
     """This flag indicates whether the transaction is booked or pending"""
 
+    def __str__(self):
+        return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))
+
+
 class Notification(ModelBase):
     """Object representing a configured notification, e.g a webhook or email hook"""
     
@@ -159,4 +171,7 @@ class Notification(ModelBase):
     
     state = None
     """State similiar to sync and logon process. It will passed as POST payload for webhooks"""
+
+    def __str__(self):
+        return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
 

@@ -3,6 +3,8 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
+import base64
+from datetime import datetime, timedelta
 import hashlib
 import httplib
 from itertools import izip_longest
@@ -59,6 +61,8 @@ class FigoException(Exception):
     """
 
     def __init__(self, error, error_description):
+        super(FigoException, self).__init__()
+
         self.error = error
         self.error_description = error_description
 
@@ -67,6 +71,7 @@ class FigoException(Exception):
 
     @classmethod
     def from_dict(cls, dictionary):
+        """Helper function creating an exception instance from the dictionary returned by the server"""
         return cls(dictionary['error'], dictionary['error_description'])
 
 
@@ -163,7 +168,7 @@ class FigoConnection(object):
             raise Exception("Invalid authentication code")
 
         response = self._query_api("/auth/token", data={
-                                   'code': authorization_code, 'redirect_uri': self.redirect_uri, 'grant_type': 'authorization_code'})
+                                   'code': authentication_code, 'redirect_uri': self.redirect_uri, 'grant_type': 'authorization_code'})
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -203,7 +208,7 @@ class FigoConnection(object):
          - `token` - access or refresh token to be revoked
         """
 
-        response = self._query_api("/auth/revoke?" + urllib.urlencode({'token': access_token_info['refresh_token']}))
+        response = self._query_api("/auth/revoke?" + urllib.urlencode({'token': token}))
         if 'error' in response:
             raise FigoException.from_dict(response)
 

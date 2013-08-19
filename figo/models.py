@@ -64,19 +64,13 @@ class Account(ModelBase):
     def balance(self):
         """Balance details of the account, represented by an `AccountBalance` object."""
 
-        response = self.session._query_api("/rest/accounts/%s/balance" % (str(self.account_id), ))
-        if 'error' in response:
-            raise FigoException.from_dict(response)
-        return AccountBalance.from_dict(self.session, response)
+        return AccountBalance.from_dict(self.session, self.session._query_api_with_exception("/rest/accounts/%s/balance" % (str(self.account_id), )))
 
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction on the account"""
 
-        response = self.session._query_api("/rest/accounts/%s/transactions" % (str(self.account_id), ))
-        if 'error' in response:
-            raise FigoException.from_dict(response)
-        return [Transaction.from_dict(self.session, transaction_dict) for transaction_dict in response['transactions']]
+        return [Transaction.from_dict(self.session, transaction_dict) for transaction_dict in self.session._query_api_with_exception("/rest/accounts/%s/transactions" % (str(self.account_id), ))['transactions']]
 
     def get_transaction(self, transaction_id):
         """Retrieve a specific transaction.
@@ -88,10 +82,7 @@ class Account(ModelBase):
             a `Transaction` object representing the transaction to be retrieved
         """
 
-        response = self.session._query_api("/rest/accounts/%s/transactions/%s" % (str(self.account_id), str(transaction_id)))
-        if 'error' in response:
-            raise FigoException.from_dict(response)
-        return Transaction.from_dict(self.session, response)
+        return Transaction.from_dict(self.session, self.session._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (str(self.account_id), str(transaction_id))))
 
 
 class AccountBalance(ModelBase):
@@ -168,3 +159,4 @@ class Notification(ModelBase):
     
     state = None
     """State similiar to sync and logon process. It will passed as POST payload for webhooks"""
+

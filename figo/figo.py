@@ -253,6 +253,14 @@ class FigoSession(object):
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
             return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
 
+    def _query_api_with_exception(self, path, data=None, method="GET"):
+        """Helper method analog to _query_api but raises an exception instead of simply returning"""
+        response = self._query_api(path, data, method)
+        if 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return response
+
     @property
     def accounts(self):
         """An array of `Account` objects, one for each account the user has granted the app access"""

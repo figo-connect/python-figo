@@ -5,4 +5,10 @@ python:
   - "3.2"
   - "3.3"
   - "pypy"
-script:  python setup.py test
+install:
+  - pip install flake8 --use-mirrors
+  - pip install -q -e . --use-mirrors
+before-script:
+  - flake8 figo
+script:
+  - python setup.py test

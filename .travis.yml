@@ -8,7 +8,7 @@ python:
 install:
   - pip install flake8 --use-mirrors
   - pip install -q -e . --use-mirrors
-before-script:
+before_script:
   - flake8 figo
 script:
   - python setup.py test

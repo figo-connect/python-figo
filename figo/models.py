@@ -62,6 +62,12 @@ class Account(ModelBase):
     """Account icon URL"""
 
     @property
+    def get_balance(self):
+        """Balance details of the account, represented by an `AccountBalance` object."""
+
+        return AccountBalance.from_dict(self.session, self.balance)
+
+    @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction on the account"""
 

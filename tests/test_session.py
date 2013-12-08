@@ -21,7 +21,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(account.account_id, "A1.2")
 
         # account sub-resources
-        balance = self.sut.get_account("A1.2").balance
+        balance = self.sut.get_account("A1.2").get_balance
         self.assertTrue(balance.balance)
         self.assertTrue(balance.balance_date)
 

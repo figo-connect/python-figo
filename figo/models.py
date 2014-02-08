@@ -3,7 +3,7 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
-import datetime
+import dateutil.parser
 
 
 class ModelBase(object):
@@ -105,8 +105,10 @@ class Account(ModelBase):
 
     def __init__(self, session, **kwargs):
         super(Account, self).__init__(session, **kwargs)
-        self.status = SynchronizationStatus.from_dict(self.session, self.status)
-        self.balance = AccountBalance.from_dict(self.session, self.balance)
+        if self.status:
+            self.status = SynchronizationStatus.from_dict(self.session, self.status)
+        if self.balance:
+            self.balance = AccountBalance.from_dict(self.session, self.balance)
 
 
 class AccountBalance(ModelBase):
@@ -133,10 +135,11 @@ class AccountBalance(ModelBase):
 
     def __init__(self, session, **kwargs):
         super(AccountBalance, self).__init__(session, **kwargs)
-        self.status = SynchronizationStatus.from_dict(self.session, self.status)
+        if self.status:
+            self.status = SynchronizationStatus.from_dict(self.session, self.status)
 
         if self.balance_date:
-            self.balance_date = datetime.datetime.fromtimestamp(self.balance_date)
+            self.balance_date = dateutil.parser.parse(self.balance_date)
 
 
 class Payment(object):
@@ -189,10 +192,10 @@ class Payment(object):
         super(Payment, self).__init__(session, **kwargs)
 
         if self.creation_timestamp:
-            self.creation_timestamp = datetime.datetime.fromtimestamp(self.creation_timestamp)
+            self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
 
         if self.modification_timestamp:
-            self.modification_timestamp = datetime.datetime.fromtimestamp(self.modification_timestamp)
+            self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
 
 class Transaction(ModelBase):
@@ -251,13 +254,13 @@ class Transaction(ModelBase):
         super(Transaction, self).__init__(session, **kwargs)
 
         if self.creation_timestamp:
-            self.creation_timestamp = datetime.datetime.fromtimestamp(self.creation_timestamp)
+            self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
 
         if self.modification_timestamp:
-            self.modification_timestamp = datetime.datetime.fromtimestamp(self.modification_timestamp)
+            self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
         if self.booking_date:
-            self.booking_date = datetime.datetime.fromtimestamp(self.booking_date)
+            self.booking_date = dateutil.parser.parse(self.booking_date)
 
     def __str__(self):
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))

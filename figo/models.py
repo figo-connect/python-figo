@@ -3,6 +3,8 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
+import datetime
+
 
 class ModelBase(object):
 
@@ -61,17 +63,31 @@ class Account(ModelBase):
     icon = None
     """Account icon URL"""
 
-    @property
-    def get_balance(self):
-        """Balance details of the account, represented by an `AccountBalance` object."""
+    status = None
+    """Synchronization status object"""
 
-        return AccountBalance.from_dict(self.session, self.balance)
+    @property
+    def payments(self):
+        """An array of `Transaction` objects, one for each transaction on the account"""
+        return self.session.get_payments(self.account_id)
+
+    def get_payment(self, payment_id):
+        """Retrieve a specific payment.
+
+        :Parameters:
+         - `payment_id` - ID of the payment to be retrieved
+
+        :Returns:
+            a `Payment` object representing the payment to be retrieved
+        """
+
+        return self.session.get_payments(self.account_id, payment_id)
 
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction on the account"""
 
-        return [Transaction.from_dict(self.session, transaction_dict) for transaction_dict in self.session._query_api_with_exception("/rest/accounts/%s/transactions" % (str(self.account_id), ))['transactions']]
+        return self.session.get_transactions(self.account_id)
 
     def get_transaction(self, transaction_id):
         """Retrieve a specific transaction.
@@ -82,11 +98,15 @@ class Account(ModelBase):
         :Returns:
             a `Transaction` object representing the transaction to be retrieved
         """
-
-        return Transaction.from_dict(self.session, self.session._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (str(self.account_id), str(transaction_id))))
+        return self.session.get_transaction(self.account_id, transaction_id)
 
     def __str__(self):
         return "Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+
+    def __init__(self, session, **kwargs):
+        super(Account, self).__init__(session, **kwargs)
+        self.status = SynchronizationStatus.from_dict(self.session, self.status)
+        self.balance = AccountBalance.from_dict(self.session, self.balance)
 
 
 class AccountBalance(ModelBase):
@@ -105,8 +125,74 @@ class AccountBalance(ModelBase):
     monthly_spending_limit = None
     """User-defined spending limit"""
 
+    status = None
+    """Synchronization status object"""
+
     def __str__(self):
         return "Balance: %d at %s" % (self.balance, str(self.balance_date))
+
+    def __init__(self, session, **kwargs):
+        super(AccountBalance, self).__init__(session, **kwargs)
+        self.status = SynchronizationStatus.from_dict(self.session, self.status)
+
+        if self.balance_date:
+            self.balance_date = datetime.datetime.fromtimestamp(self.balance_date)
+
+
+class Payment(object):
+
+    """docstring for Payment"""
+
+    payment_id = None
+    """Internal figo Connect payment ID"""
+
+    account_id = None
+    """ Internal figo Connect account ID"""
+
+    type = None
+    """payment type"""
+
+    name = None
+    """Name of creditor or debtor"""
+
+    account_number = None
+    """Account number or IBAN of creditor or debtor"""
+
+    bank_code = None
+    """Bank code or BIC of creditor or debtor"""
+
+    amount = None
+    """Order amount"""
+
+    currency = None
+    """Three-character currency code"""
+
+    purpose = None
+    """Purpose text"""
+
+    text_key = None
+    """DTA text key"""
+
+    text_key_extension = None
+    """DTA text key extension"""
+
+    notification_recipient = None
+    """Recipient of the payment notification (should be an email address)"""
+
+    creation_timestamp = None
+    """creation date"""
+
+    modification_timestamp = None
+    """modification date"""
+
+    def __init__(self, session, **kwargs):
+        super(Payment, self).__init__(session, **kwargs)
+
+        if self.creation_timestamp:
+            self.creation_timestamp = datetime.datetime.fromtimestamp(self.creation_timestamp)
+
+        if self.modification_timestamp:
+            self.modification_timestamp = datetime.datetime.fromtimestamp(self.modification_timestamp)
 
 
 class Transaction(ModelBase):
@@ -155,6 +241,24 @@ class Transaction(ModelBase):
     booked = None
     """This flag indicates whether the transaction is booked or pending"""
 
+    creation_timestamp = None
+    """creation date"""
+
+    modification_timestamp = None
+    """modification date"""
+
+    def __init__(self, session, **kwargs):
+        super(Transaction, self).__init__(session, **kwargs)
+
+        if self.creation_timestamp:
+            self.creation_timestamp = datetime.datetime.fromtimestamp(self.creation_timestamp)
+
+        if self.modification_timestamp:
+            self.modification_timestamp = datetime.datetime.fromtimestamp(self.modification_timestamp)
+
+        if self.booking_date:
+            self.booking_date = datetime.datetime.fromtimestamp(self.booking_date)
+
     def __str__(self):
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))
 
@@ -177,3 +281,34 @@ class Notification(ModelBase):
 
     def __str__(self):
         return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
+
+
+class SynchronizationStatus(ModelBase):
+
+    """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers"""
+
+    code = None
+    """Internal figo Connect status code"""
+
+    message = None
+    """Human-readable error message"""
+
+    sync_timestamp = None
+    """Timestamp of last synchronization"""
+
+    success_timestamp = None
+    """Timestamp of last successful synchronization"""
+
+    def __str__():
+        return "Synchronization Status: %s (%s)" % (self.code, self.message)
+
+
+class User(ModelBase):
+
+    """Object representing an user"""
+
+    name = None
+    """First and last name"""
+
+    email = None
+    """Email address"""

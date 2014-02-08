@@ -16,7 +16,7 @@ import sys
 import urllib
 
 
-from .models import Account, Notification, Transaction
+from .models import Account, Notification, Payment, Transaction, User
 
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,9 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
 
     VALID_FINGERPRINTS = ("A6:FE:08:F4:A8:86:F9:C1:BF:4E:70:0A:BD:72:AE:B8:8E:B7:78:52",
-                          "E0:46:84:06:D0:1B:0B:6E:3D:3F:7F:A4:F5:D7:32:C2:56:BA:2F:0A",
-                          "21:2D:B9:E0:6F:8E:B7:FE:23:37:A2:C1:D0:52:90:5D:BD:8D:BE:0B",
-                          "AD:A0:E3:2B:1F:CE:E8:44:F2:83:BA:AE:E4:7D:F2:AD:44:48:7F:1E")
+                          "AD:A0:E3:2B:1F:CE:E8:44:F2:83:BA:AE:E4:7D:F2:AD:44:48:7F:1E",
+                          "2A:B2:8B:83:78:B9:D2:F3:A0:03:0B:14:D1:0D:15:61:66:73:FF:B7",
+                          "E0:46:84:06:D0:1B:0B:6E:3D:3F:7F:A4:F5:D7:32:C2:56:BA:2F:0A")
 
     def connect(self):
         # overrides the version in httplib so that we do certificate verification
@@ -55,6 +55,60 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
                 raise ssl.SSLError("Certificate validation failed")
 
 
+class FigoObject(object):
+
+    API_ENDPOINT = "api.leanbank.com"
+    API_SECURE = True
+
+    def _query_api(self, path, data=None, method="GET"):
+        """Helper method for making a REST-compliant API call
+
+        :Parameters:
+         - `path` - path on the server to call
+         - `data` - Dictionary of data to send to the server in message body
+         - `method` - HTTP verb to use for the request
+
+        :Returns:
+            the JSON-parsed result body
+        """
+
+        connection = VerifiedHTTPSConnection(
+            self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
+        connection.request(method, path, None if data is None else json.dumps(data),
+                           {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
+        response = connection.getresponse()
+
+        if response.status >= 200 and response.status < 300:
+            response_data = response.read().decode("utf-8")
+            if response_data == "":
+                return {}
+            return json.loads(response_data)
+        elif response.status == 400:
+            response_data = response.read().decode("utf-8")
+            return json.loads(response_data)
+        elif response.status == 401:
+            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
+        elif response.status == 403:
+            return {'error': "forbidden", 'error_description': "Insufficient permission."}
+        elif response.status == 404:
+            return None
+        elif response.status == 405:
+            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
+        elif response.status == 503:
+            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
+        else:
+            logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
+            return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
+
+    def _query_api_with_exception(self, path, data=None, method="GET"):
+        """Helper method analog to _query_api but raises an exception instead of simply returning"""
+        response = self._query_api(path, data, method)
+        if 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return response
+
+
 class FigoException(Exception):
 
     """Base class for all exceptions transported via the figo connect API.
@@ -77,15 +131,12 @@ class FigoException(Exception):
         return cls(dictionary['error'], dictionary['error_description'])
 
 
-class FigoConnection(object):
+class FigoConnection(FigoObject):
 
     """Representing a not user-bound connection to the figo connect API.
 
     Its main purpose is to let user login via the OAuth2 API.
     """
-
-    API_ENDPOINT = "api.leanbank.com"
-    API_SECURE = True
 
     def __init__(self, client_id, client_secret, redirect_uri):
         """Creates a FigoConnection instance.
@@ -215,7 +266,7 @@ class FigoConnection(object):
             raise FigoException.from_dict(response)
 
 
-class FigoSession(object):
+class FigoSession(FigoObject):
 
     """Represents a user-bound connection to the figo connect API and allows access to the users data"""
 
@@ -226,54 +277,6 @@ class FigoSession(object):
          - `access_token` - the access token to bind this session to a user
         """
         self.access_token = access_token
-
-    def _query_api(self, path, data=None, method="GET"):
-        """Helper method for making a REST-compliant API call
-
-        :Parameters:
-         - `path` - path on the server to call
-         - `data` - Dictionary of data to send to the server in message body
-         - `method` - HTTP verb to use for the request
-
-        :Returns:
-            the JSON-parsed result body
-        """
-
-        connection = VerifiedHTTPSConnection(
-            FigoConnection.API_ENDPOINT) if FigoConnection.API_SECURE else httplib.HTTPConnection(FigoConnection.API_ENDPOINT)
-        connection.request(method, path, None if data is None else json.dumps(data),
-                           {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
-        response = connection.getresponse()
-
-        if response.status >= 200 and response.status < 300:
-            response_data = response.read().decode("utf-8")
-            if response_data == "":
-                return {}
-            return json.loads(response_data)
-        elif response.status == 400:
-            response_data = response.read().decode("utf-8")
-            return json.loads(response_data)
-        elif response.status == 401:
-            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
-        elif response.status == 403:
-            return {'error': "forbidden", 'error_description': "Insufficient permission."}
-        elif response.status == 404:
-            return None
-        elif response.status == 405:
-            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
-        elif response.status == 503:
-            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
-        else:
-            logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
-
-    def _query_api_with_exception(self, path, data=None, method="GET"):
-        """Helper method analog to _query_api but raises an exception instead of simply returning"""
-        response = self._query_api(path, data, method)
-        if 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
 
     @property
     def accounts(self):
@@ -374,6 +377,133 @@ class FigoSession(object):
         elif 'error' in response:
             raise FigoException.from_dict(response)
 
+    def get_payments(self, account_id, since=None, count=None):
+        """Get an array of `Payment` objects, one for each payment of the user
+
+        :Parameters:
+         - `account_id` - ID of the account to be retrieved
+         - `since` - Payments which were created on or after this date/id will be returned in the response
+         - `count` - Limit the number of returned payments. The default number is 1000.
+
+        :Returns:
+            `List` of Payment objects
+        """
+
+        query = {}
+        if since:
+            query["since"] = since
+
+        if count:
+            query["count"] = count
+
+        response = self._query_api("/rest/accounts/%s/payments" % (account_id), query)
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return [Payment.from_dict(self, payment_dict) for payment_dict in response['payments']]
+
+    def get_payment(self, account_id, payment_id):
+        """Get a single `Payment` object
+
+        :Parameters:
+         - `account_id` - Internal figo Connect account ID
+         - `payment_id` - ID of the payment to be retrieved
+         
+        :Returns:
+            `Payment` object
+        """
+
+        response = self._query_api("/rest/accounts/%s/payments/" % (account_id, payment_id))
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return Payment.from_dict(self, response)
+
+    def add_payment(self, account_id, **kwargs):
+        """Insert payment into payment list
+
+        :Parameters:
+         - `account_id` - Internal figo Connect account ID
+         - all Payment attributes as keyword arguments
+        
+
+        :Returns:
+            `Payment` object of the new created Payment 
+        """
+
+        response = self._query_api("/rest/accounts/%s/payments" % (account_id), kwargs, "POST")
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return Payment.from_dict(self, response)
+
+    def modify_payment(self, account_id, payment_id, **kwargs):
+        """Insert payment into payment list
+
+        :Parameters:
+         - `account_id` - Internal figo Connect account ID
+         - `payment_id` - ID of the payment to be modified
+         - all Payment attributes as keyword arguments
+        
+
+        :Returns:
+            `Payment` object of the modified Payment 
+        """
+
+        response = self._query_api("/rest/accounts/%s/payments/%s" % (account_id, payment_id), kwargs, "PUT")
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return Payment.from_dict(self, response)
+
+    def remove_payment(self, account_id, payment_id):
+        """Remove a payment
+
+        :Parameters:
+         - `account_id` - Internal figo Connect account ID
+         - `payment_id` - ID of the payment to be deleted
+        """
+
+        response = self._query_api("/rest/accounts/%s/payments/%s" (account_id, notification_id), method="DELETE")
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+
+    def submit_payment(self, account_id, payment_id, **kwargs):
+        """Submit payment to bank server.
+
+        :Parameters:
+         - `account_id` - Internal figo Connect account ID
+         - `payment_id` - ID of the payment to be submited
+         - all Payment submit attributes as keyword arguments
+        
+
+        :Returns:
+            `task_token` Task token
+        """
+
+        response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), query, "POST")
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return response["task_token"]
+
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction of the user"""
@@ -385,6 +515,57 @@ class FigoSession(object):
             raise FigoException.from_dict(response)
         else:
             return [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+
+    def get_transactions(self, account_id):
+        """Get an array of `Transaction` objects, one for each transaction of the user
+
+        :Parameters:
+         - `account_id` - ID of the account to be retrieved
+ 
+        :Returns:
+            `List` of Transaction objects
+        """
+
+        response = self._query_api("/rest/accounts/%s/transactions" % (account_id))
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+
+    def get_transaction(self, account_id, transaction_id):
+        """Retrieve a specific transaction.
+
+        :Parameters:
+         - `account_id` - ID of the account to be retrieved
+         - `transaction_id` - ID of the transaction to be retrieved
+ 
+        :Returns:
+            a `Transaction` object representing the transaction to be retrieved
+        """
+
+        response = self._query_api("/rest/accounts/%s/transactions/%s" % (account_id, transaction_id))
+
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return Transaction.from_dict(self, response)
+
+    @property
+    def user(self):
+        """Get figo Account settings."""
+
+        response = self._query_api("/rest/user")
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return User.from_dict(self, response)
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronisation.
@@ -406,3 +587,14 @@ class FigoSession(object):
             raise FigoException.from_dict(response)
         else:
             return FigoConnection.API_ENDPOINT + "/task/start?id=" + response['task_token']
+
+    def get_task_start_url(self, task_token):
+        """URL for communication with bank server
+
+        :Parameters:
+         - `task_token` - Task token from the initial request.
+
+        :Returns:
+            the URL to be opened by the user.
+        """
+        return "%s/task/start?id=%s" % (FigoConnection.API_ENDPOINT, task_token)

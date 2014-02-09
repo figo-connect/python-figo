@@ -619,10 +619,10 @@ class FigoSession(FigoObject):
         data = self._query_api(notification.observe_key)
 
 
-        if re.match("\/rest\/transactions", notification.observe_key:
+        if re.match("\/rest\/transactions", notification.observe_key):
             notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
 
-        elif re.match("\/rest\/accounts\/(.*)\/transactions", notification.observe_key:
+        elif re.match("\/rest\/accounts\/(.*)\/transactions", notification.observe_key):
             notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
 
         elif re.match("\/rest\/accounts\/(.*)\/balance", notification.observe_key):

@@ -266,8 +266,6 @@ class FigoConnection(FigoObject):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-
-
     def add_user(self, **kwargs):
         """Register a new figo Account. Only native clients may create new figo Accounts.
 
@@ -286,7 +284,6 @@ class FigoConnection(FigoObject):
         else:
             return response['recovery_password']
 
-
     def resend_unlock_code(self, **kwargs):
         """Re-send unlock code email.
 
@@ -300,7 +297,6 @@ class FigoConnection(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-      
 
     def unlock(self, **kwargs):
         """Native clients may unlock figo Accounts. This request must be issued with the same client identifier which was used to request the unlock code.
@@ -317,7 +313,8 @@ class FigoConnection(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-        
+
+
 class FigoSession(FigoObject):
 
     """Represents a user-bound connection to the figo connect API and allows access to the users data"""
@@ -972,7 +969,6 @@ class FigoSession(FigoObject):
         else:
             return User.from_dict(self, response)
 
-
     def modify_user(self, **kwargs):
         """Modify figo Account settings.
 
@@ -999,7 +995,6 @@ class FigoSession(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
 
-
     def resend_verification(self):
         """Re-send verification email.
 
@@ -1010,8 +1005,6 @@ class FigoSession(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-
-
 
     def purchase_premium(self, **kwargs):
         """Purchase a premium membership with a debit or credit card.
@@ -1033,8 +1026,6 @@ class FigoSession(FigoObject):
         else:
             return response
 
-
-
     def cancel_subscription(self):
         """Cancel the premium membership
 
@@ -1045,10 +1036,6 @@ class FigoSession(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-
-
-
-
 
     def verify_receipt(self, **kwargs):
         """Verify iOS App Store receipt from In-App Purchase.
@@ -1070,9 +1057,6 @@ class FigoSession(FigoObject):
         else:
             return response
 
-
-
-
     def redeem_code(self, **kwargs):
         """Redeem a voucher code.
 
@@ -1091,11 +1075,6 @@ class FigoSession(FigoObject):
             raise FigoException.from_dict(response)
         else:
             return response
-
-
-
-
-
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronisation.

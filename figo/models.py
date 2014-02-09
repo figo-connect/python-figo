@@ -138,17 +138,22 @@ class Bank(ModelBase):
         if type(self.credentials) is list:
             self.credentials = [Credential.from_dict(self, credential_dict) for credential_dict in self.credentials]
 
+    def __str__(self):
+        return "Bank: %s" % (self.bank_name)
 
 
 class BankContact(ModelBase):
 
     """Object representing a BankContact"""
 
-    sepa_creditor_id = None 
+    sepa_creditor_id = None
     """SEPA direct debit creditor ID."""
 
-    save_pin = None 
+    save_pin = None
     """This flag indicates whether the user has chosen to save the PIN on the figo Connect server."""
+
+    def __str__(self):
+        return "BankContact: %s " % self.sepa_creditor_id
 
 
 class AccountBalance(ModelBase):
@@ -219,6 +224,9 @@ class Client(ModelBase):
         if self.last_access:
             self.last_access = dateutil.parser.parse(self.last_access)
 
+        def __str__(self):
+            return "Client: %s (%s)" % (self.name, self.homepage)
+
 
 class Credential(ModelBase):
     label = None
@@ -229,6 +237,9 @@ class Credential(ModelBase):
 
     optional = None
     """ This flag indicates whether this text input field is allowed to contain the empty string."""
+
+    def __str__(self):
+        return "Credential: %s " % self.label
 
 
 class Device(ModelBase):
@@ -253,11 +264,14 @@ class Device(ModelBase):
         if self.last_access:
             self.last_access = dateutil.parser.parse(self.last_access)
 
+    def __str__(self):
+        return "Device: %s (%s)" % (self.name, self.device_id)
+
 
 class Payment(ModelBase):
 
     """Object representing a Payment"""
-    
+
     payment_id = None
     """Internal figo Connect payment ID"""
 
@@ -335,6 +349,9 @@ class Payment(ModelBase):
 
         if type(self.container) is list:
             self.container = [Payment.from_dict(self, payment_dict) for payment_dict in self.container]
+
+    def __str__(self):
+        return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
 class Transaction(ModelBase):
@@ -458,6 +475,9 @@ class Service(object):
     icon = None
     """Icon URL"""
 
+    def __str__(self):
+        return "Service: %s (%s)" % (self.name, self.bank_code)
+
 
 class Task(ModelBase):
 
@@ -483,6 +503,9 @@ class Task(ModelBase):
 
     challenge = None
     """Challenge object."""
+
+    def __str__(self):
+        return "Task: %s (%s" % (self.message, self.account_id)
 
 
 class User(ModelBase):
@@ -534,8 +557,11 @@ class User(ModelBase):
         if self.join_date:
             self.join_date = dateutil.parser.parse(self.join_date)
 
+    def __str__(self):
+        return "User: %s (%s, %s)" % (self.name, self.user_id, self.email)
 
-class WebhookNotification(object):
+
+class WebhookNotification(ModelBase):
 
     """Object representing a WebhookNotification"""
 
@@ -550,3 +576,6 @@ class WebhookNotification(object):
 
     data = None
     """Object or List with the data (`AccountBalance` or `Transaction`)"""
+
+    def __str__(self):
+        return "WebhookNotification: %s" % (self.notification_id)

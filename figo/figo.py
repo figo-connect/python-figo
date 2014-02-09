@@ -10,13 +10,14 @@ import httplib
 from itertools import izip_longest
 import json
 import logging
+import re
 import socket
 import ssl
 import sys
 import urllib
 
 
-from .models import Account, Notification, Payment, Transaction, User
+from .models import Account, Notification, Payment, Transaction, User, WebhookNotification
 
 
 logger = logging.getLogger(__name__)
@@ -598,3 +599,34 @@ class FigoSession(FigoObject):
             the URL to be opened by the user.
         """
         return "%s/task/start?id=%s" % (FigoConnection.API_ENDPOINT, task_token)
+
+    def parse_webhook_notification(self, message_body):
+        """ parses webhook notification and returns a `WebhookNotification` object
+
+            :Parameters:
+            - `message_body` - message body of the webhook message (as string or dict)
+
+            :Returns:
+                a WebhookNotification object 
+
+        """
+
+        if type(message_body) is not dict:
+            message_body = json.loads(message_body)
+
+        notification = WebhookNotification.from_dict(self, message_body)
+
+        data = self._query_api(notification.observe_key)
+
+
+        if re.match("\/rest\/transactions", notification.observe_key:
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+
+        elif re.match("\/rest\/accounts\/(.*)\/transactions", notification.observe_key:
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+
+        elif re.match("\/rest\/accounts\/(.*)\/balance", notification.observe_key):
+            notification.data = AccountBalance.from_dict(data)
+
+
+        return notification

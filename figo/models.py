@@ -68,7 +68,7 @@ class Account(ModelBase):
 
     @property
     def payments(self):
-        """An array of `Transaction` objects, one for each transaction on the account"""
+        """An array of `Payment` objects, one for each transaction on the account"""
         return self.session.get_payments(self.account_id)
 
     def get_payment(self, payment_id):
@@ -315,3 +315,18 @@ class User(ModelBase):
 
     email = None
     """Email address"""
+
+class WebhookNotification(object):
+    """Object representing a WebhookNotification"""
+
+    notification_id = None
+    """Internal figo Connect notification ID from the notification registration response."""
+
+    observe_key = None
+    """The Notification key"""
+
+    state = None
+    """The state parameter from the notification registration request."""
+
+    data = None
+    """Object or List with the data (`AccountBalance` or `Transaction`)"""

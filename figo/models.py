@@ -111,6 +111,46 @@ class Account(ModelBase):
             self.balance = AccountBalance.from_dict(self.session, self.balance)
 
 
+class Bank(ModelBase):
+
+    """Object representing a Bank"""
+
+    bank_name = None
+    """Bank name."""
+
+    supported = None
+    """This flag indicates whether this bank is supported by figo."""
+
+    credentials = None
+    """List of credential objects."""
+
+    auth_type = None
+    """If the authentication type is pin, then the user must have the option to save or not to save his or her PIN. If the authentication type is none or token, then there is no such option."""
+
+    advice = None
+    """Help text."""
+
+    icon = None
+    """Icon URL."""
+
+    def __init__(self, session, **kwargs):
+        super(Bank, self).__init__(session, **kwargs)
+        if type(self.credentials) is list:
+            self.credentials = [Credential.from_dict(self, credential_dict) for credential_dict in self.credentials]
+
+
+
+class BankContact(ModelBase):
+
+    """Object representing a BankContact"""
+
+    sepa_creditor_id = None 
+    """SEPA direct debit creditor ID."""
+
+    save_pin = None 
+    """This flag indicates whether the user has chosen to save the PIN on the figo Connect server."""
+
+
 class AccountBalance(ModelBase):
 
     """Object representing the balance of a certain bank account of the user"""
@@ -142,27 +182,105 @@ class AccountBalance(ModelBase):
             self.balance_date = dateutil.parser.parse(self.balance_date)
 
 
-class Payment(object):
+class Client(ModelBase):
 
-    """docstring for Payment"""
+    """object representing a `Client`"""
 
+    client_id = None
+    """Internal figo Connect client ID"""
+
+    name = None
+    """Client name"""
+
+    homepage = None
+    """Homepage URL"""
+
+    description = None
+    """Client description"""
+
+    icon = None
+    """Icon URL"""
+
+    scope = None
+    """A space delimited set of permissions for the client."""
+
+    valid = None
+    """This flag indicates whether the client is still authorized."""
+
+    last_access = None
+    """Timestamp of the last request this client made."""
+
+    accounts = None
+    """List of account IDs. The client has access to these accounts."""
+
+    def __init__(self, session, **kwargs):
+        super(AccountBalance, self).__init__(session, **kwargs)
+
+        if self.last_access:
+            self.last_access = dateutil.parser.parse(self.last_access)
+
+
+class Credential(ModelBase):
+    label = None
+    """Label for text input field"""
+
+    masked = None
+    """This indicates whether the this text input field is used for password entry and therefore should be masked."""
+
+    optional = None
+    """ This flag indicates whether this text input field is allowed to contain the empty string."""
+
+
+class Device(ModelBase):
+
+    """Object representing a Device"""
+
+    device_id = None
+    """Internal figo Connect device ID"""
+
+    name = None
+    """Device name"""
+
+    icon = None
+    """Icon URL"""
+
+    last_access = None
+    """Timestamp of the last request this device made."""
+
+    def __init__(self, session, **kwargs):
+        super(Device, self).__init__(session, **kwargs)
+
+        if self.last_access:
+            self.last_access = dateutil.parser.parse(self.last_access)
+
+
+class Payment(ModelBase):
+
+    """Object representing a Payment"""
+    
     payment_id = None
     """Internal figo Connect payment ID"""
 
     account_id = None
-    """ Internal figo Connect account ID"""
+    """Internal figo Connect account ID"""
 
     type = None
-    """payment type"""
+    """Payment type"""
 
     name = None
     """Name of creditor or debtor"""
 
     account_number = None
-    """Account number or IBAN of creditor or debtor"""
+    """Account number of creditor or debtor"""
 
     bank_code = None
-    """Bank code or BIC of creditor or debtor"""
+    """Bank code of creditor or debtor"""
+
+    bank_name = None
+    """Bank name of creditor or debtor"""
+
+    bank_icon = None
+    """ Icon of creditor or debtor bank"""
 
     amount = None
     """Order amount"""
@@ -179,23 +297,44 @@ class Payment(object):
     text_key_extension = None
     """DTA text key extension"""
 
-    notification_recipient = None
-    """Recipient of the payment notification (should be an email address)"""
+    scheduled_date = None
+    """Scheduled date. Recurring time intervals for standing orders are specified according ISO 8601."""
+
+    container = None
+    """If this payment object is a container for multiple payments, then this field is set and contains a ist of payment objects."""
+
+    submission_timestamp = None
+    """Timestamp of submission to the bank server."""
 
     creation_timestamp = None
-    """creation date"""
+    """Internal creation timestamp on the figo Connect server."""
 
     modification_timestamp = None
-    """modification date"""
+    """Internal modification timestamp on the figo Connect server."""
+
+    transaction_id = None
+    """Transaction ID. This field is only set if the payment has been matched to a transaction."""
+
+    can_be_modified = None
+    """List of fields which are modifiable on the bank server"""
+
+    can_be_deleted = None
+    """Flag which is set to true if the payment can be deleted from the bank server"""
 
     def __init__(self, session, **kwargs):
         super(Payment, self).__init__(session, **kwargs)
+
+        if self.submission_timestamp:
+            self.submission_timestamp = dateutil.parser.parse(self.submission_timestamp)
 
         if self.creation_timestamp:
             self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
 
         if self.modification_timestamp:
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
+
+        if type(self.container) is list:
+            self.container = [Payment.from_dict(self, payment_dict) for payment_dict in self.container]
 
 
 class Transaction(ModelBase):
@@ -306,17 +445,98 @@ class SynchronizationStatus(ModelBase):
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
 
 
+class Service(object):
+
+    """Object representing a Service"""
+
+    name = None
+    """Service name"""
+
+    bank_code = None
+    """Bank code of the service"""
+
+    icon = None
+    """Icon URL"""
+
+
+class Task(ModelBase):
+
+    """Object representing a Task"""
+
+    account_id = None
+    """Account ID of currently processed account."""
+
+    message = None
+    """Status message or error message for currently processed account."""
+
+    is_waiting_for_pin = None
+    """If this flag is set, then the figo Connect server waits for a PIN."""
+
+    is_waiting_for_response = None
+    """If this flag is set, then the figo Connect server waits for a response to the parameter challenge."""
+
+    is_erroneous = None
+    """If this flag is set, then an error occurred and the figo Connect server waits for a continuation."""
+
+    is_ended = None
+    """If this flag is set, then the communication with the bank server has been completed."""
+
+    challenge = None
+    """Challenge object."""
+
+
 class User(ModelBase):
 
     """Object representing an user"""
 
+    user_id = None
+    """Internal figo Connect user ID."""
+
     name = None
-    """First and last name"""
+    """"First and last name."""
 
     email = None
-    """Email address"""
+    """"Email address."""
+
+    address = None
+    """Postal address for bills, etc."""
+
+    verified_email = None
+    """This flag indicates whether the email address has been verified."""
+
+    send_newsletter = None
+    """"This flag indicates whether the user has agreed to be contacted by email."""
+
+    language = None
+    """"Two-letter code of preferred language."""
+
+    premium = None
+    """This flag indicates whether the figo Account plan is free or premium."""
+
+    premium_expires_on = None
+    """Timestamp of premium figo Account expiry."""
+
+    premium_subscription = None
+    """Provider for premium subscription or Null of no subscription is active."""
+
+    join_date = None
+    """Timestamp of figo Account registration."""
+
+    force_reset = None
+    """If this flag is set then all local data must be cleared from the device and re-fetched from the figo Connect server."""
+
+    recovery_password = None
+    """Auto-generated recovery password. This response parameter will only be set once and only for the figo iOS app and only for legacy figo Accounts. The figo iOS app must display this recovery password to the user."""
+
+    def __init__(self, session, **kwargs):
+        super(Payment, self).__init__(session, **kwargs)
+
+        if self.join_date:
+            self.join_date = dateutil.parser.parse(self.join_date)
+
 
 class WebhookNotification(object):
+
     """Object representing a WebhookNotification"""
 
     notification_id = None

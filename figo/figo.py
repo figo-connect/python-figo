@@ -14,7 +14,7 @@ import ssl
 import sys
 import urllib
 
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     import http.client as httplib
     from itertools import zip_longest as izip_longest
 else:

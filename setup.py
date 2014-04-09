@@ -29,5 +29,8 @@ setup(name='python-figo',
       install_requires=[
           'python-dateutil'
       ],
+      test_requires=[
+          'nose'
+      ],
       test_suite="tests",
       )

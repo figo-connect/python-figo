@@ -3,4 +3,4 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
-from figo import *
+from .figo import *

@@ -16,7 +16,7 @@ class ModelBase(object):
     def __init__(self, session, **kwargs):
         self.session = session
 
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
 

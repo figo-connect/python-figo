@@ -27,10 +27,7 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
 
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
 
-    VALID_FINGERPRINTS = ("A6:FE:08:F4:A8:86:F9:C1:BF:4E:70:0A:BD:72:AE:B8:8E:B7:78:52",
-                          "AD:A0:E3:2B:1F:CE:E8:44:F2:83:BA:AE:E4:7D:F2:AD:44:48:7F:1E",
-                          "2A:B2:8B:83:78:B9:D2:F3:A0:03:0B:14:D1:0D:15:61:66:73:FF:B7",
-                          "E0:46:84:06:D0:1B:0B:6E:3D:3F:7F:A4:F5:D7:32:C2:56:BA:2F:0A")
+    VALID_FINGERPRINTS = ("3A:62:54:4D:86:B4:34:38:EA:34:64:4E:95:10:A9:FF:37:27:69:C0",)
 
     def connect(self):
         # overrides the version in httplib so that we do certificate verification
@@ -58,7 +55,7 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
 
 class FigoObject(object):
 
-    API_ENDPOINT = "api.leanbank.com"
+    API_ENDPOINT = "api.figo.me"
     API_SECURE = True
 
     def _query_api(self, path, data=None, method="GET"):

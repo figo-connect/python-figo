@@ -6,8 +6,6 @@
 import base64
 from datetime import datetime, timedelta
 import hashlib
-import httplib
-from itertools import izip_longest
 import json
 import logging
 import re
@@ -15,6 +13,13 @@ import socket
 import ssl
 import sys
 import urllib
+
+if sys.version_info.major > 2:
+    import http.client as httplib
+    from itertools import zip_longest as izip_longest
+else:
+    import httplib
+    from itertools import izip_longest
 
 
 from .models import *

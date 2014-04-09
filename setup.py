@@ -26,6 +26,8 @@ setup(name='python-figo',
           'Topic :: Office/Business :: Financial',
           'Topic :: Internet'
       ],
-      use_2to3=True,
+      requires=[
+          'python-dateutil'
+      ],
       test_suite="tests",
       )

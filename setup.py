@@ -26,7 +26,7 @@ setup(name='python-figo',
           'Topic :: Office/Business :: Financial',
           'Topic :: Internet'
       ],
-      requires=[
+      install_requires=[
           'python-dateutil'
       ],
       test_suite="tests",

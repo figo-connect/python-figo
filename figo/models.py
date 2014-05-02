@@ -418,6 +418,9 @@ class Transaction(ModelBase):
         if self.booking_date:
             self.booking_date = dateutil.parser.parse(self.booking_date)
 
+        if self.value_date:
+            self.value_date = dateutil.parser.parse(self.value_date)
+
     def __str__(self):
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))
 

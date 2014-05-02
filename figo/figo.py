@@ -205,7 +205,7 @@ class FigoConnection(FigoObject):
         :Returns:
             the URL of the first page of the login process
         """
-        return self.API_ENDPOINT + "/auth/code?" + urllib.urlencode({'response_type': 'code', 'client_id': self.client_id, 'redirect_uri': self.redirect_uri, 'scope': scope, 'state': state})
+        return ("https://" if self.API_SECURE else "http://") + self.API_ENDPOINT + "/auth/code?" + urllib.urlencode({'response_type': 'code', 'client_id': self.client_id, 'redirect_uri': self.redirect_uri, 'scope': scope, 'state': state})
 
     def convert_authentication_code(self, authentication_code):
         """Convert the authentication code received as result of the login process into an access token usable for data access.
@@ -441,7 +441,7 @@ class FigoSession(FigoObject):
             raise FigoException.from_dict(response)
 
     @property
-    def catalog(self):
+    def catalog_services(self):
         """An array of `Service` objects, one for each supported credit card and payment services."""
 
         response = self._query_api("/rest/catalog/services/de")
@@ -452,7 +452,7 @@ class FigoSession(FigoObject):
         else:
             return [Service.from_dict(self, service_dict) for service_dict in response['services']]
 
-    def get_bank(self, bank_code):
+    def get_catalog_bank(self, bank_code, country_code='de'):
         """Get login settings for bank code.
         :Parameters:
          - `bank_code` - Bank code  
@@ -460,7 +460,7 @@ class FigoSession(FigoObject):
         :Returns:
             'Bank' object for the respective bank
         """
-        response = self._query_api("/rest/catalog/banks/de/%s" % bank_code)
+        response = self._query_api("/rest/catalog/banks/%s/%s" % (country_code, bank_code))
         if response is None:
             return None
         elif 'error' in response:
@@ -819,7 +819,7 @@ class FigoSession(FigoObject):
             `task_token` Task token
         """
 
-        response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), query, "POST")
+        response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), kwargs, "POST")
 
         if response is None:
             return None

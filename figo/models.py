@@ -219,7 +219,7 @@ class Client(ModelBase):
     """List of account IDs. The client has access to these accounts."""
 
     def __init__(self, session, **kwargs):
-        super(AccountBalance, self).__init__(session, **kwargs)
+        super(Client, self).__init__(session, **kwargs)
 
         if self.last_access:
             self.last_access = dateutil.parser.parse(self.last_access)
@@ -555,7 +555,7 @@ class User(ModelBase):
     """Auto-generated recovery password. This response parameter will only be set once and only for the figo iOS app and only for legacy figo Accounts. The figo iOS app must display this recovery password to the user."""
 
     def __init__(self, session, **kwargs):
-        super(Payment, self).__init__(session, **kwargs)
+        super(User, self).__init__(session, **kwargs)
 
         if self.join_date:
             self.join_date = dateutil.parser.parse(self.join_date)

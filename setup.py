@@ -31,7 +31,8 @@ setup(name='python-figo',
           'python-dateutil'
       ],
       test_requires=[
-          'nose'
+          'nose',
+          'flake8'
       ],
       test_suite="tests",
       )

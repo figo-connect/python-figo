@@ -46,11 +46,14 @@ class TestSession(unittest.TestCase):
         self.assertTrue(len(notifications) >= 0)
 
     def test_missing_handling(self):
-        self.assertIsNone(self.sut.get_account("A1.22"))
+        self.assertEqual(self.sut.get_account("A1.22"), None)
 
     def test_error_handling(self):
-        with self.assertRaises(Exception):
+        try:
             self.sut.get_sync_url("", "http://localhost:3003/")
+            self.fail("no exception encountered")
+        except:
+            pass
 
     def test_sync_uri(self):
         self.sut.get_sync_url("qwe", "qew")

@@ -308,9 +308,12 @@ class FigoSession(FigoObject):
         """An array of `Account` objects, one for each account the user has granted the app access"""
 
         response = self._query_api("/rest/accounts")
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return [Account.from_dict(self, account_dict) for account_dict in response['accounts']]
+        else:
+            return [Account.from_dict(self, account_dict) for account_dict in response['accounts']]
 
     def get_account(self, account_id):
         """Retrieve a specific account.
@@ -323,9 +326,12 @@ class FigoSession(FigoObject):
         """
 
         response = self._query_api("/rest/accounts/%s" % account_id)
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return Account.from_dict(self, response)
+        else:
+            return Account.from_dict(self, response)
 
     def modify_account(self, account_id, name=None, owner=None, preferred_tan_scheme=None, auto_sync=None):
         """Modify an account.
@@ -590,7 +596,7 @@ class FigoSession(FigoObject):
         else:
             return Payment.from_dict(self, response)
 
-    def modify_payment(self, account_id, payment_id, **kwargs):
+    def modify_payment(self, account_id, payment_id, name=None, account_number=None, bank_code=None, amount=None, purpose=None, currency=None):
         """Modify a payment
 
         :Parameters:
@@ -627,7 +633,7 @@ class FigoSession(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-        else
+        else:
             return Payment.from_dict(self, response)
 
     def remove_payment(self, account_id, payment_id):
@@ -638,7 +644,7 @@ class FigoSession(FigoObject):
          - `payment_id` - ID of the payment to be deleted
         """
 
-        response = self._query_api("/rest/accounts/%s/payments/%s" (account_id, notification_id), method="DELETE")
+        response = self._query_api("/rest/accounts/%s/payments/%s" % (account_id, payment_id), method="DELETE")
         if response is None:
             return None
         elif 'error' in response:

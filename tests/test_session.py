@@ -25,7 +25,7 @@ class TestSession(unittest.TestCase):
         self.assertTrue(balance.balance)
         self.assertTrue(balance.balance_date)
 
-        bank = self.sut.get_account("A1.2").bank
+        #bank = self.sut.get_account("A1.2").bank
 
         transactions = self.sut.get_account("A1.2").transactions
         self.assertTrue(len(transactions) > 0)
@@ -39,7 +39,7 @@ class TestSession(unittest.TestCase):
 
     def test_global_payments(self):
         payments = self.sut.payments
-        self.assertTruer(len(payments) >= 0)
+        self.assertTrue(len(payments) >= 0)
 
     def test_notifications(self):
         notifications = self.sut.notifications
@@ -69,7 +69,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(modified_notification.notify_uri, "http://figo.me/test")
         self.assertEqual(modified_notification.state, "asd")
 
-        self.sut.remove_notification(notification_id)
+        self.sut.remove_notification(modified_notification.notification_id)
         self.assertEqual(self.sut.get_notification(modified_notification.notification_id), None)
 
     def test_create_update_delete_payment(self):

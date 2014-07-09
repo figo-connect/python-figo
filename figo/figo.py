@@ -55,7 +55,7 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
         else:
             fingerprint = hashlib.sha1(certificate).hexdigest()
             fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
-            if not fingerprint in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
+            if fingerprint not in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
                 raise ssl.SSLError("Certificate validation failed")
 
 
@@ -291,6 +291,7 @@ class FigoConnection(FigoObject):
         else:
             return response['recovery_password']
 
+
 class FigoSession(FigoObject):
 
     """Represents a user-bound connection to the figo connect API and allows access to the users data"""
@@ -348,13 +349,13 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not name is None:
+        if name is not None:
             params['name'] = name
-        if not owner is None:
+        if owner is not None:
             params['owner'] = owner
-        if not preferred_tan_scheme is None:
+        if preferred_tan_scheme is not None:
             params['preferred_tan_scheme'] = preferred_tan_scheme
-        if not auto_sync is None:
+        if auto_sync is not None:
             params['auto_sync'] = auto_sync
 
         response = self._query_api("/rest/accounts/%s" % account_id, params, method="PUT")
@@ -409,9 +410,9 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not credit_line is None:
+        if credit_line is not None:
             params['credit_line'] = credit_line
-        if not monthly_spending_limit is None:
+        if monthly_spending_limit is not None:
             params['monthly_spending_limit'] = monthly_spending_limit
 
         response = self._query_api("/rest/accounts/%s/balance" % account_id, params, method="PUT")
@@ -486,12 +487,12 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not observe_key is None:
-          params['observe_key'] = observe_key
-        if not notify_uri is None:
-          params['notify_uri'] = notify_uri
-        if not state is None:
-          params['state'] = state
+        if observe_key is not None:
+            params['observe_key'] = observe_key
+        if notify_uri is not None:
+            params['notify_uri'] = notify_uri
+        if state is not None:
+            params['state'] = state
 
         response = self._query_api("/rest/notifications/" + str(notification_id), params, method="PUT")
         if response is None:
@@ -499,7 +500,7 @@ class FigoSession(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
-          return Notification.from_dict(self, response)
+            return Notification.from_dict(self, response)
 
     def remove_notification(self, notification_id):
         """Remove a notification
@@ -516,20 +517,20 @@ class FigoSession(FigoObject):
 
     @property
     def payments(self):
-      """Get an array of `Payment` objects, one for each payment of the user over all accounts
+        """Get an array of `Payment` objects, one for each payment of the user over all accounts
 
-      :Returns:
+        :Returns:
           `List` of Payment objects
-      """
+        """
 
-      response = self._query_api("/rest/payments")
+        response = self._query_api("/rest/payments")
 
-      if response is None:
-          return None
-      elif 'error' in response:
-          raise FigoException.from_dict(response)
-      else:
-          return [Payment.from_dict(self, payment_dict) for payment_dict in response['payments']]
+        if response is None:
+            return None
+        elif 'error' in response:
+            raise FigoException.from_dict(response)
+        else:
+            return [Payment.from_dict(self, payment_dict) for payment_dict in response['payments']]
 
     def get_payments(self, account_id):
         """Get an array of `Payment` objects, one for each payment of the user on the specified account
@@ -614,18 +615,18 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not name is None:
-          params['name'] = name
-        if not account_number is None:
-          params['account_number'] = account_number
-        if not bank_code is None:
-          params['bank_code'] = bank_code
-        if not amount is None:
-          params['amount'] = amount
-        if not purpose is None:
-          params['purpose'] = purpose
-        if not currency is None:
-          params['currency'] = currency
+        if name is not None:
+            params['name'] = name
+        if account_number is not None:
+            params['account_number'] = account_number
+        if bank_code is not None:
+            params['bank_code'] = bank_code
+        if amount is not None:
+            params['amount'] = amount
+        if purpose is not None:
+            params['purpose'] = purpose
+        if currency is not None:
+            params['currency'] = currency
 
         response = self._query_api("/rest/accounts/%s/payments/%s" % (account_id, payment_id), params, "PUT")
 
@@ -665,8 +666,8 @@ class FigoSession(FigoObject):
         """
 
         params = {'tan_scheme_id': tan_scheme_id, 'state': state}
-        if not redirect_uri is None:
-          params['redirect_uri'] = redirect_uri
+        if redirect_uri is not None:
+            params['redirect_uri'] = redirect_uri
 
         response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), params, "POST")
 
@@ -759,8 +760,8 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not sepa_creditor_id is None:
-          params['sepa_creditor_id'] = sepa_creditor_id
+        if sepa_creditor_id is not None:
+            params['sepa_creditor_id'] = sepa_creditor_id
 
         response = self._query_api("/rest/banks/%s" % (bank_id), params, "PUT")
 
@@ -816,17 +817,17 @@ class FigoSession(FigoObject):
         """
 
         params = {}
-        if not name is None:
+        if name is not None:
             params['name'] = name
-        if not send_newsletter is None:
+        if send_newsletter is not None:
             params['send_newsletter'] = send_newsletter
-        if not language is None:
+        if language is not None:
             params['language'] = language
-        if not email is None:
+        if email is not None:
             params['email'] = email
-        if not password is None:
+        if password is not None:
             params['password'] = password
-        if not new_password is None:
+        if new_password is not None:
             params['new_password'] = new_password
 
         response = self._query_api("/rest/user", params, "PUT")
@@ -846,7 +847,6 @@ class FigoSession(FigoObject):
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronisation.

@@ -354,7 +354,7 @@ class SynchronizationStatus(ModelBase):
     success_timestamp = None
     """Timestamp of last successful synchronization"""
 
-    def __str__():
+    def __str__(self):
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
 
 

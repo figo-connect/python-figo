@@ -1,0 +1,70 @@
+{% extends "bootstrap/base.html" %}
+{% block title %}figo web banking @ apidays berlin 2014{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <link href="{{url_for('static', filename='favicon.ico')}}" rel="shortcut icon" />
+    <link href="{{url_for('static', filename='banking.css')}}" rel="stylesheet" media="screen" />
+{% endblock %}
+
+{% block navbar %}
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">figo web banking</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li {% if not current_account %} class="active"{% endif %}><a href="/">Unified Inbox</a></li>
+                {% for account in accounts %}
+                    <li {% if current_account.account_id == account.account_id %}class="active" {% endif %}><a href="/{{account.account_id}}">{{account.name}}</a></li>
+                {% endfor %}
+            </ul>
+            <p class="navbar-text navbar-right">Signed in as <a href="/logout" class="navbar-link">{{user.email}}</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" role="main">
+        <h1>{% if current_account %}{{current_account.name}}{% else %}Unified Inbox{% endif %}</h1>
+
+        {% if current_account %}
+            <div class="panel panel-default">
+                <div class="panel-heading">Account Details</div>
+                <div class="panel-body">
+                    <ul class="list-group">
+                        <li class="list-group-item">Owner: {{current_account.owner}}</li>
+                        <li class="list-group-item">Account Number: {{current_account.account_number}}</li>
+                        <li class="list-group-item">Bank Code: {{current_account.bank_code}}</li>
+                        <li class="list-group-item">IBAN: {{current_account.iban}}</li>
+                        <li class="list-group-item">Balance: {{current_account.balance.balance}} {{current_account.currency}}</li>
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+
+        <table class="table table-hover table-condensed">
+            <thead><tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Account Number</th>
+                <th>Purpose</th>
+                <th style="text-align: right;">Amount</th>
+            </tr></thead>
+            <tbody>
+                {% for transaction in transactions %}
+                    <tr>
+                        <td>{{"{:%Y-%m-%d}"|ff(transaction.value_date)}}</td>
+                        <td>{{transaction.name}}</td>
+                        <td>{{transaction.account_number}}</td>
+                        <td>{{transaction.purpose}}</td>
+                        <td style="text-align: right; {% if transaction.amount < 0 %}color: red;{% endif %}">{{"%.2f"|format(transaction.amount)}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

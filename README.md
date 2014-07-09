@@ -1,7 +1,7 @@
 python-figo [![Build Status](https://travis-ci.org/figo-connect/python-figo.png)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg)](https://pypi.python.org/pypi/python-figo)
 ===========
 
-Python bindings for the figo Connect API: http://developer.figo.me
+Python bindings for the figo Connect API: http://docs.figo.io
 
 Usage
 =====
@@ -60,3 +60,7 @@ def process_redirect(authentication_code, state):
 ```
 
 You can find more documentation at http://python-figo.readthedocs.org
+
+Demos
+-----
+In this repository you can also have a look at a simple console(`console_demo.py`) and web demo(`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.

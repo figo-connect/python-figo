@@ -67,6 +67,11 @@ class Account(ModelBase):
     """Synchronization status object"""
 
     @property
+    def bank(self):
+        """The corresponding BankContact object for this account"""
+        return self.session.get_bank(self.bank_id)
+
+    @property
     def payments(self):
         """An array of `Payment` objects, one for each transaction on the account"""
         return self.session.get_payments(self.account_id)
@@ -109,37 +114,6 @@ class Account(ModelBase):
             self.status = SynchronizationStatus.from_dict(self.session, self.status)
         if self.balance:
             self.balance = AccountBalance.from_dict(self.session, self.balance)
-
-
-class Bank(ModelBase):
-
-    """Object representing a Bank"""
-
-    bank_name = None
-    """Bank name."""
-
-    supported = None
-    """This flag indicates whether this bank is supported by figo."""
-
-    credentials = None
-    """List of credential objects."""
-
-    auth_type = None
-    """If the authentication type is pin, then the user must have the option to save or not to save his or her PIN. If the authentication type is none or token, then there is no such option."""
-
-    advice = None
-    """Help text."""
-
-    icon = None
-    """Icon URL."""
-
-    def __init__(self, session, **kwargs):
-        super(Bank, self).__init__(session, **kwargs)
-        if type(self.credentials) is list:
-            self.credentials = [Credential.from_dict(self, credential_dict) for credential_dict in self.credentials]
-
-    def __str__(self):
-        return "Bank: %s" % (self.bank_name)
 
 
 class BankContact(ModelBase):
@@ -185,87 +159,6 @@ class AccountBalance(ModelBase):
 
         if self.balance_date:
             self.balance_date = dateutil.parser.parse(self.balance_date)
-
-
-class Client(ModelBase):
-
-    """object representing a `Client`"""
-
-    client_id = None
-    """Internal figo Connect client ID"""
-
-    name = None
-    """Client name"""
-
-    homepage = None
-    """Homepage URL"""
-
-    description = None
-    """Client description"""
-
-    icon = None
-    """Icon URL"""
-
-    scope = None
-    """A space delimited set of permissions for the client."""
-
-    valid = None
-    """This flag indicates whether the client is still authorized."""
-
-    last_access = None
-    """Timestamp of the last request this client made."""
-
-    accounts = None
-    """List of account IDs. The client has access to these accounts."""
-
-    def __init__(self, session, **kwargs):
-        super(Client, self).__init__(session, **kwargs)
-
-        if self.last_access:
-            self.last_access = dateutil.parser.parse(self.last_access)
-
-        def __str__(self):
-            return "Client: %s (%s)" % (self.name, self.homepage)
-
-
-class Credential(ModelBase):
-    label = None
-    """Label for text input field"""
-
-    masked = None
-    """This indicates whether the this text input field is used for password entry and therefore should be masked."""
-
-    optional = None
-    """ This flag indicates whether this text input field is allowed to contain the empty string."""
-
-    def __str__(self):
-        return "Credential: %s " % self.label
-
-
-class Device(ModelBase):
-
-    """Object representing a Device"""
-
-    device_id = None
-    """Internal figo Connect device ID"""
-
-    name = None
-    """Device name"""
-
-    icon = None
-    """Icon URL"""
-
-    last_access = None
-    """Timestamp of the last request this device made."""
-
-    def __init__(self, session, **kwargs):
-        super(Device, self).__init__(session, **kwargs)
-
-        if self.last_access:
-            self.last_access = dateutil.parser.parse(self.last_access)
-
-    def __str__(self):
-        return "Device: %s (%s)" % (self.name, self.device_id)
 
 
 class Payment(ModelBase):
@@ -463,52 +356,6 @@ class SynchronizationStatus(ModelBase):
 
     def __str__():
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
-
-
-class Service(object):
-
-    """Object representing a Service"""
-
-    name = None
-    """Service name"""
-
-    bank_code = None
-    """Bank code of the service"""
-
-    icon = None
-    """Icon URL"""
-
-    def __str__(self):
-        return "Service: %s (%s)" % (self.name, self.bank_code)
-
-
-class Task(ModelBase):
-
-    """Object representing a Task"""
-
-    account_id = None
-    """Account ID of currently processed account."""
-
-    message = None
-    """Status message or error message for currently processed account."""
-
-    is_waiting_for_pin = None
-    """If this flag is set, then the figo Connect server waits for a PIN."""
-
-    is_waiting_for_response = None
-    """If this flag is set, then the figo Connect server waits for a response to the parameter challenge."""
-
-    is_erroneous = None
-    """If this flag is set, then an error occurred and the figo Connect server waits for a continuation."""
-
-    is_ended = None
-    """If this flag is set, then the communication with the bank server has been completed."""
-
-    challenge = None
-    """Challenge object."""
-
-    def __str__(self):
-        return "Task: %s (%s" % (self.message, self.account_id)
 
 
 class User(ModelBase):

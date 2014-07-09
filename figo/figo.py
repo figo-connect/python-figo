@@ -32,7 +32,8 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
 
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
 
-    VALID_FINGERPRINTS = ("3A:62:54:4D:86:B4:34:38:EA:34:64:4E:95:10:A9:FF:37:27:69:C0",)
+    VALID_FINGERPRINTS = ("3A:62:54:4D:86:B4:34:38:EA:34:64:4E:95:10:A9:FF:37:27:69:C0",
+                          "CF:C1:BC:7F:6A:16:09:2B:10:83:8A:B0:22:4F:3A:65:D2:70:D7:3E")
 
     def connect(self):
         # overrides the version in httplib so that we do certificate verification
@@ -268,54 +269,27 @@ class FigoConnection(FigoObject):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-    def add_user(self, **kwargs):
-        """Register a new figo Account. Only native clients may create new figo Accounts.
+    def add_user(self, name, email, password, language='de', send_newsletter=True):
+        """Create a new figo Account.
 
         :Parameters:
-            all user attributes as keyword arguments
+        - `name` - First and last name
+        - `email` - Email address; It must obey the figo username & password policy
+        - `password` - New figo Account password; It must obey the figo username & password policy
+        - `language` - Two-letter code of preferred language
+        - `send_newsletter` - This flag indicates whether the user has agreed to be contacted by email
 
         :Returns:
             Auto-generated recovery password.
         """
 
-        response = self._query_api("/auth/user", kwargs, method="POST")
+        response = self._query_api("/auth/user", {'name': name, 'email': email, 'password': password, 'language': language, 'send_newsletter': send_newsletter, 'affiliate_client_id': self.client_id}, method="POST")
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
             return response['recovery_password']
-
-    def resend_unlock_code(self, **kwargs):
-        """Re-send unlock code email.
-
-        :Parameters:
-            all resend unlock'code attributes as keyword arguments
-
-        """
-
-        response = self._query_api("/auth/user/resend_unlock_code", kwargs, method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def unlock(self, **kwargs):
-        """Native clients may unlock figo Accounts. This request must be issued with the same client identifier which was used to request the unlock code.
-
-        :Parameters:
-            all unlock attributes as keyword arguments
-
-        :Returns:
-            Auto-generated recovery password.
-        """
-
-        response = self._query_api("/auth/unlock", kwargs, method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
 
 class FigoSession(FigoObject):
 
@@ -353,50 +327,37 @@ class FigoSession(FigoObject):
             raise FigoException.from_dict(response)
         return Account.from_dict(self, response)
 
-    def add_account(self, **kwargs):
-        """Create a new account.
+    def modify_account(self, account_id, name=None, owner=None, preferred_tan_scheme=None, auto_sync=None):
+        """Modify an account.
 
         :Parameters:
-            all account attributes as keyword arguments
+         - `account_id` - ID of the account to be modified
+         - `name` - Account name
+         - `owner` - Account owner
+         - `preferred_tan_scheme` - Internal figo Connect TAN scheme ID of the default TAN scheme for this account
+         - `auto_sync` - This flag indicates whether the account will be automatically synchronized
 
-        :Returns:
-            Task token
+         :Returns:
+           'Account' object for the updated account
         """
 
-        response = self._query_api("/rest/accounts", kwargs, method="POST")
+        params = {}
+        if not name is None:
+            params['name'] = name
+        if not owner is None:
+            params['owner'] = owner
+        if not preferred_tan_scheme is None:
+            params['preferred_tan_scheme'] = preferred_tan_scheme
+        if not auto_sync is None:
+            params['auto_sync'] = auto_sync
+
+        response = self._query_api("/rest/accounts/%s" % account_id, params, method="PUT")
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
-            return response['task_token']
-
-    def modify_account_sort_order(self, **kwargs):
-        """Set account sort order.
-
-        :Parameters:
-         - all accounts attributes as keyword arguments
-        """
-
-        response = self._query_api("/rest/accounts", kwargs, method="PUT")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def modify_account(self, account_id, **kwargs):
-        """Modify an account.
-
-        :Parameters:
-         - `account_id` - ID of the account to be modified
-         - all account attributes as keyword arguments
-        """
-
-        response = self._query_api("/rest/accounts/%s" % account_id, kwargs, method="PUT")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
+            return Account.from_dict(self, response)
 
     def remove_account(self, account_id):
         """Remove an account
@@ -422,133 +383,38 @@ class FigoSession(FigoObject):
         """
 
         response = self._query_api("/rest/accounts/%s/balance" % account_id)
-        if 'error' in response:
+        if response is None:
+            return None
+        elif 'error' in response:
             raise FigoException.from_dict(response)
-        return AccountBalance.from_dict(self, response)
+        else:
+            return AccountBalance.from_dict(self, response)
 
-    def modify_account_balance(self, account_id, **kwargs):
+    def modify_account_balance(self, account_id, credit_line=None, monthly_spending_limit=None):
         """Modify balance or account limits.
 
         :Parameters:
          - `account_id` - ID of the account to be modified
-         - all account balance attributes as keyword arguments
+         - `credit_line` - Credit line
+         - `monthly_spending_limit` - User-defined spending limit
+
+         :Returns:
+           'AccountBalance' object for the updated account
         """
 
-        response = self._query_api("/rest/accounts/%s/balance" % account_id, kwargs, method="PUT")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
+        params = {}
+        if not credit_line is None:
+            params['credit_line'] = credit_line
+        if not monthly_spending_limit is None:
+            params['monthly_spending_limit'] = monthly_spending_limit
 
-    @property
-    def catalog_services(self):
-        """An array of `Service` objects, one for each supported credit card and payment services."""
-
-        response = self._query_api("/rest/catalog/services/de")
+        response = self._query_api("/rest/accounts/%s/balance" % account_id, params, method="PUT")
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
-            return [Service.from_dict(self, service_dict) for service_dict in response['services']]
-
-    def get_catalog_bank(self, bank_code, country_code='de'):
-        """Get login settings for bank code.
-        :Parameters:
-         - `bank_code` - Bank code  
-
-        :Returns:
-            'Bank' object for the respective bank
-        """
-        response = self._query_api("/rest/catalog/banks/%s/%s" % (country_code, bank_code))
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return Bank.from_dict(self, response)
-
-    @property
-    def clients(self):
-        """Get a list of all current and former authorized figo Connect clients."""
-
-        response = self._query_api("/rest/clients")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return [Client.from_dict(self, client_dict) for client_dict in response['clients']]
-
-    def modify_client(self, client_id, **kwargs):
-        """Modify client details.
-
-        :Parameters:
-         - `client_id` - Internal figo Connect client ID.
-         - all Client attributes as keyword arguments
-        
-        """
-
-        response = self._query_api("/rest/clients/%s" % client_id, kwargs, "PUT")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def remove_client(self, client_id):
-        """Unlink client.
-
-        :Parameters:
-         - `client_id` -Internal figo Connect client ID.
-        """
-
-        response = self._query_api("/rest/clients/%s" (client_id), method="DELETE")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    @property
-    def devices(self):
-        """Get a list of all authorized devices."""
-
-        response = self._query_api("/rest/devices")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return [Device.from_dict(self, device_dict) for device_dict in response['devices']]
-
-    def modify_device(self, device_id, **kwargs):
-        """Modify client details.
-
-        :Parameters:
-         - `device_id` - Internal figo Connect device ID.
-         - all Device attributes as keyword arguments
-        
-        """
-
-        response = self._query_api("/rest/devices/%s" % device_id, kwargs, "PUT")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def remove_device(self, device_id):
-        """Unlink client.
-
-        :Parameters:
-         - `device_id` - Internal figo Connect device ID.
-        """
-
-        response = self._query_api("/rest/devices/%s" (device_id), method="DELETE")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
+            return AccountBalance.from_dict(self, response)
 
     @property
     def notifications(self):
@@ -580,37 +446,54 @@ class FigoSession(FigoObject):
         else:
             return Notification.from_dict(self, response)
 
-    def add_notification(self, **kwargs):
+    def add_notification(self, observe_key, notify_uri, state):
         """Create a new notification.
 
         :Parameters:
-            all Notification attributes as keyword arguments
+        - `observe_key` - URL describing on what condition this notification is triggered
+        - `notify_uri` - URL specifying who and how the notification is delivered
+        - `state` - Value passed back transparently when delivering the notification
 
         :Returns:
-            ID of the newly created notification
+            'Notification' object for the newly created notification
         """
 
-        response = self._query_api("/rest/notifications", kwargs, method="POST")
+        response = self._query_api("/rest/notifications", {'observe_key': observe_key, 'notify_uri': notify_uri, 'state': state}, method="POST")
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
-            return response['notification_id']
+            return Notification.from_dict(self, response)
 
-    def modify_notification(self, notification_id, **kwargs):
+    def modify_notification(self, notification_id, observe_key=None, notify_uri=None, state=None):
         """Modify a notification.
 
         :Parameters:
          - `notification_id` - ID of the notification to be modified
-         - all Notification attributes as keyword arguments
+         - `observe_key` - URL describing on what condition this notification is triggered
+         - `notify_uri` - URL specifying who and how the notification is delivered
+         - `state` - Value passed back transparently when delivering the notification
+
+        :Returns:
+            'Notification' object for the newly created notification
         """
 
-        response = self._query_api("/rest/notifications/" + str(notification_id), kwargs, method="PUT")
+        params = {}
+        if not observe_key is None:
+          params['observe_key'] = observe_key
+        if not notify_uri is None:
+          params['notify_uri'] = notify_uri
+        if not state is None:
+          params['state'] = state
+
+        response = self._query_api("/rest/notifications/" + str(notification_id), params, method="PUT")
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
+        else:
+          return Notification.from_dict(self, response)
 
     def remove_notification(self, notification_id):
         """Remove a notification
@@ -625,36 +508,25 @@ class FigoSession(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
 
-    def get_payments(self, account_id, since=None, count=None):
-        """Get an array of `Payment` objects, one for each payment of the user
+    @property
+    def payments(self):
+      """Get an array of `Payment` objects, one for each payment of the user over all accounts
 
-        :Parameters:
-         - `account_id` - ID of the account to be retrieved
-         - `since` - Payments which were created on or after this date/id will be returned in the response
-         - `count` - Limit the number of returned payments. The default number is 1000.
+      :Returns:
+          `List` of Payment objects
+      """
 
-        :Returns:
-            `List` of Payment objects
-        """
+      response = self._query_api("/rest/payments")
 
-        query = {}
-        if since:
-            query["since"] = since
+      if response is None:
+          return None
+      elif 'error' in response:
+          raise FigoException.from_dict(response)
+      else:
+          return [Payment.from_dict(self, payment_dict) for payment_dict in response['payments']]
 
-        if count:
-            query["count"] = count
-
-        response = self._query_api("/rest/accounts/%s/payments" % (account_id), query)
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return [Payment.from_dict(self, payment_dict) for payment_dict in response['payments']]
-
-    def get_scheduled_payments(self, account_id):
-        """Get an array of `Payment` objects, one for each scheduled payments known to the bank server.
+    def get_payments(self, account_id):
+        """Get an array of `Payment` objects, one for each payment of the user on the specified account
 
         :Parameters:
          - `account_id` - ID of the account to be retrieved
@@ -663,7 +535,7 @@ class FigoSession(FigoObject):
             `List` of Payment objects
         """
 
-        response = self._query_api("/rest/accounts/%s/payments/scheduled" % (account_id))
+        response = self._query_api("/rest/accounts/%s/payments" % (account_id))
 
         if response is None:
             return None
@@ -676,9 +548,9 @@ class FigoSession(FigoObject):
         """Get a single `Payment` object
 
         :Parameters:
-         - `account_id` - Internal figo Connect account ID
+         - `account_id` - ID of the account on which the payment is to be found
          - `payment_id` - ID of the payment to be retrieved
-         
+
         :Returns:
             `Payment` object
         """
@@ -692,39 +564,24 @@ class FigoSession(FigoObject):
         else:
             return Payment.from_dict(self, response)
 
-    def get_scheduled_payment(self, account_id, payment_id):
-        """Get information about a particular scheduled payment. 
+    def add_payment(self, account_id, payment_type, name, account_number, bank_code, amount, purpose, currency='EUR'):
+        """Create a new payment
 
         :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `payment_id` - ID of the payment to be retrieved
-         
-        :Returns:
-            `Payment` object
-        """
-
-        response = self._query_api("/rest/accounts/%s/scheduled/%s" % (account_id, payment_id))
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return Payment.from_dict(self, response)
-
-    def add_payment(self, account_id, **kwargs):
-        """Insert payment into payment list
-
-        :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - all Payment attributes as keyword arguments
-        
+         - `account_id` - ID of the account on which the payment is to be created
+         - `payment_type` - Payment type
+         - `name` - Name of creditor or debtor
+         - `account_number` - Account number of creditor or debtor
+         - `bank_code` - Bank code of creditor or debtor
+         - `amount` - Order amount
+         - `purpose` - Purpose text
+         - `currency` - Three-character currency code
 
         :Returns:
-            `Payment` object of the new created Payment 
+            `Payment` object of the newly created payment
         """
 
-        response = self._query_api("/rest/accounts/%s/payments" % (account_id), kwargs, "POST")
+        response = self._query_api("/rest/accounts/%s/payments" % (account_id), {'type': payment_type, 'name': name, 'account_number': account_number, 'bank_code': bank_code, 'amount': amount, 'purpose': purpose, 'currency': currency}, "POST")
 
         if response is None:
             return None
@@ -737,47 +594,47 @@ class FigoSession(FigoObject):
         """Modify a payment
 
         :Parameters:
-         - `account_id` - Internal figo Connect account ID
+         - `account_id` - ID of the account on which the payment is to be found
          - `payment_id` - ID of the payment to be modified
-         - all Payment attributes as keyword arguments
-        
-
-        """
-
-        response = self._query_api("/rest/accounts/%s/payments/%s" % (account_id, payment_id), kwargs, "PUT")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def modify_scheduled_payment(self, account_id, payment_id, **kwargs):
-        """Modify a payment scheduled
-
-        :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `payment_id` - ID of the payment to be modified
-         - all Payment attributes as keyword arguments
-        
+         - `name` - Name of creditor or debtor
+         - `account_number` - Account number of creditor or debtor
+         - `bank_code` - Bank code of creditor or debtor
+         - `amount` - Order amount
+         - `purpose` - Purpose text
+         - `currency` - Three-character currency code
 
         :Returns:
-            `task_token` Task token
+          'Payment' object for the updated payment
         """
 
-        response = self._query_api("/rest/accounts/%s/scheduled/%s" % (account_id, payment_id), kwargs, "PUT")
+        params = {}
+        if not name is None:
+          params['name'] = name
+        if not account_number is None:
+          params['account_number'] = account_number
+        if not bank_code is None:
+          params['bank_code'] = bank_code
+        if not amount is None:
+          params['amount'] = amount
+        if not purpose is None:
+          params['purpose'] = purpose
+        if not currency is None:
+          params['currency'] = currency
+
+        response = self._query_api("/rest/accounts/%s/payments/%s" % (account_id, payment_id), params, "PUT")
 
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
-        else:
-            return response["task_token"]
+        else
+            return Payment.from_dict(self, response)
 
     def remove_payment(self, account_id, payment_id):
         """Remove a payment
 
         :Parameters:
-         - `account_id` - Internal figo Connect account ID
+         - `account_id` - ID of the account on which the payment is to be found
          - `payment_id` - ID of the payment to be deleted
         """
 
@@ -787,39 +644,25 @@ class FigoSession(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
 
-    def remove_scheduled_payment(self, account_id, payment_id, **kwargs):
-        """Remove a scheduled payment
-
-        :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `payment_id` - ID of the payment to be deleted
-
-         :Returns:
-            `task_token` Task token
-        """
-
-        response = self._query_api("/rest/accounts/%s/scheduled/%s" (account_id, notification_id), kwargs, method="DELETE")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response["task_token"]
-
-    def submit_payment(self, account_id, payment_id, **kwargs):
+    def submit_payment(self, account_id, payment_id, tan_scheme_id, state, redirect_uri=None):
         """Submit payment to bank server.
 
         :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `payment_id` - ID of the payment to be submited
-         - all Payment submit attributes as keyword arguments
-        
+         - `account_id` - ID of the account on which the payment is to be found
+         - `payment_id` - ID of the payment to be submitted
+         - `tan_scheme_id` - TAN scheme ID of user-selected TAN scheme
+         - `state` - Any kind of string that will be forwarded in the callback response message
+         - `redirect_uri` - At the end of the submission process a response will be sent to this callback URL
 
         :Returns:
-            `task_token` Task token
+            Task token
         """
 
-        response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), kwargs, "POST")
+        params = {'tan_scheme_id': tan_scheme_id, 'state': state}
+        if not redirect_uri is None:
+          params['redirect_uri'] = redirect_uri
+
+        response = self._query_api("/rest/accounts/%s/payments/%s/submit" % (account_id, payment_id), params, "POST")
 
         if response is None:
             return None
@@ -845,7 +688,7 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `account_id` - ID of the account to be retrieved
- 
+
         :Returns:
             `List` of Transaction objects
         """
@@ -863,9 +706,9 @@ class FigoSession(FigoObject):
         """Retrieve a specific transaction.
 
         :Parameters:
-         - `account_id` - ID of the account to be retrieved
+         - `account_id` - ID of the account on which the transaction occured
          - `transaction_id` - ID of the transaction to be retrieved
- 
+
         :Returns:
             a `Transaction` object representing the transaction to be retrieved
         """
@@ -879,46 +722,14 @@ class FigoSession(FigoObject):
         else:
             return Transaction.from_dict(self, response)
 
-    def modify_transaction(self, account_id, transaction_id, **kwargs):
-        """Modify a transaction
-
-        :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `transaction_id` - ID of the transaction to be modified
-         - all Transaction attributes as keyword arguments
-        
-        """
-
-        response = self._query_api("/rest/accounts/%s/transactions/%s" % (account_id, transaction_id), kwargs, "PUT")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def remove_transaction(self, account_id, transaction_id):
-        """Remove a Transaction
-
-        :Parameters:
-         - `account_id` - Internal figo Connect account ID
-         - `transaction_id` - ID of the transaction to be deleted
-        """
-
-        response = self._query_api("/rest/accounts/%s/transactions/%s" (account_id, notification_id), method="DELETE")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
     def get_bank(self, bank_id):
-        """Get bank contact settings.
+        """Get bank.
 
         :Parameters:
-         - `bank_id` - Internal figo Connect bank ID.
-        
+         - `bank_id` - ID of the bank to be retrieved.
 
         :Returns:
-            a `BankContact` object representing the bank contact to be retrieved
+            a `BankContact` object representing the bank to be retrieved
         """
 
         response = self._query_api("/rest/banks/%s" % (bank_id))
@@ -930,30 +741,38 @@ class FigoSession(FigoObject):
         else:
             return BankContact.from_dict(self, response)
 
-    def modify_bank(self, bank_id, **kwargs):
-        """Modify a transaction
+    def modify_bank(self, bank_id, sepa_creditor_id=None):
+        """Modify a bank
 
         :Parameters:
-         - `bank_id` - Internal figo Connect bank ID.
-         - all BankContact attributes as keyword arguments
-        
+         - `bank_id` - ID of the bank to be modified.
+         - `sepa_creditor_id` - SEPA direct debit creditor ID
+
+         :Returns:
+           'BankContact' object for the updated bank
         """
 
-        response = self._query_api("/rest/banks/%s" % (account_id, transaction_id), kwargs, "PUT")
+        params = {}
+        if not sepa_creditor_id is None:
+          params['sepa_creditor_id'] = sepa_creditor_id
+
+        response = self._query_api("/rest/banks/%s" % (bank_id), params, "PUT")
 
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
+        else:
+            return BankContact.from_dict(self, response)
 
     def remove_bank_pin(self, bank_id):
-        """Remove a Transaction
+        """Remove the stored PIN for a bank (if there was one)
 
         :Parameters:
-        - `bank_id` - Internal figo Connect bank ID.
+        - `bank_id` - ID of the bank whose pin should be removed
         """
 
-        response = self._query_api("/rest/banks/%s/remove_pin" (bank_id), method="DELETE")
+        response = self._query_api("/rest/banks/%s/remove_pin" (bank_id), method="POST")
         if response is None:
             return None
         elif 'error' in response:
@@ -961,7 +780,11 @@ class FigoSession(FigoObject):
 
     @property
     def user(self):
-        """Get figo Account settings."""
+        """Get the current figo Account
+
+        :Returns:
+          'User' object for the current figo Account
+        """
 
         response = self._query_api("/rest/user")
         if response is None:
@@ -971,25 +794,46 @@ class FigoSession(FigoObject):
         else:
             return User.from_dict(self, response)
 
-    def modify_user(self, **kwargs):
-        """Modify figo Account settings.
+    def modify_user(self, name=None, send_newsletter=None, language=None, email=None, password=None, new_password=None):
+        """Modify figo Account
 
         :Parameters:
-         - all User attributes as keyword arguments
-        
+         - `name` - First and last name
+         - `send_newsletter` - This flag indicates whether the user has agreed to be contacted by email.
+         - `language` - Two-letter code of preferred language
+         - `email` - Email address. It must obey the figo username & password policy. If this parameter is set, then the parameter password must be set, too.
+         - `password` - Current figo Account password
+         - `new_password` - New figo Account password; It must obey the figo username & password policy. If this parameter is set, then the parameter password must be set, too.
+
+        :Returns:
+          'User' object for the updated figo Account
         """
 
-        response = self._query_api("/rest/user", kwargs, "PUT")
+        params = {}
+        if not name is None:
+            params['name'] = name
+        if not send_newsletter is None:
+            params['send_newsletter'] = send_newsletter
+        if not language is None:
+            params['language'] = language
+        if not email is None:
+            params['email'] = email
+        if not password is None:
+            params['password'] = password
+        if not new_password is None:
+            params['new_password'] = new_password
+
+        response = self._query_api("/rest/user", params, "PUT")
 
         if response is None:
             return None
         elif 'error' in response:
             raise FigoException.from_dict(response)
+        else:
+            return User.from_dict(self, response)
 
     def remove_user(self):
-        """Delete figo Account.
-
-        """
+        """Delete figo Account"""
 
         response = self._query_api("/rest/user", method="DELETE")
         if response is None:
@@ -997,86 +841,6 @@ class FigoSession(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
 
-    def resend_verification(self):
-        """Re-send verification email.
-
-        """
-
-        response = self._query_api("/rest/user/resend_verification", method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def purchase_premium(self, **kwargs):
-        """Purchase a premium membership with a debit or credit card.
-
-
-        :Parameters:
-         - all purchase premium attributes as keyword arguments
-
-         :Returns:
-            a dict with the response
-
-        """
-
-        response = self._query_api("/rest/user/purchase_subscription", kwargs, method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
-
-    def cancel_subscription(self):
-        """Cancel the premium membership
-
-        """
-
-        response = self._query_api("/rest/user/cancel_subscription", method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
-    def verify_receipt(self, **kwargs):
-        """Verify iOS App Store receipt from In-App Purchase.
-
-
-        :Parameters:
-         - all verify receipt attributes as keyword arguments
-
-         :Returns:
-            a dict with the response
-
-        """
-
-        response = self._query_api("/rest/user/verify_receipt", kwargs, method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
-
-    def redeem_code(self, **kwargs):
-        """Redeem a voucher code.
-
-        :Parameters:
-         - all redeem code attributes as keyword arguments
-
-         :Returns:
-            a dict with the response
-
-        """
-
-        response = self._query_api("/rest/user/redeem_code", kwargs, method="POST")
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronisation.
@@ -1100,7 +864,7 @@ class FigoSession(FigoObject):
             return FigoConnection.API_ENDPOINT + "/task/start?id=" + response['task_token']
 
     def get_task_start_url(self, task_token):
-        """URL for communication with bank server
+        """URL for user interface during task processing (e.g. payment submission or account synchronization)
 
         :Parameters:
          - `task_token` - Task token from the initial request.
@@ -1110,41 +874,6 @@ class FigoSession(FigoObject):
         """
         return "%s/task/start?id=%s" % (FigoConnection.API_ENDPOINT, task_token)
 
-    def task_progress(self, task_id, **kwargs):
-        """While the figo Connect server communicates with a bank server, your application can monitor its progress by periodically polling this method.
-
-        :Parameters:
-         - `task_id` - Task token
-         - all Task attributes as keyword arguments
-        
-
-        :Returns:
-            `Task` object
-        """
-
-        response = self._query_api("/task/progress?id=%s" % task_id, kwargs, "POST")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-        else:
-            return Task.from_dict(response)
-
-    def cancel_task(self, task_id):
-        """Cancel bank server communication.
-
-        :Parameters:
-         - `task_id` - Task token
-         
-        """
-        response = self._query_api("/task/cancel?id=%s" % task_id, kwargs, "POST")
-
-        if response is None:
-            return None
-        elif 'error' in response:
-            raise FigoException.from_dict(response)
-
     def parse_webhook_notification(self, message_body):
         """ parses webhook notification and returns a `WebhookNotification` object
 
@@ -1152,8 +881,7 @@ class FigoSession(FigoObject):
             - `message_body` - message body of the webhook message (as string or dict)
 
             :Returns:
-                a WebhookNotification object 
-
+                a WebhookNotification object
         """
 
         if type(message_body) is not dict:

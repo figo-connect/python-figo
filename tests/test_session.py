@@ -25,32 +25,64 @@ class TestSession(unittest.TestCase):
         self.assertTrue(balance.balance)
         self.assertTrue(balance.balance_date)
 
+        bank = self.sut.get_account("A1.2").bank
+
         transactions = self.sut.get_account("A1.2").transactions
         self.assertTrue(len(transactions) > 0)
+
+        payments = self.sut.get_account("A1.2").payments
+        self.assertTrue(len(payments) >= 0)
 
     def test_global_transactions(self):
         transactions = self.sut.transactions
         self.assertTrue(len(transactions) > 0)
 
+    def test_global_payments(self):
+        payments = self.sut.payments
+        self.assertTruer(len(payments) >= 0)
+
     def test_notifications(self):
         notifications = self.sut.notifications
         self.assertTrue(len(notifications) >= 0)
 
+    def test_missing_handling(self):
+        self.assertIsNone(self.sut.get_account("A1.22"))
+
+    def test_error_handling(self):
+        with self.assertRaises(Exception):
+            self.sut.get_sync_url("", "http://localhost:3003/")
+
     def test_sync_uri(self):
         self.sut.get_sync_url("qwe", "qew")
 
-    def test_create_update_delete_notification(self):
-        notification_id = self.sut.add_notification(observe_key="/rest/transactions", notify_uri="http://figo.me/test", state="qwe")
-        notification = self.sut.get_notification(notification_id)
-        self.assertEqual(notification.observe_key, "/rest/transactions")
-        self.assertEqual(notification.notify_uri, "http://figo.me/test")
-        self.assertEqual(notification.state, "qwe")
+    def test_user(self):
+        self.assertEqual(self.sut.user.email, "demo@figo.me")
 
-        self.sut.modify_notification(notification_id, state="asd")
-        notification = self.sut.get_notification(notification_id)
-        self.assertEqual(notification.observe_key, "/rest/transactions")
-        self.assertEqual(notification.notify_uri, "http://figo.me/test")
-        self.assertEqual(notification.state, "asd")
+    def test_create_update_delete_notification(self):
+        added_notification = self.sut.add_notification(observe_key="/rest/transactions", notify_uri="http://figo.me/test", state="qwe")
+        self.assertEqual(added_notification.observe_key, "/rest/transactions")
+        self.assertEqual(added_notification.notify_uri, "http://figo.me/test")
+        self.assertEqual(added_notification.state, "qwe")
+
+        modified_notification = self.sut.modify_notification(added_notification.notification_id, state="asd")
+        self.assertEqual(modified_notification.observe_key, "/rest/transactions")
+        self.assertEqual(modified_notification.notify_uri, "http://figo.me/test")
+        self.assertEqual(modified_notification.state, "asd")
 
         self.sut.remove_notification(notification_id)
-        self.assertEqual(self.sut.get_notification(notification_id), None)
+        self.assertEqual(self.sut.get_notification(modified_notification.notification_id), None)
+
+    def test_create_update_delete_payment(self):
+        added_payment = self.sut.add_payment(account_id="A1.1", payment_type="Transfer", account_number="4711951501", bank_code="90090042", name="figo", purpose="Thanks for all the fish.", amount=0.89)
+        self.assertEqual(added_payment.account_id, "A1.1")
+        self.assertEqual(added_payment.bank_name, "Demobank")
+        self.assertEqual(added_payment.amount, 0.89)
+
+        modified_payment = self.sut.modify_payment(account_id=added_payment.account_id, payment_id=added_payment.payment_id, amount=2.39)
+        self.assertEqual(modified_payment.payment_id, added_payment.payment_id)
+        self.assertEqual(modified_payment.account_id, "A1.1")
+        self.assertEqual(modified_payment.bank_name, "Demobank")
+        self.assertEqual(modified_payment.amount, 2.39)
+
+        self.sut.remove_payment(account_id=modified_payment.account_id, payment_id=modified_payment.payment_id)
+        self.assertEqual(self.sut.get_payment(account_id=modified_payment.account_id, payment_id=modified_payment.payment_id), None)

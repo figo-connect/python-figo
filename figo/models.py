@@ -7,6 +7,7 @@ import dateutil.parser
 
 
 class ModelBase(object):
+    __dump_attributes__ = []
 
     @classmethod
     def from_dict(cls, session, data_dict):
@@ -19,10 +20,19 @@ class ModelBase(object):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def dump(self):
+        result = {}
+        for attribute in self.__dump_attributes__:
+            value = getattr(self, attribute)
+            if value is not None:
+                result[attribute] = value
+        return result
+
 
 class Account(ModelBase):
-
     """Object representing one bank account of the user, independent of the exact account type"""
+
+    __dump_attributes__ = ["name", "owner", "auto_sync"]
 
     account_id = None
     """Internal figo Connect account ID"""
@@ -63,6 +73,9 @@ class Account(ModelBase):
     icon = None
     """Account icon URL"""
 
+    additional_icons = None
+    """Account icon in other resolutions"""
+
     status = None
     """Synchronization status object"""
 
@@ -94,6 +107,20 @@ class Account(ModelBase):
 
         return self.session.get_transactions(self.account_id)
 
+    def get_transactions(self, since=None, count=1000, offset=0, include_pending=False):
+        """Get an array of `Transaction` objects, one for each transaction of the user
+
+        :Parameters:
+         - `since` - this parameter can either be a transaction ID or a date
+         - `count` - limit the number of returned transactions
+         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
+         - `include_pending` - this flag indicates whether pending transactions should be included in the response; pending transactions are always included as a complete set, regardless of the `since` parameter
+
+        :Returns:
+            `List` of Transaction objects
+        """
+        return self.session.get_transactions(self.account_id, since, count, offset, include_pending)
+
     def get_transaction(self, transaction_id):
         """Retrieve a specific transaction.
 
@@ -117,8 +144,9 @@ class Account(ModelBase):
 
 
 class BankContact(ModelBase):
-
     """Object representing a BankContact"""
+
+    __dump_attributes__ = ["sepa_creditor_id"]
 
     sepa_creditor_id = None
     """SEPA direct debit creditor ID."""
@@ -131,8 +159,9 @@ class BankContact(ModelBase):
 
 
 class AccountBalance(ModelBase):
-
     """Object representing the balance of a certain bank account of the user"""
+
+    __dump_attributes__ = ["credit_line", "monthly_spending_limit"]
 
     balance = None
     """Account balance or None if the balance is not yet known"""
@@ -162,8 +191,9 @@ class AccountBalance(ModelBase):
 
 
 class Payment(ModelBase):
-
     """Object representing a Payment"""
+
+    __dump_attributes__ = ["type", "name", "account_number", "bank_code", "amount", "currency", "purpose"]
 
     payment_id = None
     """Internal figo Connect payment ID"""
@@ -187,7 +217,10 @@ class Payment(ModelBase):
     """Bank name of creditor or debtor"""
 
     bank_icon = None
-    """ Icon of creditor or debtor bank"""
+    """Icon of creditor or debtor bank"""
+
+    bank_additional_icons = None
+    """Icon of the creditor or debtor bank in other resolutions"""
 
     amount = None
     """Order amount"""
@@ -197,18 +230,6 @@ class Payment(ModelBase):
 
     purpose = None
     """Purpose text"""
-
-    text_key = None
-    """DTA text key"""
-
-    text_key_extension = None
-    """DTA text key extension"""
-
-    scheduled_date = None
-    """Scheduled date. Recurring time intervals for standing orders are specified according ISO 8601."""
-
-    container = None
-    """If this payment object is a container for multiple payments, then this field is set and contains a ist of payment objects."""
 
     submission_timestamp = None
     """Timestamp of submission to the bank server."""
@@ -222,12 +243,6 @@ class Payment(ModelBase):
     transaction_id = None
     """Transaction ID. This field is only set if the payment has been matched to a transaction."""
 
-    can_be_modified = None
-    """List of fields which are modifiable on the bank server"""
-
-    can_be_deleted = None
-    """Flag which is set to true if the payment can be deleted from the bank server"""
-
     def __init__(self, session, **kwargs):
         super(Payment, self).__init__(session, **kwargs)
 
@@ -240,16 +255,14 @@ class Payment(ModelBase):
         if self.modification_timestamp:
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
-        if type(self.container) is list:
-            self.container = [Payment.from_dict(self, payment_dict) for payment_dict in self.container]
-
     def __str__(self):
         return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
 class Transaction(ModelBase):
-
     """Object representing one bank transaction on a certain bank account of the user"""
+
+    __dump_attributes__ = []
 
     transaction_id = None
     """Internal figo Connect transaction ID"""
@@ -319,8 +332,9 @@ class Transaction(ModelBase):
 
 
 class Notification(ModelBase):
-
     """Object representing a configured notification, e.g a webhook or email hook"""
+
+    __dump_attributes__ = ["observe_key", "notify_uri", "state"]
 
     notification_id = None
     """Internal figo Connect notification ID from the notification registration response"""
@@ -339,8 +353,9 @@ class Notification(ModelBase):
 
 
 class SynchronizationStatus(ModelBase):
-
     """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers"""
+
+    __dump_attributes__ = []
 
     code = None
     """Internal figo Connect status code"""
@@ -359,8 +374,9 @@ class SynchronizationStatus(ModelBase):
 
 
 class User(ModelBase):
-
     """Object representing an user"""
+
+    __dump_attributes__ = ["name", "address", "send_newsletter", "language"]
 
     user_id = None
     """Internal figo Connect user ID."""
@@ -395,12 +411,6 @@ class User(ModelBase):
     join_date = None
     """Timestamp of figo Account registration."""
 
-    force_reset = None
-    """If this flag is set then all local data must be cleared from the device and re-fetched from the figo Connect server."""
-
-    recovery_password = None
-    """Auto-generated recovery password. This response parameter will only be set once and only for the figo iOS app and only for legacy figo Accounts. The figo iOS app must display this recovery password to the user."""
-
     def __init__(self, session, **kwargs):
         super(User, self).__init__(session, **kwargs)
 
@@ -412,8 +422,9 @@ class User(ModelBase):
 
 
 class WebhookNotification(ModelBase):
-
     """Object representing a WebhookNotification"""
+
+    __dump_attributes__ = []
 
     notification_id = None
     """Internal figo Connect notification ID from the notification registration response."""

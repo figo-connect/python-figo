@@ -12,14 +12,19 @@ import re
 import socket
 import ssl
 import sys
-import urllib
 
 if sys.version_info[0] > 2:
     import http.client as httplib
     from itertools import zip_longest as izip_longest
+    import urllib.parse as urllib
+
+    STRING_TYPES = (str)
 else:
     import httplib
     from itertools import izip_longest
+    import urllib
+
+    STRING_TYPES = (str, unicode)
 
 
 from .models import *
@@ -46,17 +51,26 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
             self._tunnel()
 
         # wrap the socket
-        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
+        if sys.hexversion > 0x03010000:
+            server_hostname = self.host if ssl.HAS_SNI else None
+            self.sock = self._context.wrap_socket(sock, server_hostname=server_hostname)
+        else:
+            self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
 
         # verify the certificate fingerprint
-        certificate = self.sock.getpeercert(True)
-        if certificate is None:
-            raise ssl.SSLError("Certificate validation failed")
-        else:
-            fingerprint = hashlib.sha1(certificate).hexdigest()
-            fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
-            if fingerprint not in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
+        try:
+            certificate = self.sock.getpeercert(True)
+            if certificate is None:
                 raise ssl.SSLError("Certificate validation failed")
+            else:
+                fingerprint = hashlib.sha1(certificate).hexdigest()
+                fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
+                if fingerprint not in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
+                    raise ssl.SSLError("Certificate validation failed")
+        except Exception:
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+            raise
 
 
 class FigoObject(object):
@@ -80,25 +94,25 @@ class FigoObject(object):
             self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         connection.request(method, path, None if data is None else json.dumps(data),
                            {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
-        response = connection.getresponse()
 
-        if response.status >= 200 and response.status < 300:
-            response_data = response.read().decode("utf-8")
+        response = connection.getresponse()
+        response_status = response.status
+        response_data  = response.read().decode("utf-8")
+        connection.close()
+
+        if response_status >= 200 and response_status < 300 or response_status == 400:
             if response_data == "":
                 return {}
             return json.loads(response_data)
-        elif response.status == 400:
-            response_data = response.read().decode("utf-8")
-            return json.loads(response_data)
-        elif response.status == 401:
+        elif response_status == 401:
             return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
-        elif response.status == 403:
+        elif response_status == 403:
             return {'error': "forbidden", 'error_description': "Insufficient permission."}
-        elif response.status == 404:
+        elif response_status == 404:
             return None
-        elif response.status == 405:
+        elif response_status == 405:
             return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
-        elif response.status == 503:
+        elif response_status == 503:
             return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
@@ -349,7 +363,7 @@ class FigoSession(FigoObject):
         :Parameters:
          - `account_or_account_id` - account to be removed or its ID
         """
-        if isinstance(account_or_account_id, (str, unicode)):
+        if isinstance(account_or_account_id, STRING_TYPES):
             self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id, method="DELETE")
         else:
             self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id.account_id, method="DELETE")
@@ -425,7 +439,7 @@ class FigoSession(FigoObject):
          - `notification_or_notification_id` - notification to be removed or its ID
         """
 
-        if isinstance(notification_or_notification_id, (str, unicode)):
+        if isinstance(notification_or_notification_id, STRING_TYPES):
             self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id, method="DELETE")
         else:
             self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id.notification_id, method="DELETE")
@@ -584,7 +598,7 @@ class FigoSession(FigoObject):
         - `bank_or_bank_id` - bank whose pin should be removed or its ID
         """
 
-        if isinstance(bank_or_bank_id, (str, unicode)):
+        if isinstance(bank_or_bank_id, STRING_TYPES):
             self._query_api_with_exception("/rest/banks/%s/remove_pin" (bank_or_bank_id), method="POST")
         else:
             self._query_api_with_exception("/rest/banks/%s/remove_pin" (bank_or_bank_id.bank_id), method="POST")

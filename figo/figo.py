@@ -97,7 +97,7 @@ class FigoObject(object):
 
         response = connection.getresponse()
         response_status = response.status
-        response_data  = response.read().decode("utf-8")
+        response_data = response.read().decode("utf-8")
         connection.close()
 
         if response_status >= 200 and response_status < 300 or response_status == 400:

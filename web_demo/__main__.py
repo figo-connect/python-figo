@@ -39,7 +39,6 @@ def figo_format(value, *args, **kwargs):
 def root(current_account_id=None):
     # check whether the user is logged in
     if not 'figo_token' in session:
-        print connection.login_url(scope="accounts=ro transactions=ro balance=ro user=ro", state="qweqwe")
         return redirect(connection.login_url(scope="accounts=ro transactions=ro balance=ro user=ro", state="qweqwe"))
 
     # open user figo connection

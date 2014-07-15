@@ -382,10 +382,10 @@ class User(ModelBase):
     """Internal figo Connect user ID."""
 
     name = None
-    """"First and last name."""
+    """First and last name."""
 
     email = None
-    """"Email address."""
+    """Email address."""
 
     address = None
     """Postal address for bills, etc."""
@@ -394,10 +394,10 @@ class User(ModelBase):
     """This flag indicates whether the email address has been verified."""
 
     send_newsletter = None
-    """"This flag indicates whether the user has agreed to be contacted by email."""
+    """This flag indicates whether the user has agreed to be contacted by email."""
 
     language = None
-    """"Two-letter code of preferred language."""
+    """Two-letter code of preferred language."""
 
     premium = None
     """This flag indicates whether the figo Account plan is free or premium."""

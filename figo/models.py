@@ -148,6 +148,9 @@ class BankContact(ModelBase):
 
     __dump_attributes__ = ["sepa_creditor_id"]
 
+    bank_id = None
+    """Internal figo Connect bank ID"""
+
     sepa_creditor_id = None
     """SEPA direct debit creditor ID."""
 
@@ -155,7 +158,7 @@ class BankContact(ModelBase):
     """This flag indicates whether the user has chosen to save the PIN on the figo Connect server."""
 
     def __str__(self):
-        return "BankContact: %s " % self.sepa_creditor_id
+        return "BankContact: %s " % self.bank_id
 
 
 class AccountBalance(ModelBase):

@@ -258,6 +258,17 @@ class FigoConnection(FigoObject):
         return {'access_token': response['access_token'],
                 'refresh_token': response['refresh_token'] if 'refresh_token' in response else None,
                 'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
+        
+    def credential_login(self, username, password):
+        response = self._query_api("/auth/token", data={"grant_type": "password",
+                                             "username": username,
+                                             "password": password})
+        if 'error' in response:
+            raise FigoException.from_dict(response)
+        
+        return {'access_token': response['access_token'],
+                'refresh_token': response['refresh_token'] if 'refresh_token' in response else None,
+                'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
 
     def convert_refresh_token(self, refresh_token):
         """Convert a refresh token (granted for offline access and returned by `convert_authentication_code`) into an access token usabel for data acccess.
@@ -309,7 +320,7 @@ class FigoConnection(FigoObject):
             Auto-generated recovery password.
         """
 
-        response = self._query_api("/auth/user", {'name': name, 'email': email, 'password': password, 'language': language, 'send_newsletter': send_newsletter, 'affiliate_client_id': self.client_id}, method="POST")
+        response = self._query_api("/auth/user", {'name': name, 'email': email, 'password': password, 'language': language, 'affiliate_client_id': self.client_id})
         if response is None:
             return None
         elif 'error' in response:
@@ -345,6 +356,23 @@ class FigoSession(FigoObject):
             `Account` object for the respective account
         """
         return self._query_api_object(Account, "/rest/accounts/%s" % account_id)
+    
+    def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
+        """Add an account.
+        
+        :Parameters:
+        - `bank_code` - bank code of the bank to add
+        - `country` - country code of the bank to add
+        - `credentials` - list of credentials needed for bank login
+        
+        :Returns:
+         A task token for the account creation task"""
+        data = {}
+        if iban is not None:
+            data = {"iban": iban, "country": country, "credentials": credentials, "save_pin": save_pin}
+        elif bank_code is not None:
+            data = {"bank_code": bank_code, "country": country, "credentials": credentials, "save_pin": save_pin}
+        return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
     def modify_account(self, account):
         """Modify an account.
@@ -370,29 +398,56 @@ class FigoSession(FigoObject):
 
         return None
 
-    def get_account_balance(self, account_id):
+    def get_account_balance(self, account_or_account_id):
         """Get balance and account limits.
 
         :Parameters:
-         - `account_id` - ID of the account to be retrieved
+         - `account_or_account_id` - account to be removed or its ID
 
         :Returns:
             `AccountBalance` object for the respective account
         """
-        return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_id)
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id.account_id)
+        else:
+            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id)
 
-    def modify_account_balance(self, account_id, account_balance):
+    def modify_account_balance(self, account_or_account_id, account_balance):
         """Modify balance or account limits.
 
         :Parameters:
-         - `account_id` - ID of the account to be modified
+         - `account_or_account_id` - account to be removed or its ID
          - `account_balance` - modified AccountBalance object to be saved
 
          :Returns:
            'AccountBalance' object for the updated account as returned by the server
         """
-        return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_id, account_balance.dump(), "PUT")
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id.account_id, account_balance.dump(), "PUT")
+        else:
+            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id, account_balance.dump(), "PUT")
 
+
+    def get_supported_payment_services(self, country_code):
+        """Returns a list of supported credit cards an other payment services.
+        A fake bank code is used for identification
+        """
+        services = self._query_api_with_exception("/rest/catalog/services/%s" % country_code)["services"]
+        return [Service.from_dict(self, service) for service in services]
+    
+    def get_login_settings(self, country_code, item_id):
+        """Returns the login settings of a bank or service"""
+        return self._query_api_object(LoginSettings, "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+    
+    def set_account_sort_order(self, accounts):
+        """Sets the sort order of the user's accounts.
+        :Parameters:
+            - accounts - List of Accounts
+        :Returns:
+            - empty response if successful"""
+        data = {"accounts": [{"account_id": account.account_id} for account in accounts]}
+        return self._query_api_with_exception("/rest/accounts", data, "POST")
+    
     @property
     def notifications(self):
         """An array of `Notification` objects, one for each registered notification"""
@@ -454,29 +509,34 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(Payment, "/rest/payments", collection_name="payments")
 
-    def get_payments(self, account_id):
+    def get_payments(self, account_or_account_id):
         """Get an array of `Payment` objects, one for each payment of the user on the specified account
 
         :Parameters:
-         - `account_id` - ID of the account to be retrieved
+         - `account_or_account_id` - account to be removed or its ID
 
         :Returns:
             `List` of Payment objects
         """
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (account_or_account_id.account_id), collection_name="payments")
+        else:
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (account_or_account_id), collection_name="payments")
 
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (account_id), collection_name="payments")
-
-    def get_payment(self, account_id, payment_id):
+    def get_payment(self, account_or_account_id, payment_id):
         """Get a single `Payment` object
 
         :Parameters:
-         - `account_id` - ID of the account on which the payment is to be found
+         - `account_or_account_id` - account to be removed or its ID
          - `payment_id` - ID of the payment to be retrieved
 
         :Returns:
             `Payment` object
         """
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (account_id, payment_id))
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (account_or_account_id.account_id, payment_id))
+        else:
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (account_or_account_id, payment_id))
 
     def add_payment(self, payment):
         """Create a new payment
@@ -532,7 +592,57 @@ class FigoSession(FigoObject):
             return None
         else:
             return ("https" if self.API_SECURE else "http") + "://" + self.API_ENDPOINT + "/task/start?id=" + response["task_token"]
+    
+    @property
+    def payment_proposals(self):
+        """List of payment proposal object"""
+        return self.get_payment_proposals()
+    
+    def get_payment_proposals(self):
+        """ Provides a address book-like list of proposed wire transfer partners"""
+        response = self._query_api_with_exception("/rest/address_book")
+        return [PaymentProposal.from_dict(self, payment_proposal) for payment_proposal in response]
 
+    def start_task(self, task_token):
+        "Starts the given task"
+        return self._query_api_with_exception("/task/start?id=%s" % task_token.task_token)
+    
+    def get_task_state(self, task_token, **kwargs):
+        """Returns the progress of the given task. The kwargs are used to
+        submit additional content for the task
+        
+        :Parameters:
+        - `pin` - Submit PIN. If this parameter is set, then the parameter save_pin must be set, too.
+        - `continue` - This flag signals to continue after an error condition or to skip a PIN or challenge-response entry
+        - `save_pin` - This flag indicates whether the user has chosen to save the PIN on the figo Connect server
+        - `response` - Submit response to challenge.
+        
+        :Returns:
+        A TaskState object which indicates the current status of the queried task
+        """
+        data = {"id": task_token.task_token}
+        if "pin" in kwargs:
+            data["pin"] = kwargs["pin"]
+        if "continue" in kwargs:
+            data["continue"] = kwargs["continue"]
+        if "save_pin" in kwargs:
+            data["save_pin"] = kwargs["save_pin"]
+        if "response" in kwargs:
+            data["response"] = kwargs["response"]
+        return self._query_api_object(TaskState, "/task/progress?id=%s" % (task_token.task_token), data, "POST")
+    
+    def cancel_task(self, task_token):
+        """Cancels a task if possible"""
+        return self._query_api_with_exception("/task/cancel?id=%s" % (task_token.task_token), {"id": task_token.task_token}, "POST")
+    
+    def start_process(self, process_token):
+        "Starts the given process"
+        return self._query_api_with_exception("/process/start?id=%s" % process_token.process_token)
+    
+    def create_process(self, process):
+        """Creates a new process to be executed by the user Returns a process token"""
+        return self._query_api_object(ProcessToken, "/client/process", process.dump(), "POST")
+        
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction of the user"""
@@ -545,7 +655,7 @@ class FigoSession(FigoObject):
          - `account_id` - ID of the account for which to list the transactions
          - `since` - this parameter can either be a transaction ID or a date
          - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
+         - `offset` - which offset into the result set should be used to determine the first transaction to return (useful in combination with count)
          - `include_pending` - this flag indicates whether pending transactions should be included in the response; pending transactions are always included as a complete set, regardless of the `since` parameter
 
         :Returns:
@@ -557,18 +667,166 @@ class FigoSession(FigoObject):
 
         return self._query_api_object(Transaction, ("/rest/transactions?" if account_id is None else ("/rest/accounts/%s/transactions?" % account_id)) + urllib.urlencode(params), collection_name="transactions")
 
-    def get_transaction(self, account_id, transaction_id):
+    def get_transaction(self, account_or_account_id, transaction_id):
         """Retrieve a specific transaction.
 
         :Parameters:
-         - `account_id` - ID of the account on which the transaction occured
+         - `account_or_account_id` - account to be removed or its ID
          - `transaction_id` - ID of the transaction to be retrieved
 
         :Returns:
             a `Transaction` object representing the transaction to be retrieved
         """
-        return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_id, transaction_id))
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_id))
+        else:
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_id))
+    
+    # Method added by Fincite (http://fincite.de) on 06/03/2015
+    @property
+    def securities(self):
+        """An array of `Security` objects, one for each transaction of the user"""
+        return self._query_api_object(Security, "/rest/securities", collection_name="securities")
 
+    # Method added by Fincite (http://fincite.de) on 06/03/2015
+    def get_securities(self, account_id=None, since=None, count=1000, offset=0, accounts=None):
+        """Get an array of `Security` objects, one for each security of the user
+
+        :Parameters:
+         - `account_id` - ID of the account for which to list the securities
+         - `since` - this parameter can either be a transaction ID or a date
+         - `count` - limit the number of returned transactions
+         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
+         - `accounts` - if retrieving the securities for all accounts, filter the securities to be only from these accounts
+
+        :Returns:
+            `List` of Security objects
+        """
+        params = {'count': count, 'offset': offset}
+        if accounts is not None and type(accounts) == list:
+            params['accounts'] = ",".join(accounts)
+
+        if since is not None:
+            params['since'] = since
+
+        return self._query_api_object(Security, ("/rest/securities?" if account_id is None else ("/rest/accounts/%s/securities?" % account_id)) + urllib.urlencode(params), collection_name="securities")
+
+    # Method added by Fincite (http://fincite.de) on 06/03/2015
+    def get_security(self, account_or_account_id, security_id):
+        """Retrieve a specific security.
+
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `security_id` - ID of the security to be retrieved
+
+        :Returns:
+            a `Security` object representing the transaction to be retrieved
+        """
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (account_or_account_id.account_id, security_id))
+        else:
+            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (account_or_account_id, security_id))
+
+    def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
+        """Modifies a specific security
+        
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `securities_or_security_id` - Security or its ID to be modified
+         - `visited` - new value of the visited field for the security
+
+        :Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account) and isinstance(security_or_security_id, Security):
+            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (account_or_account_id.account_id, security_or_security_id.security_id), {"visited": visited}, "PUT")
+        else:
+            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
+
+    def modify_account_securities(self, account_or_account_id, visited=None):
+        """Modifies all securities of an account
+        
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `visited` - new value of the visited field for the security
+         
+        :Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_with_exception("/rest/accounts/%s/securities" % (account_or_account_id.account_id), {"visited": visited}, "PUT")
+        else:
+            return self._query_api_with_exception("/rest/accounts/%s/securities" % (account_or_account_id), {"visited": visited}, "PUT")
+    
+    def modify_user_securities(self, visited=None):
+        """Modifies all securities from the current user
+        
+        :Parameters:
+        - `visited` - new value of the visited field for the security
+        
+        :Returns:
+            Nothing if the request was successful
+        """
+        return self._query_api_with_exception("/rest/securities", {"visited": visited}, "PUT")    
+    
+    def modify_transaction(self, account_or_account_id, transaction_or_transaction_id, visited=None):
+        """Modifies a specific transaction.
+
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `transaction_or_transaction_id` - Transactions or its ID to be modified
+         - `visited` - new value of the visited field for the transaction
+
+        :Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id, Transaction):
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_or_transaction_id.transaction_id), {"visited": visited}, "PUT")
+        else:
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
+
+    def modify_account_transactions(self, account_or_account_id, visited=None):
+        """Modifies all transactions of a specific account
+
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `visited` - new value of the visited field for the transactions
+
+        :Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account):
+            return self._query_api_with_exception("/rest/accounts/%s/transactions" % account_or_account_id.account_id, {"visited": visited}, "PUT")
+        else:
+            return self._query_api_with_exception("/rest/accounts/%s/transactions" % account_or_account_id, {"visited": visited}, "PUT")
+    
+    def modify_user_transactions(self, visited=None):
+        """Modifies all transactions of the current user
+
+        :Parameters:
+         - `visited` - new value of the visited field for the transactions
+
+        :Returns:
+            Nothing if the request was successful
+        """
+        return self._query_api_with_exception("/rest/transactions", {"visited": visited}, "PUT")
+    
+    def delete_transaction(self, account_or_account_id, transaction_or_transaction_id):
+        """Deletes a specific transaction.
+
+        :Parameters:
+         - `account_or_account_id` - account to be removed or its ID
+         - `transaction_or_transaction_id` - Transaction or its ID to be modified
+
+        :Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id, Transaction):
+            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_or_transaction_id.transaction_id), method="DELETE")
+        else:
+            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_or_transaction_id), method="DELETE")
+    
+    
     def get_bank(self, bank_id):
         """Get bank.
 
@@ -589,7 +847,7 @@ class FigoSession(FigoObject):
          :Returns:
            'BankContact' object for the updated bank
         """
-        return self._query_api_object(Bank, "/rest/banks/%s" % bank.bank_id, bank.dump(), "PUT")
+        return self._query_api_object(BankContact, "/rest/banks/%s" % bank.bank_id, bank.dump(), "PUT")
 
     def remove_bank_pin(self, bank_or_bank_id):
         """Remove the stored PIN for a bank (if there was one)
@@ -666,10 +924,10 @@ class FigoSession(FigoObject):
         data = self._query_api(notification.observe_key)
 
         if re.match("\/rest\/transactions", notification.observe_key):
-            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in data['transactions']]
 
         elif re.match("\/rest\/accounts\/(.*)\/transactions", notification.observe_key):
-            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in response['transactions']]
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in data['transactions']]
 
         elif re.match("\/rest\/accounts\/(.*)\/balance", notification.observe_key):
             notification.data = AccountBalance.from_dict(data)

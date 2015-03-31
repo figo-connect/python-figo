@@ -3,7 +3,7 @@
 #  Copyright (c) 2015 figo GmbH. All rights reserved.
 #
 import unittest
-from figo.figo import FigoConnection, FigoSession
+from figo.figo import FigoConnection, FigoSession, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 import time
 
@@ -17,7 +17,7 @@ class WriteTest(unittest.TestCase):
         cls.USER = "testuser@test.de"
         cls.PASSWORD = "some_words"
         
-	# bank account info needed
+        # bank account info needed
         cls.CREDENTIALS = []
         cls.BANK_CODE = ""        
         
@@ -29,9 +29,13 @@ class WriteTest(unittest.TestCase):
         fs = FigoSession(response["access_token"])
         fs.remove_user()
             
-    def test_01_add_user(self):
+    def t_01_add_user(self):
         response = self.fc.add_user("Test", self.USER, self.PASSWORD)
         self.assertTrue(isinstance(response, (str, unicode)))
+        
+    def test_010_add_user_and_login(self):
+        response = self.fc.add_user_and_login("Test", self.USER, self.PASSWORD)
+        self.assertTrue("access_token" in response)
 
     def test_02_credential_login(self):        
         response = self.fc.credential_login(self.USER, self.PASSWORD)
@@ -50,12 +54,31 @@ class WriteTest(unittest.TestCase):
         login_settings = fs.get_login_settings("de", self.BANK_CODE)
         self.assertTrue(isinstance(login_settings, LoginSettings))
         
-    def test_05_add_account(self):
+    def t_05_add_account(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         token = fs.add_account("de", self.CREDENTIALS, self.BANK_CODE)
         self.assertTrue(isinstance(token, TaskToken))
         task_state = fs.get_task_state(token)
+        time.sleep(5)
+        self.assertTrue(isinstance(task_state, TaskState))
+        self.assertEqual(1, len(fs.accounts))
+        
+    def test_050_add_acount_and_sync_wrong_pin(self):
+        response = self.fc.credential_login(self.USER, self.PASSWORD)
+        fs = FigoSession(response["access_token"])
+        wrong_credentials = [self.CREDENTIALS[0], "123456"]
+        self.assertRaises(FigoPinException, fs.add_account_and_sync, "de", wrong_credentials, self.BANK_CODE)
+        self.assertEqual(0, len(fs.accounts))
+        
+    def test_051_add_acount_and_sync_wrong_and_correct_pin(self):
+        response = self.fc.credential_login(self.USER, self.PASSWORD)
+        fs = FigoSession(response["access_token"])
+        wrong_credentials = [self.CREDENTIALS[0], "123456"]
+        try:
+            task_state = fs.add_account_and_sync("de", wrong_credentials, self.BANK_CODE)
+        except FigoPinException as pin_exception:
+            task_state = fs.add_account_and_sync_with_new_pin(pin_exception, self.CREDENTIALS[1])
         time.sleep(5)
         self.assertTrue(isinstance(task_state, TaskState))
         self.assertEqual(1, len(fs.accounts))

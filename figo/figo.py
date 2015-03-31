@@ -1,3 +1,5 @@
+#!/usr/bin/python
+#-*- coding:utf-8 -*-
 #
 #  Created by Stefan Richter on 2013-01-12.
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
@@ -159,6 +161,21 @@ class FigoException(Exception):
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned by the server"""
         return cls(dictionary['error'], dictionary['error_description'])
+    
+class FigoPinException(FigoException):
+    
+    def __init__(self, country, credentials, bank_code, iban, save_pin):        
+        self.error = "Wrong PIN"
+        self.error_description = "You've entered a wrong PIN, please provide a new one."
+        
+        self.country = country
+        self.credentials = credentials
+        self.bank_code = bank_code
+        self.iban = iban
+        self.save_pin = save_pin
+        
+    def __str__(self):
+        return "FigoPinException: %s(%s)" % (repr(self.error_description), repr(self.error))
 
 
 class FigoConnection(FigoObject):
@@ -260,6 +277,9 @@ class FigoConnection(FigoObject):
                 'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
         
     def credential_login(self, username, password):
+        """
+        Returns a Token dictionary which tokens are used for further API actions.
+        """
         response = self._query_api("/auth/token", data={"grant_type": "password",
                                              "username": username,
                                              "password": password})
@@ -306,7 +326,7 @@ class FigoConnection(FigoObject):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-    def add_user(self, name, email, password, language='de', send_newsletter=True):
+    def add_user(self, name, email, password, language='de'):
         """Create a new figo Account.
 
         :Parameters:
@@ -314,7 +334,6 @@ class FigoConnection(FigoObject):
         - `email` - Email address; It must obey the figo username & password policy
         - `password` - New figo Account password; It must obey the figo username & password policy
         - `language` - Two-letter code of preferred language
-        - `send_newsletter` - This flag indicates whether the user has agreed to be contacted by email
 
         :Returns:
             Auto-generated recovery password.
@@ -327,6 +346,22 @@ class FigoConnection(FigoObject):
             raise FigoException.from_dict(response)
         else:
             return response['recovery_password']
+        
+    def add_user_and_login(self, name, email, password, language='de'):
+        """Create a new figo account and get a session token for the new account
+        
+        :Parameters:
+        - `name` - First and last name
+        - `email` - Email address; It must obey the figo username & password policy
+        - `password` - New figo Account password; It must obey the figo username & password policy
+        - `language` - Two-letter code of preferred language
+        - `send_newsletter` - This flag indicates whether the user has agreed to be contacted by email
+
+        :Returns:
+            Token dictionary for further API access
+        """
+        self.add_user(name, email, password, language)
+        return self.credential_login(email, password)
 
 
 class FigoSession(FigoObject):
@@ -374,6 +409,26 @@ class FigoSession(FigoObject):
             data = {"bank_code": bank_code, "country": country, "credentials": credentials, "save_pin": save_pin}
         return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
+    def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
+        task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
+        task_state = self.get_task_state(task_token)
+        while task_state.message == "Connecting to server...":
+            task_state = self.get_task_state(task_token)
+        if task_state.is_erroneous and task_state.message == "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.".decode("utf-8"):
+            raise FigoPinException(country, credentials, bank_code, iban, save_pin)
+        elif task_state.is_erroneous and task_state.message == "Ihr Online-Zugang wurde von Ihrer Bank gesperrt. Bitte lassen Sie die Sperre von Ihrer Bank aufheben.".decode("utf-8"):
+            raise FigoException("", task_state.message)
+        else:
+            return task_state
+        
+    def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):
+        pin_exception.credentials[1] = new_pin
+        return self.add_account_and_sync(pin_exception.country,
+                                         pin_exception.credentials,
+                                         pin_exception.bank_code,
+                                         pin_exception.iban,
+                                         pin_exception.save_pin)
+        
     def modify_account(self, account):
         """Modify an account.
 

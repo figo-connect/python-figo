@@ -11,7 +11,7 @@ class ModelBase(object):
 
     @classmethod
     def from_dict(cls, session, data_dict):
-        """Creating an instance of the specific type from the data passed in the dictionary `data_dict`"""
+        """Creating an instance of the specific type from the data passed in the dictionary `data_dict`."""
         return cls(session, **data_dict)
 
     def __init__(self, session, **kwargs):
@@ -30,7 +30,7 @@ class ModelBase(object):
 
 
 class Account(ModelBase):
-    """Object representing one bank account of the user, independent of the exact account type"""
+    """Object representing one bank account of the user, independent of the exact account type."""
 
     __dump_attributes__ = ["name", "owner", "auto_sync"]
 
@@ -91,16 +91,17 @@ class Account(ModelBase):
 
     @property
     def bank(self):
-        """The corresponding BankContact object for this account"""
+        """The corresponding BankContact object for this account."""
         return self.session.get_bank(self.bank_id)
 
     @property
     def payments(self):
-        """An array of `Payment` objects, one for each transaction on the account"""
+        """An array of `Payment` objects, one for each transaction on the account."""
         return self.session.get_payments(self.account_id)
 
     def get_payment(self, payment_id):
-        """Retrieve a specific payment.
+        """
+        Retrieve a specific payment.
 
         :Parameters:
          - `payment_id` - ID of the payment to be retrieved
@@ -108,17 +109,16 @@ class Account(ModelBase):
         :Returns:
             a `Payment` object representing the payment to be retrieved
         """
-
         return self.session.get_payments(self.account_id, payment_id)
 
     @property
     def transactions(self):
-        """An array of `Transaction` objects, one for each transaction on the account"""
-
+        """An array of `Transaction` objects, one for each transaction on the account."""
         return self.session.get_transactions(self.account_id)
 
     def get_transactions(self, since=None, count=1000, offset=0, include_pending=False):
-        """Get an array of `Transaction` objects, one for each transaction of the user
+        """
+        Get an array of `Transaction` objects, one for each transaction of the user.
 
         :Parameters:
          - `since` - this parameter can either be a transaction ID or a date
@@ -132,7 +132,8 @@ class Account(ModelBase):
         return self.session.get_transactions(self.account_id, since, count, offset, include_pending)
 
     def get_transaction(self, transaction_id):
-        """Retrieve a specific transaction.
+        """
+        Retrieve a specific transaction.
 
         :Parameters:
          - `transaction_id` - ID of the transaction to be retrieved
@@ -145,13 +146,13 @@ class Account(ModelBase):
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     @property
     def securities(self):
-        """An array of `Securities` objects, one for each security on the account"""
-
+        """An array of `Securities` objects, one for each security on the account."""
         return self.session.get_securities(self.account_id)
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     def get_securities(self, since=None, count=1000, offset=0, accounts=None):
-        """Get an array of `Security` objects, one for each security of the user
+        """
+        Get an array of `Security` objects, one for each security of the user.
 
         :Parameters:
          - `account_id` - ID of the account for which to list the securities
@@ -179,6 +180,7 @@ class Account(ModelBase):
         return self.session.get_security(self.account_id, security_id)
 
     def __str__(self):
+        """Short String representation of an Account object."""
         return "Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
     def __init__(self, session, **kwargs):
@@ -190,7 +192,8 @@ class Account(ModelBase):
 
 
 class BankContact(ModelBase):
-    """Object representing a BankContact"""
+
+    """Object representing a BankContact."""
 
     __dump_attributes__ = ["sepa_creditor_id"]
 
@@ -204,11 +207,13 @@ class BankContact(ModelBase):
     """This flag indicates whether the user has chosen to save the PIN on the figo Connect server."""
 
     def __str__(self):
+        """Short String representation of the bank contact."""
         return "BankContact: %s " % self.bank_id
 
 
 class AccountBalance(ModelBase):
-    """Object representing the balance of a certain bank account of the user"""
+
+    """Object representing the balance of a certain bank account of the user."""
 
     __dump_attributes__ = ["credit_line", "monthly_spending_limit"]
 
@@ -228,6 +233,7 @@ class AccountBalance(ModelBase):
     """Synchronization status object"""
 
     def __str__(self):
+        """Short String representation of the account balance."""
         return "Balance: %d at %s" % (self.balance, str(self.balance_date))
 
     def __init__(self, session, **kwargs):
@@ -240,6 +246,7 @@ class AccountBalance(ModelBase):
 
 
 class Payment(ModelBase):
+
     """Object representing a Payment"""
 
     __dump_attributes__ = ["type", "name", "account_number", "bank_code", "amount", "currency", "purpose"]
@@ -305,11 +312,13 @@ class Payment(ModelBase):
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
     def __str__(self):
+        """Short String representation of a Payment."""
         return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
 class Transaction(ModelBase):
-    """Object representing one bank transaction on a certain bank account of the user"""
+
+    """Object representing one bank transaction on a certain bank account of the user."""
 
     __dump_attributes__ = ["transaction_id", "account_id", "name",
                            "account_number", "bank_code", "bank_name", "amount",
@@ -381,10 +390,12 @@ class Transaction(ModelBase):
             self.value_date = dateutil.parser.parse(self.value_date)
 
     def __str__(self):
+        """Short String representation of a Transaction."""
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))
 
 
 class Notification(ModelBase):
+
     """Object representing a configured notification, e.g a webhook or email hook"""
 
     __dump_attributes__ = ["observe_key", "notify_uri", "state"]
@@ -402,10 +413,12 @@ class Notification(ModelBase):
     """State similiar to sync and logon process. It will passed as POST payload for webhooks"""
 
     def __str__(self):
+        """Short String representation of a Notification."""
         return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
 
 
 class SynchronizationStatus(ModelBase):
+
     """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers"""
 
     __dump_attributes__ = []
@@ -423,11 +436,13 @@ class SynchronizationStatus(ModelBase):
     """Timestamp of last successful synchronization"""
 
     def __str__(self):
+        """Short String representation of a synchronizationStatus."""
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
 
 
 class User(ModelBase):
-    """Object representing an user"""
+
+    """Object representing an user."""
 
     __dump_attributes__ = ["name", "address", "send_newsletter", "language"]
 
@@ -471,10 +486,12 @@ class User(ModelBase):
             self.join_date = dateutil.parser.parse(self.join_date)
 
     def __str__(self):
+        """Short String representation of a User."""
         return "User: %s (%s, %s)" % (self.name, self.user_id, self.email)
 
 
 class WebhookNotification(ModelBase):
+
     """Object representing a WebhookNotification"""
 
     __dump_attributes__ = []
@@ -493,11 +510,13 @@ class WebhookNotification(ModelBase):
     """Object or List with the data (`AccountBalance` or `Transaction`)"""
 
     def __str__(self):
+        """Short String representation of a WebhookNotification."""
         return "WebhookNotification: %s" % (self.notification_id)
 
 
 class Service(ModelBase):
-    "Object representing a payment service"
+
+    """Object representing a payment service."""
 
     __dump_attributes__ = ["name", "bank_code", "icon", "additional_icons"]
 
@@ -515,10 +534,12 @@ class Service(ModelBase):
     the banks icon."""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a Service."""
         return "Service: %s" % (self.bank_code)
 
 class LoginSettings(ModelBase):
-    """Object representing login settings for a banking service"""
+
+    """Object representing login settings for a banking service."""
 
     __dump_attributes__ = ["bank_name", "supported", "icon", "additional_icons",
                             "credentials", "auth_type", "advice"]
@@ -546,10 +567,12 @@ class LoginSettings(ModelBase):
     """Any additional advice useful to locate the required credentials"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a LoginSettings object."""
         return "LoginSettings: %s" % (self.bank_name)
 
 class Credential(ModelBase):
-    """Object representing a login credential field for a banking service"""
+
+    """Object representing a login credential field for a banking service."""
 
     __dump_attributes__ = ["label", "masked", "optional"]
 
@@ -565,20 +588,24 @@ class Credential(ModelBase):
     the empty string"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a Credential."""
         return "Credential: %s" % (self.label)
 
 class TaskToken(ModelBase):
-    """Object representing a task token"""
+
+    """Object representing a task token."""
 
     __dump_attributes__ = ["task_token"]
 
     task_token = None
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a TaskToken."""
         return "TaskToken: %s" % (self.task_token)
 
 class TaskState(ModelBase):
-    """Object representing a tasks state"""
+
+    """Object representing a tasks state."""
 
     __dump_attributes__ = ["account_id", "message", "is_waiting_for_pin",
                            "is_waiting_for_response", "is_erroneous",
@@ -609,10 +636,12 @@ class TaskState(ModelBase):
     """Challenge object"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a TaskState."""
         return "TaskState: %s" % (self.message)
 
 class Challenge(ModelBase):
-    """Object representing a challenge"""
+
+    """Object representing a challenge."""
 
     __dump_attributes__ = ["title", "label", "format"]
 
@@ -629,10 +658,12 @@ class Challenge(ModelBase):
     """Challenge data"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a Challenge."""
         return "Challenge: %s" % (self.title)
 
 class PaymentProposal(ModelBase):
-    """Object representing a payment proposal"""
+
+    """Object representing a payment proposal."""
 
     __dump_attributes__ = ["account_number", "bank_code", "name"]
 
@@ -646,10 +677,13 @@ class PaymentProposal(ModelBase):
     """Name of the payment proposal"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a PaymentProposal."""
         return "Payment Proposal: %s" % (self.name)
 
+
 class Process(ModelBase):
-    """Object representing a Business Process"""
+
+    """Object representing a Business Process."""
 
     __dump_attributes__ = ["email", "password", "redirect_uri", "state", "steps"]
 
@@ -679,7 +713,8 @@ class Process(ModelBase):
     another dictionary containing all the settings for the respective step"""
 
 class ProcessStep(ModelBase):
-    """Object representing a process step"""
+
+    """Object representing a process step."""
 
     __dump_attributes__ = ["type", "options"]
 
@@ -690,10 +725,13 @@ class ProcessStep(ModelBase):
     """settings for the respective step"""
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a ProcessStep."""
         return "ProcessStep Type: %s" % (self.type)
 
+
 class ProcessOptions(ModelBase):
-    """Object representing a process option"""
+
+    """Object representing a process option."""
 
     __dump_attributes__ = ["account_number", "amount", "bank_code", "currency",
                            "name", "purpose", "type"]
@@ -712,19 +750,23 @@ class ProcessOptions(ModelBase):
 
     type = None
 
+
 class ProcessToken(ModelBase):
-    """Object representing a process token"""
+
+    """Object representing a process token."""
 
     __dump_attributes__ = ["process_token"]
 
     process_token = None
 
     def __str__(self, *args, **kwargs):
+        """Short String representation of a ProcessToken."""
         return "Process Token: %s" % (self.process_token)
 
 # Class added by Fincite (http://fincite.de) on 06/03/2015
 class Security(ModelBase):
-    """Object representing one bank security on a certain bank account of the user"""
+
+    """Object representing one bank security on a certain bank account of the user."""
 
     __dump_attributes__ = []
 
@@ -795,4 +837,5 @@ class Security(ModelBase):
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
     def __str__(self):
+        """Short String representation of a Security."""
         return "Security: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.trade_timestamp))

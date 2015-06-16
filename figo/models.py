@@ -7,6 +7,9 @@ import dateutil.parser
 
 
 class ModelBase(object):
+
+    """Super class for all models. Provides basic serialization."""
+
     __dump_attributes__ = []
 
     @classmethod
@@ -16,11 +19,11 @@ class ModelBase(object):
 
     def __init__(self, session, **kwargs):
         self.session = session
-
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def dump(self):
+        """Serialize the ModelBase object to a dictionary."""
         result = {}
         for attribute in self.__dump_attributes__:
             value = getattr(self, attribute)
@@ -30,6 +33,7 @@ class ModelBase(object):
 
 
 class Account(ModelBase):
+
     """Object representing one bank account of the user, independent of the exact account type."""
 
     __dump_attributes__ = ["name", "owner", "auto_sync"]
@@ -247,7 +251,7 @@ class AccountBalance(ModelBase):
 
 class Payment(ModelBase):
 
-    """Object representing a Payment"""
+    """Object representing a Payment."""
 
     __dump_attributes__ = ["type", "name", "account_number", "bank_code", "amount", "currency", "purpose"]
 
@@ -396,7 +400,7 @@ class Transaction(ModelBase):
 
 class Notification(ModelBase):
 
-    """Object representing a configured notification, e.g a webhook or email hook"""
+    """Object representing a configured notification, e.g a webhook or email hook."""
 
     __dump_attributes__ = ["observe_key", "notify_uri", "state"]
 
@@ -419,7 +423,7 @@ class Notification(ModelBase):
 
 class SynchronizationStatus(ModelBase):
 
-    """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers"""
+    """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers."""
 
     __dump_attributes__ = []
 
@@ -492,7 +496,7 @@ class User(ModelBase):
 
 class WebhookNotification(ModelBase):
 
-    """Object representing a WebhookNotification"""
+    """Object representing a WebhookNotification."""
 
     __dump_attributes__ = []
 
@@ -537,6 +541,7 @@ class Service(ModelBase):
         """Short String representation of a Service."""
         return "Service: %s" % (self.bank_code)
 
+
 class LoginSettings(ModelBase):
 
     """Object representing login settings for a banking service."""
@@ -570,6 +575,7 @@ class LoginSettings(ModelBase):
         """Short String representation of a LoginSettings object."""
         return "LoginSettings: %s" % (self.bank_name)
 
+
 class Credential(ModelBase):
 
     """Object representing a login credential field for a banking service."""
@@ -591,6 +597,7 @@ class Credential(ModelBase):
         """Short String representation of a Credential."""
         return "Credential: %s" % (self.label)
 
+
 class TaskToken(ModelBase):
 
     """Object representing a task token."""
@@ -602,6 +609,7 @@ class TaskToken(ModelBase):
     def __str__(self, *args, **kwargs):
         """Short String representation of a TaskToken."""
         return "TaskToken: %s" % (self.task_token)
+
 
 class TaskState(ModelBase):
 
@@ -639,6 +647,7 @@ class TaskState(ModelBase):
         """Short String representation of a TaskState."""
         return "TaskState: %s" % (self.message)
 
+
 class Challenge(ModelBase):
 
     """Object representing a challenge."""
@@ -660,6 +669,7 @@ class Challenge(ModelBase):
     def __str__(self, *args, **kwargs):
         """Short String representation of a Challenge."""
         return "Challenge: %s" % (self.title)
+
 
 class PaymentProposal(ModelBase):
 
@@ -712,6 +722,7 @@ class Process(ModelBase):
     type and options keys, where type is the name of step type and options is
     another dictionary containing all the settings for the respective step"""
 
+
 class ProcessStep(ModelBase):
 
     """Object representing a process step."""
@@ -762,6 +773,7 @@ class ProcessToken(ModelBase):
     def __str__(self, *args, **kwargs):
         """Short String representation of a ProcessToken."""
         return "Process Token: %s" % (self.process_token)
+
 
 # Class added by Fincite (http://fincite.de) on 06/03/2015
 class Security(ModelBase):

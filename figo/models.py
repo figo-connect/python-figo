@@ -74,6 +74,12 @@ class Account(ModelBase):
     type = None
     """Account type: Giro account, Savings account, Credit card, Loan account, PayPal, Cash book or Unknown"""
 
+    supported_tan_schemes = None
+    """List of supported tan schemes"""
+
+    preferred_tan_scheme = None
+    """ID of the preferred tan scheme"""
+
     icon = None
     """Account icon URL"""
 
@@ -492,227 +498,227 @@ class WebhookNotification(ModelBase):
 
 class Service(ModelBase):
     "Object representing a payment service"
-    
+
     __dump_attributes__ = ["name", "bank_code", "icon", "additional_icons"]
-    
+
     name = None
     """Human readable name of the service"""
-    
+
     bank_code = None
     """surrogate bank code used for this service"""
-    
+
     state = None
     """URL to an logo of the bank, e.g. as a badge icon"""
-    
+
     additional_icons = None
     """Dictionary mapping from resolution to URL for additional resolutions of
     the banks icon."""
-    
+
     def __str__(self, *args, **kwargs):
         return "Service: %s" % (self.bank_code)
 
 class LoginSettings(ModelBase):
     """Object representing login settings for a banking service"""
-    
+
     __dump_attributes__ = ["bank_name", "supported", "icon", "additional_icons",
                             "credentials", "auth_type", "advice"]
-    
+
     bank_name = None
     """Human readable name of the bank"""
-    
+
     supported = None
     """Flag showing whether figo supports the bank"""
-    
+
     icon = None
     """URL to an logo of the bank, e.g. as a badge icon"""
-    
+
     additional_icons = None
     """Dictionary mapping from resolution to URL for additional resolutions of
     the banks icon."""
-    
+
     credentials = None
     """List of credentials needed to connect to the bank."""
-    
+
     auth_type = None
     """Kind of authentication used by the bank, commonly PIN"""
-    
+
     advice = None
     """Any additional advice useful to locate the required credentials"""
-    
+
     def __str__(self, *args, **kwargs):
         return "LoginSettings: %s" % (self.bank_name)
-    
+
 class Credential(ModelBase):
     """Object representing a login credential field for a banking service"""
-    
+
     __dump_attributes__ = ["label", "masked", "optional"]
-    
+
     label = None
     """Label for text input field"""
-    
+
     masked = None
     """This indicates whether the this text input field is used for password
     entry and therefore should be masked"""
-    
+
     optional = None
     """This flag indicates whether this text input field is allowed to contain
     the empty string"""
-    
+
     def __str__(self, *args, **kwargs):
         return "Credential: %s" % (self.label)
-    
+
 class TaskToken(ModelBase):
     """Object representing a task token"""
-    
+
     __dump_attributes__ = ["task_token"]
-    
+
     task_token = None
-    
+
     def __str__(self, *args, **kwargs):
         return "TaskToken: %s" % (self.task_token)
-    
+
 class TaskState(ModelBase):
     """Object representing a tasks state"""
-    
+
     __dump_attributes__ = ["account_id", "message", "is_waiting_for_pin",
                            "is_waiting_for_response", "is_erroneous",
                            "is_ended", "challenge"]
-    
+
     account_id = None
     """Account ID of currently processed account"""
-    
+
     message = None
     """Status message or error message for currently processed account"""
-    
+
     is_waiting_for_pin = None
     """If this flag is set, then the figo Connect server waits for a PIN"""
-    
+
     is_waiting_for_response = None
     """If this flag is set, then the figo Connect server waits for a response to
     the parameter challenge"""
-    
+
     is_erroneous = None
     """If this flag is set, then an error occurred and the figo Connect server
     waits for a continuation"""
-    
+
     is_ended = None
     """If this flag is set, then the communication with the bank server has been
     completed"""
-    
+
     challenge = None
     """Challenge object"""
-    
+
     def __str__(self, *args, **kwargs):
         return "TaskState: %s" % (self.message)
-    
+
 class Challenge(ModelBase):
     """Object representing a challenge"""
-    
+
     __dump_attributes__ = ["title", "label", "format"]
-    
+
     title = None
     """Challenge title"""
-    
+
     label = None
     """Response label"""
-    
+
     format = None
     """Challenge data format. Possible values are Text, HTML, HHD or Matrix."""
-    
+
     data = None
     """Challenge data"""
-    
+
     def __str__(self, *args, **kwargs):
         return "Challenge: %s" % (self.title)
 
 class PaymentProposal(ModelBase):
     """Object representing a payment proposal"""
-    
+
     __dump_attributes__ = ["account_number", "bank_code", "name"]
-    
+
     account_number = None
     """Account number or IBAN"""
 
     bank_code = None
     """bank code or BIC"""
-    
+
     name = None
     """Name of the payment proposal"""
-    
+
     def __str__(self, *args, **kwargs):
         return "Payment Proposal: %s" % (self.name)
-    
+
 class Process(ModelBase):
     """Object representing a Business Process"""
-    
+
     __dump_attributes__ = ["email", "password", "redirect_uri", "state", "steps"]
-    
+
     email = None
     """The email of the existing user to use as context or the new user to
     create beforehand. In the latter case it must obey the figo username &
     password policy"""
-    
+
     password = None
     """The password of the user existing or new user. In the latter case it must
     obey the figo username & password policy"""
-    
+
     redirect_uri = None
     """The authorization code will be sent to this callback URL. It must match
     one of the URLs registered during application registration."""
-    
+
     state = None
     """Any kind of string that will be forwarded in the callback response
     message. It serves two purposes: The value is used to maintain state between
     this request and the callback, e.g. it might contain a session ID from your
     application. The value should also contain a random component, which your
     application checks to mitigate cross-site request forgery."""
-    
+
     steps = None
     """A list of step definitions. Each step definition is a dictionary with
     type and options keys, where type is the name of step type and options is
     another dictionary containing all the settings for the respective step"""
-    
+
 class ProcessStep(ModelBase):
     """Object representing a process step"""
-    
+
     __dump_attributes__ = ["type", "options"]
-    
+
     type = None
     """name of step type"""
-    
+
     options = None
     """settings for the respective step"""
-    
+
     def __str__(self, *args, **kwargs):
         return "ProcessStep Type: %s" % (self.type)
-    
+
 class ProcessOptions(ModelBase):
     """Object representing a process option"""
-    
+
     __dump_attributes__ = ["account_number", "amount", "bank_code", "currency",
                            "name", "purpose", "type"]
-    
+
     account_number = None
-    
+
     amount = None
-    
+
     bank_code = None
-    
+
     currency = None
-    
+
     name = None
-    
+
     purpose = None
-    
+
     type = None
-    
+
 class ProcessToken(ModelBase):
     """Object representing a process token"""
-    
+
     __dump_attributes__ = ["process_token"]
-    
+
     process_token = None
-    
+
     def __str__(self, *args, **kwargs):
         return "Process Token: %s" % (self.process_token)
 

@@ -251,7 +251,28 @@ class AccountBalance(ModelBase):
 
 class Payment(ModelBase):
 
-    """Object representing a Payment."""
+    """
+    Object representing a Payment.
+
+    When creating a new Payment for submitment to the Figo API all necessary
+    fields have to be set on the Payment object.
+
+    Required fields:
+        - account_id        -   Internal figo connect ID of the account
+        - type              -   Payment type (Valid values: Transfer, Direct Debit, SEPA transfer, SEPA direct debit)
+        - name              -   Name of creditor or debtor
+        - account_number    -   Account number of creditor or debtor
+        - bank_code         -   Bank code of creditor or debtor
+        - amount            -   Order amount
+        - purpose           -   Purpose text
+
+    Optional fields:
+        - currency                  -   Three-character currency code (Default: EUR / Valid values: EUR)
+        - text_key                  -   DTA text key
+        - text_key_extension        -   DTA text key extension
+        - notification_recipient    -   Recipient of the payment notification, should be an email address
+        - cents                     -   If true, the amount is submitted and displayed as cents
+    """
 
     __dump_attributes__ = ["type", "name", "account_number", "bank_code", "amount", "currency", "purpose"]
 

@@ -39,7 +39,7 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
 
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
 
-    VALID_FINGERPRINTS = ("3A:62:54:4D:86:B4:34:38:EA:34:64:4E:95:10:A9:FF:37:27:69:C0",
+    VALID_FINGERPRINTS = ("38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07",
                           "CF:C1:BC:7F:6A:16:09:2B:10:83:8A:B0:22:4F:3A:65:D2:70:D7:3E")
 
     def connect(self):

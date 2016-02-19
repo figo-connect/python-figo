@@ -218,7 +218,7 @@ class FigoConnection(FigoObject):
         """
         connection = VerifiedHTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         connection.request("POST", path, urllib.urlencode(data),
-                           {'Authorization': "Basic %s" % base64.b64encode(self.client_id + ":" + self.client_secret),
+                           {'Authorization': "Basic %s" % base64.b64encode((self.client_id + ":" + self.client_secret).encode("ascii")),
                             'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'})
         response = connection.getresponse()
 

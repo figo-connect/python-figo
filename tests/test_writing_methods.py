@@ -6,6 +6,8 @@ import unittest
 from figo.figo import FigoConnection, FigoSession, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 import time
+import random
+import string
 
 
 class WriteTest(unittest.TestCase):
@@ -14,7 +16,9 @@ class WriteTest(unittest.TestCase):
     def setUpClass(cls):
         cls.CLIENT_ID = "C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI"
         cls.CLIENT_SECRET = "Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28"
-        cls.USER = "testuser@test.de"
+        # random string to avoid "user already exists" on parallel test-runs
+        rand_str = ''.join(random.choice(string.ascii_letters) for x in range(10))
+        cls.USER = rand_str + "-testuser@test.de"
         cls.PASSWORD = "some_words"
         
         # bank account info needed

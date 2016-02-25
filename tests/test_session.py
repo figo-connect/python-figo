@@ -5,6 +5,7 @@
 
 
 import unittest
+import time
 
 from figo import FigoSession, Payment
 from figo.figo import FigoException
@@ -79,6 +80,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(modified_notification.state, "asd")
 
         self.sut.remove_notification(modified_notification.notification_id)
+        time.sleep(5)
         self.assertEqual(self.sut.get_notification(modified_notification.notification_id), None)
 
     def test_create_update_delete_payment(self):

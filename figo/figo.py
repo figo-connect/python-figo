@@ -5,6 +5,7 @@
 #  Copyright (c) 2013 figo GmbH. All rights reserved.
 #
 
+from __future__ import unicode_literals # python2: all strings unicode
 import base64
 from datetime import datetime, timedelta
 import hashlib

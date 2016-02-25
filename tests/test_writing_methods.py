@@ -62,7 +62,7 @@ class WriteTest(unittest.TestCase):
         task_state = fs.get_task_state(token)
         time.sleep(5)
         self.assertTrue(isinstance(task_state, TaskState))
-        self.assertEqual(1, len(fs.accounts))
+        self.assertEqual(3, len(fs.accounts))
         
     def test_050_add_acount_and_sync_wrong_pin(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
@@ -81,7 +81,7 @@ class WriteTest(unittest.TestCase):
             task_state = fs.add_account_and_sync_with_new_pin(pin_exception, self.CREDENTIALS[1])
         time.sleep(5)
         self.assertTrue(isinstance(task_state, TaskState))
-        self.assertEqual(1, len(fs.accounts))
+        self.assertEqual(3, len(fs.accounts))
         
     def test_06_modify_transaction(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)

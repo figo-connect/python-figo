@@ -6,6 +6,8 @@ import unittest
 from figo.figo import FigoConnection, FigoSession, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 import time
+import random
+import string
 
 
 class WriteTest(unittest.TestCase):
@@ -14,12 +16,14 @@ class WriteTest(unittest.TestCase):
     def setUpClass(cls):
         cls.CLIENT_ID = "C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI"
         cls.CLIENT_SECRET = "Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28"
-        cls.USER = "testuser@test.de"
+        # random string to avoid "user already exists" on parallel test-runs
+        rand_str = ''.join(random.choice(string.ascii_letters) for x in range(10))
+        cls.USER = rand_str + "-testuser@test.de"
         cls.PASSWORD = "some_words"
         
         # bank account info needed
-        cls.CREDENTIALS = []
-        cls.BANK_CODE = ""        
+        cls.CREDENTIALS = ["demo", "demo"]
+        cls.BANK_CODE = "90090042"
         
         cls.fc = FigoConnection(cls.CLIENT_ID, cls.CLIENT_SECRET, "https://127.0.0.1/")
         
@@ -45,7 +49,7 @@ class WriteTest(unittest.TestCase):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         services = fs.get_supported_payment_services("de")
-        self.assertEqual(21, len(services))
+        self.assertEqual(25, len(services))
         self.assertTrue(isinstance(services[0], Service))
         
     def test_04_get_login_settings(self):
@@ -62,7 +66,7 @@ class WriteTest(unittest.TestCase):
         task_state = fs.get_task_state(token)
         time.sleep(5)
         self.assertTrue(isinstance(task_state, TaskState))
-        self.assertEqual(1, len(fs.accounts))
+        self.assertEqual(3, len(fs.accounts))
         
     def test_050_add_acount_and_sync_wrong_pin(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
@@ -81,7 +85,7 @@ class WriteTest(unittest.TestCase):
             task_state = fs.add_account_and_sync_with_new_pin(pin_exception, self.CREDENTIALS[1])
         time.sleep(5)
         self.assertTrue(isinstance(task_state, TaskState))
-        self.assertEqual(1, len(fs.accounts))
+        self.assertEqual(3, len(fs.accounts))
         
     def test_06_modify_transaction(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)

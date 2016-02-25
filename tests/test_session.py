@@ -5,6 +5,7 @@
 
 
 import unittest
+import time
 
 from figo import FigoSession, Payment
 from figo.figo import FigoException
@@ -22,7 +23,7 @@ class TestSession(unittest.TestCase):
 
     def test_get_account_tan_schemes(self):
         account = self.sut.get_account("A1.1")
-        self.assertEqual(len(account.supported_tan_schemes), 3)
+        self.assertEqual(len(account.supported_tan_schemes), 4)
 
     def test_get_account_balance(self):
         # account sub-resources
@@ -79,6 +80,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(modified_notification.state, "asd")
 
         self.sut.remove_notification(modified_notification.notification_id)
+        time.sleep(5)
         self.assertEqual(self.sut.get_notification(modified_notification.notification_id), None)
 
     def test_create_update_delete_payment(self):

@@ -18,8 +18,8 @@ class WriteTest(unittest.TestCase):
         cls.PASSWORD = "some_words"
         
         # bank account info needed
-        cls.CREDENTIALS = []
-        cls.BANK_CODE = ""        
+        cls.CREDENTIALS = ["demo", "demo"]
+        cls.BANK_CODE = "90090042"
         
         cls.fc = FigoConnection(cls.CLIENT_ID, cls.CLIENT_SECRET, "https://127.0.0.1/")
         

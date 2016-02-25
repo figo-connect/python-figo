@@ -54,7 +54,7 @@ class WriteTest(unittest.TestCase):
         login_settings = fs.get_login_settings("de", self.BANK_CODE)
         self.assertTrue(isinstance(login_settings, LoginSettings))
         
-    def t_05_add_account(self):
+    def test_05_add_account(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         token = fs.add_account("de", self.CREDENTIALS, self.BANK_CODE)

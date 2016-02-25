@@ -349,7 +349,7 @@ class Transaction(ModelBase):
                            "account_number", "bank_code", "bank_name", "amount",
                            "currency", "booking_date", "value_date", "purpose",
                            "type", "booking_text", "booked", "creation_timestamp",
-                           "modification_timestamp"]
+                           "modification_timestamp", "visited", "additional_info"]
 
     transaction_id = None
     """Internal figo Connect transaction ID"""
@@ -398,6 +398,12 @@ class Transaction(ModelBase):
 
     modification_timestamp = None
     """modification date"""
+
+    visited = None
+    """This flag indicates whether the transaction has already been marked as visited by the user"""
+
+    additional_info = None
+    """Provides more info about the transaction if available, depends on the account type"""
 
     def __init__(self, session, **kwargs):
         super(Transaction, self).__init__(session, **kwargs)

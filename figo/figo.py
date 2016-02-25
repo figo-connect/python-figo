@@ -444,7 +444,7 @@ class FigoSession(FigoObject):
         task_state = self.get_task_state(task_token)
         while task_state.message == "Connecting to server...":
             task_state = self.get_task_state(task_token)
-        if task_state.is_erroneous and task_state.message == "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.":
+        if task_state.is_erroneous and task_state.message in ["Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.", "Bitte verwenden Sie für das Demokonto den Benutzernamen »figo« und die PIN »figo«."]:
             raise FigoPinException(country, credentials, bank_code, iban, save_pin)
         elif task_state.is_erroneous and task_state.message == "Ihr Online-Zugang wurde von Ihrer Bank gesperrt. Bitte lassen Sie die Sperre von Ihrer Bank aufheben.":
             raise FigoException("", task_state.message)

@@ -22,7 +22,7 @@ class TestSession(unittest.TestCase):
 
     def test_get_account_tan_schemes(self):
         account = self.sut.get_account("A1.1")
-        self.assertEqual(len(account.supported_tan_schemes), 3)
+        self.assertEqual(len(account.supported_tan_schemes), 4)
 
     def test_get_account_balance(self):
         # account sub-resources

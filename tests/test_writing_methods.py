@@ -45,7 +45,7 @@ class WriteTest(unittest.TestCase):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         services = fs.get_supported_payment_services("de")
-        self.assertEqual(21, len(services))
+        self.assertEqual(25, len(services))
         self.assertTrue(isinstance(services[0], Service))
         
     def test_04_get_login_settings(self):

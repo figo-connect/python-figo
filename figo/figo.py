@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+# -*- coding: utf-8 -*-
 import base64
 from datetime import datetime, timedelta
 import hashlib
@@ -135,7 +135,6 @@ class FigoObject(object):
     def _query_api_object(self, type, path, data=None, method="GET", collection_name=None):
         """Helper method using _query_api_with_exception but encapsulating the result as an object."""
         response = self._query_api_with_exception(path, data, method)
-        print response
         if response is None:
             return None
         elif collection_name is None:

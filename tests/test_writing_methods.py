@@ -3,6 +3,7 @@
 #  Copyright (c) 2015 figo GmbH. All rights reserved.
 #
 import unittest
+from nose.plugins.skip import SkipTest
 from figo.figo import FigoConnection, FigoSession, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 import time
@@ -49,14 +50,14 @@ class WriteTest(unittest.TestCase):
         self.assertEqual(26, len(services))
         self.assertTrue(isinstance(services[0], Service))
 
-    @unittest.skip("User does not have LoginSettings anymore")
+    @SkipTest
     def test_04_get_login_settings(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         login_settings = fs.get_login_settings("de", self.BANK_CODE)
         self.assertTrue(isinstance(login_settings, LoginSettings))
 
-    @unittest.skip("CREDENTIALS is not prepared")
+    @SkipTest
     def t_05_add_account(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
@@ -67,7 +68,7 @@ class WriteTest(unittest.TestCase):
         self.assertTrue(isinstance(task_state, TaskState))
         self.assertEqual(1, len(fs.accounts))
 
-    @unittest.skip("CREDENTIALS is not prepared")
+    @SkipTest
     def test_050_add_acount_and_sync_wrong_pin(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
@@ -75,7 +76,7 @@ class WriteTest(unittest.TestCase):
         self.assertRaises(FigoPinException, fs.add_account_and_sync, "de", wrong_credentials, self.BANK_CODE)
         self.assertEqual(0, len(fs.accounts))
 
-    @unittest.skip("CREDENTIALS is not prepared")
+    @SkipTest
     def test_051_add_acount_and_sync_wrong_and_correct_pin(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
@@ -88,7 +89,7 @@ class WriteTest(unittest.TestCase):
         self.assertTrue(isinstance(task_state, TaskState))
         self.assertEqual(1, len(fs.accounts))
 
-    @unittest.skip("test user does not have accounts anymore")
+    @SkipTest
     def test_06_modify_transaction(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
@@ -99,7 +100,7 @@ class WriteTest(unittest.TestCase):
         response = fs.modify_transaction(account.account_id, transaction.transaction_id, True)
         self.assertEqual(True, response.visited)
 
-    @unittest.skip("test user does not have accounts anymore")
+    @SkipTest
     def test_07_modify_account_transactions(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
@@ -117,7 +118,7 @@ class WriteTest(unittest.TestCase):
         response = fs.modify_user_transactions(True)
         [self.assertTrue(transaction.visited) for transaction in fs.transactions]
 
-    @unittest.skip("test user does not have accounts anymore")
+    @SkipTest
     def test_09_delete_transaction(self):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])

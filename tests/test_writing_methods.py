@@ -7,6 +7,7 @@ from nose.plugins.skip import SkipTest
 from figo.figo import FigoConnection, FigoSession, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 import time
+from uuid import uuid4
 
 
 class WriteTest(unittest.TestCase):
@@ -31,10 +32,15 @@ class WriteTest(unittest.TestCase):
         fs.remove_user()
             
     def t_01_add_user(self):
-        response = self.fc.add_user("Test", self.USER, self.PASSWORD)
+        username = "{0}.test@example.com".format(uuid4())
+        response = self.fc.add_user("Test", username, self.PASSWORD)
         self.assertTrue(isinstance(response, (str, unicode)))
-        
+        response = self.fc.credential_login(username, self.PASSWORD)
+        session = FigoSession(response["access_token"])
+        session.remove_user()
+
     def test_010_add_user_and_login(self):
+
         response = self.fc.add_user_and_login("Test", self.USER, self.PASSWORD)
         self.assertTrue("access_token" in response)
 
@@ -46,7 +52,6 @@ class WriteTest(unittest.TestCase):
         response = self.fc.credential_login(self.USER, self.PASSWORD)
         fs = FigoSession(response["access_token"])
         services = fs.get_supported_payment_services("de")
-        print services
         self.assertEqual(26, len(services))
         self.assertTrue(isinstance(services[0], Service))
 

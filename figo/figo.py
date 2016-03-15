@@ -107,18 +107,26 @@ class FigoObject(object):
                 return {}
             return json.loads(response_data)
         elif response_status == 401:
-            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
+            return self._generate_error_message(message="unauthorized", description="Missing, invalid or expired access token.")
         elif response_status == 403:
-            return {'error': "forbidden", 'error_description': "Insufficient permission."}
+            return self._generate_error_message(message="forbidden", description="Insufficient permission.")
         elif response_status == 404:
             return None
         elif response_status == 405:
-            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
+            return self._generate_error_message(message="method_not_allowed", description="Unexpected request method.")
         elif response_status == 503:
-            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
+            return self._generate_error_message(message="service_unavailable", description="Exceeded rate limit.")
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
+            return self._generate_error_message(message="internal_server_error", description="We are very sorry, but something went wrong")
+
+    def _generate_error_message(self, message, description):
+        return {
+            'error': {
+                'message': message,
+                'description': description,
+            }
+        }
 
     def _query_api_with_exception(self, path, data=None, method="GET"):
         """Helper method analog to _query_api but raises an exception instead of simply returning."""
@@ -133,6 +141,7 @@ class FigoObject(object):
     def _query_api_object(self, type, path, data=None, method="GET", collection_name=None):
         """Helper method using _query_api_with_exception but encapsulating the result as an object."""
         response = self._query_api_with_exception(path, data, method)
+        print response
         if response is None:
             return None
         elif collection_name is None:

@@ -162,7 +162,7 @@ class FigoException(Exception):
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned by the server."""
-        return cls(dictionary['error'], dictionary['error_description'])
+        return cls(dictionary['error']['message'], dictionary['error']['description'])
 
 
 class FigoPinException(FigoException):

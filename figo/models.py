@@ -568,7 +568,7 @@ class LoginSettings(ModelBase):
     """Object representing login settings for a banking service."""
 
     __dump_attributes__ = ["bank_name", "supported", "icon", "additional_icons",
-                            "credentials", "auth_type", "advice"]
+                           "credentials", "auth_type", "advice"]
 
     bank_name = None
     """Human readable name of the bank"""

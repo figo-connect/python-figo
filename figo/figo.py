@@ -1,9 +1,4 @@
 #!/usr/bin/python
-#-*- coding:utf-8 -*-
-#
-#  Created by Stefan Richter on 2013-01-12.
-#  Copyright (c) 2013 figo GmbH. All rights reserved.
-#
 
 import base64
 from datetime import datetime, timedelta
@@ -14,6 +9,8 @@ import re
 import socket
 import ssl
 import sys
+
+from .models import *
 
 if sys.version_info[0] > 2:
     import http.client as httplib
@@ -27,9 +24,6 @@ else:
     import urllib
 
     STRING_TYPES = (str, unicode)
-
-
-from .models import *
 
 
 logger = logging.getLogger(__name__)

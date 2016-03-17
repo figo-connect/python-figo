@@ -22,7 +22,7 @@ class TestSession(unittest.TestCase):
 
     def test_get_account_tan_schemes(self):
         account = self.sut.get_account("A1.1")
-        self.assertEqual(len(account.supported_tan_schemes), 3)
+        self.assertEqual(len(account.supported_tan_schemes), 4)
 
     def test_get_account_balance(self):
         # account sub-resources
@@ -51,7 +51,7 @@ class TestSession(unittest.TestCase):
         self.assertTrue(len(notifications) >= 0)
 
     def test_get_missing_account(self):
-        self.assertEqual(self.sut.get_account("A1.22"), None)
+        self.assertRaises(FigoException,self.sut.get_account, "A1.22")
 
     def test_error_handling(self):
         try:
@@ -79,7 +79,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(modified_notification.state, "asd")
 
         self.sut.remove_notification(modified_notification.notification_id)
-        self.assertEqual(self.sut.get_notification(modified_notification.notification_id), None)
+        self.assertRaises(FigoException, self.sut.get_notification, modified_notification.notification_id)
 
     def test_create_update_delete_payment(self):
         added_payment = self.sut.add_payment(Payment.from_dict(self.sut, dict(account_id="A1.1", type="Transfer", account_number="4711951501", bank_code="90090042", name="figo", purpose="Thanks for all the fish.", amount=0.89)))
@@ -95,7 +95,7 @@ class TestSession(unittest.TestCase):
         self.assertEqual(modified_payment.amount, 2.39)
 
         self.sut.remove_payment(modified_payment)
-        self.assertEqual(self.sut.get_payment(account_or_account_id=modified_payment.account_id, payment_id=modified_payment.payment_id), None)
+        self.assertRaises(FigoException, self.sut.get_payment, modified_payment.account_id, modified_payment.payment_id)
 
     def test_set_bank_account_order(self):
         # Access token with accounts=rw needed

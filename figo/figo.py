@@ -74,6 +74,14 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
             self.sock.close()
             raise
 
+ERROR_MESSAGES = {
+    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
+    403: {'message': "forbidden", 'description': "Insufficient permission."},
+    404: {'message': "not_found", 'description': "Not found."},
+    405: {'message': "method_not_allowed", 'description': "Unexpected request method."},
+    503: {'message': "service_unavailable", 'description': "Exceeded rate limit."}
+
+}
 
 class FigoObject(object):
 
@@ -106,26 +114,22 @@ class FigoObject(object):
             if response_data == "":
                 return {}
             return json.loads(response_data)
-        elif response_status == 401:
-            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
-        elif response_status == 403:
-            return {'error': "forbidden", 'error_description': "Insufficient permission."}
-        elif response_status == 404:
-            return None
-        elif response_status == 405:
-            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
-        elif response_status == 503:
-            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
+        elif response_status in ERROR_MESSAGES:
+            return {'error': ERROR_MESSAGES[response_status]}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
+            return {'error': {
+                'message': "internal_server_error",
+                'description': "We are very sorry, but something went wrong"}}
+
+
 
     def _query_api_with_exception(self, path, data=None, method="GET"):
         """Helper method analog to _query_api but raises an exception instead of simply returning."""
         response = self._query_api(path, data, method)
         if response is None:
             return None
-        elif 'error' in response:
+        elif isinstance(response, dict) and response.get("error"):
             raise FigoException.from_dict(response)
         else:
             return response
@@ -162,7 +166,7 @@ class FigoException(Exception):
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned by the server."""
-        return cls(dictionary['error'], dictionary['error_description'])
+        return cls(dictionary['error']['message'], dictionary['error']['description'])
 
 
 class FigoPinException(FigoException):
@@ -218,7 +222,7 @@ class FigoConnection(FigoObject):
         """
         connection = VerifiedHTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         connection.request("POST", path, urllib.urlencode(data),
-                           {'Authorization': "Basic %s" % base64.b64encode(self.client_id + ":" + self.client_secret),
+                           {'Authorization': "Basic %s" % base64.b64encode((self.client_id + ":" + self.client_secret).encode("ascii")),
                             'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'})
         response = connection.getresponse()
 

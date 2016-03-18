@@ -1,10 +1,7 @@
 #!/usr/bin/python
 #-*- coding:utf-8 -*-
-#
-#  Created by Stefan Richter on 2013-01-12.
-#  Copyright (c) 2013 figo GmbH. All rights reserved.
-#
 
+from __future__ import unicode_literals
 import base64
 from datetime import datetime, timedelta
 import hashlib
@@ -221,7 +218,8 @@ class FigoConnection(FigoObject):
             the JSON-parsed result body
         """
         connection = VerifiedHTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
-        connection.request("POST", path, urllib.urlencode(data),
+        encoded_data = urllib.urlencode(data)
+        connection.request("POST", path, encoded_data,
                            {'Authorization': "Basic %s" % base64.b64encode((self.client_id + ":" + self.client_secret).encode("ascii")),
                             'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'})
         response = connection.getresponse()
@@ -231,22 +229,11 @@ class FigoConnection(FigoObject):
             if response_data == "":
                 return {}
             return json.loads(response_data)
-        elif response.status == 400:
-            response_data = response.read().decode("utf-8")
-            return json.loads(response_data)
-        elif response.status == 401:
-            return {'error': "unauthorized", 'error_description': "Missing, invalid or expired access token."}
-        elif response.status == 403:
-            return {'error': "forbidden", 'error_description': "Insufficient permission."}
-        elif response.status == 404:
-            return None
-        elif response.status == 405:
-            return {'error': "method_not_allowed", 'error_description': "Unexpected request method."}
-        elif response.status == 503:
-            return {'error': "service_unavailable", 'error_description': "Exceeded rate limit."}
+        elif response.status in ERROR_MESSAGES:
+            return {'error': ERROR_MESSAGES[response.status]}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': "internal_server_error", 'error_description': "We are very sorry, but something went wrong"}
+            return {'error': {"message": "internal_server_error", 'description': "We are very sorry, but something went wrong"}}
 
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.

@@ -8,8 +8,7 @@ python:
   - "pypy"
 # command to install dependencies
 install:
-  - pip install .
-  - pip install flake8
-before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then flake8 figo; fi
-script: nosetests
+  - pip install -r requirement.txt
+  - pip install -r requirements-test.txt
+
+script: tox

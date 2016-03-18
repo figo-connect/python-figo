@@ -1,9 +1,9 @@
 #!/usr/bin/python
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from __future__ import unicode_literals
+
 import base64
-from datetime import datetime, timedelta
 import hashlib
 import json
 import logging
@@ -11,6 +11,7 @@ import re
 import socket
 import ssl
 import sys
+from datetime import datetime, timedelta
 
 if sys.version_info[0] > 2:
     import http.client as httplib
@@ -25,15 +26,12 @@ else:
 
     STRING_TYPES = (str, unicode)
 
-
 from .models import *
-
 
 logger = logging.getLogger(__name__)
 
 
 class VerifiedHTTPSConnection(httplib.HTTPSConnection):
-
     """HTTPSConnection supporting certificate authentication based on fingerprint"""
 
     VALID_FINGERPRINTS = ("38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07",
@@ -42,7 +40,8 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
     def connect(self):
         # overrides the version in httplib so that we do certificate verification
         if sys.hexversion >= 0x02070000:
-            sock = socket.create_connection((self.host, self.port), self.timeout, self.source_address)
+            sock = socket.create_connection((self.host, self.port), self.timeout,
+                                            self.source_address)
         else:
             sock = socket.create_connection((self.host, self.port), self.timeout)
         if self._tunnel_host:
@@ -63,13 +62,15 @@ class VerifiedHTTPSConnection(httplib.HTTPSConnection):
                 raise ssl.SSLError("Certificate validation failed")
             else:
                 fingerprint = hashlib.sha1(certificate).hexdigest()
-                fingerprint = ":".join(["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
+                fingerprint = ":".join(
+                    ["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
                 if fingerprint not in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
                     raise ssl.SSLError("Certificate validation failed")
         except Exception:
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
             raise
+
 
 ERROR_MESSAGES = {
     401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
@@ -80,8 +81,8 @@ ERROR_MESSAGES = {
 
 }
 
-class FigoObject(object):
 
+class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
     API_ENDPOINT = "api.figo.me"
@@ -100,14 +101,15 @@ class FigoObject(object):
         connection = VerifiedHTTPSConnection(
             self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         connection.request(method, path, None if data is None else json.dumps(data),
-                           {'Authorization': "Bearer %s" % self.access_token, 'Accept': 'application/json', 'Content-Type': 'application/json'})
+                           {'Authorization': "Bearer %s" % self.access_token,
+                            'Accept': 'application/json', 'Content-Type': 'application/json'})
 
         response = connection.getresponse()
         response_status = response.status
         response_data = response.read().decode("utf-8")
         connection.close()
 
-        if response_status >= 200 and response_status < 300 or response_status == 400:
+        if 200 <= response_status < 300 or response_status == 400:
             if response_data == "":
                 return {}
             return json.loads(response_data)
@@ -119,10 +121,9 @@ class FigoObject(object):
                 'message': "internal_server_error",
                 'description': "We are very sorry, but something went wrong"}}
 
-
-
     def _query_api_with_exception(self, path, data=None, method="GET"):
-        """Helper method analog to _query_api but raises an exception instead of simply returning."""
+        """Helper method analog to _query_api but raises an exception instead of
+        simply returning."""
         response = self._query_api(path, data, method)
         if response is None:
             return None
@@ -132,7 +133,8 @@ class FigoObject(object):
             return response
 
     def _query_api_object(self, type, path, data=None, method="GET", collection_name=None):
-        """Helper method using _query_api_with_exception but encapsulating the result as an object."""
+        """Helper method using _query_api_with_exception but encapsulating the result
+        as an object."""
         response = self._query_api_with_exception(path, data, method)
         if response is None:
             return None
@@ -143,7 +145,6 @@ class FigoObject(object):
 
 
 class FigoException(Exception):
-
     """Base class for all exceptions transported via the figo connect API.
 
     They consist of a code-like `error` and a human readable `error_description`.
@@ -162,13 +163,14 @@ class FigoException(Exception):
 
     @classmethod
     def from_dict(cls, dictionary):
-        """Helper function creating an exception instance from the dictionary returned by the server."""
+        """Helper function creating an exception instance from the dictionary returned
+        by the server."""
         return cls(dictionary['error']['message'], dictionary['error']['description'])
 
 
 class FigoPinException(FigoException):
-
-    """This exception is thrown if the wrong pin was submitted to a task. It contains information about current state of the task."""
+    """This exception is thrown if the wrong pin was submitted to a task. It contains
+    information about current state of the task."""
 
     def __init__(self, country, credentials, bank_code, iban, save_pin):
         """Initialiase an Exception for a wrong PIN which contains information about the task."""
@@ -187,7 +189,6 @@ class FigoPinException(FigoException):
 
 
 class FigoConnection(FigoObject):
-
     """Representing a not user-bound connection to the figo connect API.
 
     Its main purpose is to let user login via the OAuth2 API.
@@ -200,7 +201,8 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `client_id` - the OAuth Client ID as provided by your figo developer contact
          - `client_secret` - the OAuth Client Secret as provided by your figo developer contact
-         - `redirect_uri` - the URI the users gets redirected to after the login is finished or if he presses cancels
+         - `redirect_uri` - the URI the users gets redirected to after the login is finished
+         or if he presses cancels
         """
         self.client_id = client_id
         self.client_secret = client_secret
@@ -217,14 +219,17 @@ class FigoConnection(FigoObject):
         :Returns:
             the JSON-parsed result body
         """
-        connection = VerifiedHTTPSConnection(self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
+        connection = VerifiedHTTPSConnection(
+            self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
         encoded_data = urllib.urlencode(data)
         connection.request("POST", path, encoded_data,
-                           {'Authorization': "Basic %s" % base64.b64encode((self.client_id + ":" + self.client_secret).encode("ascii")),
-                            'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'})
+                           {'Authorization': "Basic %s" % base64.b64encode(
+                               (self.client_id + ":" + self.client_secret).encode("ascii")),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded'})
         response = connection.getresponse()
 
-        if response.status >= 200 and response.status < 300:
+        if 200 <= response.status < 300:
             response_data = response.read().decode("utf-8")
             if response_data == "":
                 return {}
@@ -233,40 +238,59 @@ class FigoConnection(FigoObject):
             return {'error': ERROR_MESSAGES[response.status]}
         else:
             logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': {"message": "internal_server_error", 'description': "We are very sorry, but something went wrong"}}
+            return {'error': {"message": "internal_server_error",
+                              'description': "We are very sorry, but something went wrong"}}
 
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 
-        When the process is completed, the user is redirected to the URL provided to the constructor and passes on an authentication code. This code can be converted into an access token for data access.
+        When the process is completed, the user is redirected to the URL provided to
+        the constructor and passes on an authentication code. This code can be converted into
+        an access token for data access.
 
         :Parameters:
          - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
-         - `state` - String passed on through the complete login process and to the redirect target at the end. It should be used to validated the authenticity of the call to the redirect URL
+         - `state` - String passed on through the complete login process and to the redirect
+         target at the end. It should be used to validated the authenticity of the
+         call to the redirect URL
 
         :Returns:
             the URL of the first page of the login process
         """
-        return ("https://" if self.API_SECURE else "http://") + self.API_ENDPOINT + "/auth/code?" + urllib.urlencode({'response_type': 'code', 'client_id': self.client_id, 'redirect_uri': self.redirect_uri, 'scope': scope, 'state': state})
+        return (("https://" if self.API_SECURE else "http://") +
+                self.API_ENDPOINT +
+                "/auth/code?" +
+                urllib.urlencode(
+                    {'response_type': 'code',
+                     'client_id': self.client_id,
+                     'redirect_uri': self.redirect_uri,
+                     'scope': scope, 'state': state}
+                ))
 
     def convert_authentication_code(self, authentication_code):
         """
-        Convert the authentication code received as result of the login process into an access token usable for data access.
+        Convert the authentication code received as result of the login process into an
+        access token usable for data access.
 
         :parameters:
-         - `authentication_code` - the code received as part of the call to the redirect URL at the end of the logon process
+         - `authentication_code` - the code received as part of the call to the redirect
+         URL at the end of the logon process
 
         :returns:
             Dictionary with the following keys:
-             - `access_token` - the access token for data access. You can pass it into `FigoConnection.open_session` to get a FigoSession and access the users data
-             - `refresh_token` - if the scope contained the `offline` flag, also a refresh token is generated. It can be used to generate new access tokens, when the first one has expired.
+             - `access_token` - the access token for data access. You can pass it into
+             `FigoConnection.open_session` to get a FigoSession and access the users data
+             - `refresh_token` - if the scope contained the `offline` flag, also a
+             refresh token is generated. It can be used to generate new access tokens,
+             when the first one has expired.
              - `expires` - absolute time the access token expires
         """
         if authentication_code[0] != "O":
             raise Exception("Invalid authentication code")
 
         response = self._query_api("/auth/token", data={
-                                   'code': authentication_code, 'redirect_uri': self.redirect_uri, 'grant_type': 'authorization_code'})
+            'code': authentication_code, 'redirect_uri': self.redirect_uri,
+            'grant_type': 'authorization_code'})
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -296,21 +320,24 @@ class FigoConnection(FigoObject):
                 'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
 
     def convert_refresh_token(self, refresh_token):
-        """Convert a refresh token (granted for offline access and returned by `convert_authentication_code`) into an access token usabel for data acccess.
+        """Convert a refresh token (granted for offline access and returned by
+        `convert_authentication_code`) into an access token usable for data access.
 
         :Parameters:
          - `refresh_token` - refresh token returned by `convert_authentication_code`
 
         :Returns:
             Dictionary with the following keys:
-             - `access_token` - the access token for data access. You can pass it into `FigoConnection.open_session` to get a FigoSession and access the users data
+             - `access_token` - the access token for data access. You can pass it into
+             `FigoConnection.open_session` to get a FigoSession and access the users data
              - `expires` - absolute time the access token expires
         """
         if refresh_token[0] != "R":
             raise Exception("Invalid refresh token")
 
         response = self._query_api("/auth/token", data={
-                                   'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri, 'grant_type': 'refresh_token'})
+            'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri,
+            'grant_type': 'refresh_token'})
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -321,7 +348,8 @@ class FigoConnection(FigoObject):
         """
         Revoke a granted access or refresh token and thereby invalidate it.
 
-        Note: this action has immediate effect, i.e. you will not be able use that token anymore after this call.
+        Note: this action has immediate effect, i.e. you will not be able use that
+        token anymore after this call.
 
         :Parameters:
          - `token` - access or refresh token to be revoked
@@ -343,7 +371,9 @@ class FigoConnection(FigoObject):
         :Returns:
             Auto-generated recovery password.
         """
-        response = self._query_api("/auth/user", {'name': name, 'email': email, 'password': password, 'language': language, 'affiliate_client_id': self.client_id})
+        response = self._query_api("/auth/user",
+                                   {'name': name, 'email': email, 'password': password,
+                                    'language': language, 'affiliate_client_id': self.client_id})
         if response is None:
             return None
         elif 'error' in response:
@@ -358,9 +388,11 @@ class FigoConnection(FigoObject):
         :Parameters:
         - `name` - First and last name
         - `email` - Email address; It must obey the figo username & password policy
-        - `password` - New figo Account password; It must obey the figo username & password policy
+        - `password` - New figo Account password; It must obey the figo
+        username & password policy
         - `language` - Two-letter code of preferred language
-        - `send_newsletter` - This flag indicates whether the user has agreed to be contacted by email
+        - `send_newsletter` - This flag indicates whether the user has agreed to be
+        contacted by email
 
         :Returns:
             Token dictionary for further API access
@@ -370,8 +402,8 @@ class FigoConnection(FigoObject):
 
 
 class FigoSession(FigoObject):
-
-    """Represents a user-bound connection to the figo connect API and allows access to the users data."""
+    """Represents a user-bound connection to the figo connect API and allows access to
+    the users data."""
 
     def __init__(self, access_token):
         """Create a FigoSession instance.
@@ -383,7 +415,8 @@ class FigoSession(FigoObject):
 
     @property
     def accounts(self):
-        """An array of `Account` objects, one for each account the user has granted the app access."""
+        """An array of `Account` objects, one for each account the user has granted
+        the app access."""
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
     def get_account(self, account_id):
@@ -412,9 +445,11 @@ class FigoSession(FigoObject):
         """
         data = {}
         if iban is not None:
-            data = {"iban": iban, "country": country, "credentials": credentials, "save_pin": save_pin}
+            data = {"iban": iban, "country": country, "credentials": credentials,
+                    "save_pin": save_pin}
         elif bank_code is not None:
-            data = {"bank_code": bank_code, "country": country, "credentials": credentials, "save_pin": save_pin}
+            data = {"bank_code": bank_code, "country": country, "credentials": credentials,
+                    "save_pin": save_pin}
         return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
     def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
@@ -435,9 +470,11 @@ class FigoSession(FigoObject):
         task_state = self.get_task_state(task_token)
         while task_state.message == "Connecting to server...":
             task_state = self.get_task_state(task_token)
-        if task_state.is_erroneous and task_state.message == "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.".decode("utf-8"):
+        if task_state.is_erroneous and task_state.message == "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.".decode(
+                "utf-8"):
             raise FigoPinException(country, credentials, bank_code, iban, save_pin)
-        elif task_state.is_erroneous and task_state.message == "Ihr Online-Zugang wurde von Ihrer Bank gesperrt. Bitte lassen Sie die Sperre von Ihrer Bank aufheben.".decode("utf-8"):
+        elif task_state.is_erroneous and task_state.message == "Ihr Online-Zugang wurde von Ihrer Bank gesperrt. Bitte lassen Sie die Sperre von Ihrer Bank aufheben.".decode(
+                "utf-8"):
             raise FigoException("", task_state.message)
         else:
             return task_state
@@ -470,7 +507,8 @@ class FigoSession(FigoObject):
         :Returns:
            'Account' object for the updated account returned by server
         """
-        return self._query_api_object(Account, "/rest/accounts/%s" % account.account_id, account.dump(), "PUT")
+        return self._query_api_object(Account, "/rest/accounts/%s" % account.account_id,
+                                      account.dump(), "PUT")
 
     def remove_account(self, account_or_account_id):
         """
@@ -480,9 +518,11 @@ class FigoSession(FigoObject):
          - `account_or_account_id` - account to be removed or its ID
         """
         if isinstance(account_or_account_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id, method="DELETE")
+            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id,
+                                           method="DELETE")
         else:
-            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id.account_id, method="DELETE")
+            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id.account_id,
+                                           method="DELETE")
 
         return None
 
@@ -497,9 +537,13 @@ class FigoSession(FigoObject):
             `AccountBalance` object for the respective account
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id.account_id)
+            return self._query_api_object(
+                AccountBalance,
+                "/rest/accounts/%s/balance" % account_or_account_id.account_id)
         else:
-            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id)
+            return self._query_api_object(
+                AccountBalance,
+                "/rest/accounts/%s/balance" % account_or_account_id)
 
     def modify_account_balance(self, account_or_account_id, account_balance):
         """
@@ -513,9 +557,15 @@ class FigoSession(FigoObject):
            'AccountBalance' object for the updated account as returned by the server
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id.account_id, account_balance.dump(), "PUT")
+            return self._query_api_object(
+                AccountBalance,
+                "/rest/accounts/%s/balance" % account_or_account_id.account_id,
+                account_balance.dump(), "PUT")
         else:
-            return self._query_api_object(AccountBalance, "/rest/accounts/%s/balance" % account_or_account_id, account_balance.dump(), "PUT")
+            return self._query_api_object(
+                AccountBalance,
+                "/rest/accounts/%s/balance" % account_or_account_id,
+                account_balance.dump(), "PUT")
 
     def get_supported_payment_services(self, country_code):
         """
@@ -528,7 +578,8 @@ class FigoSession(FigoObject):
         :Returns:
             A list of Service objects
         """
-        services = self._query_api_with_exception("/rest/catalog/services/%s" % country_code)["services"]
+        services = self._query_api_with_exception("/rest/catalog/services/%s" % country_code)[
+            "services"]
         return [Service.from_dict(self, service) for service in services]
 
     def get_login_settings(self, country_code, item_id):
@@ -539,9 +590,11 @@ class FigoSession(FigoObject):
             - 'country_code'    -   country code of the requested bank or service
             - 'item_id'         -   bank code or fake bank code of the requested bank or service
         :Returns:
-            A LoginSettings object which contains information which are needed for logging in to the bank or service.
+            A LoginSettings object which contains information which are needed for
+            logging in to the bank or service.
         """
-        return self._query_api_object(LoginSettings, "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+        return self._query_api_object(LoginSettings,
+                                      "/rest/catalog/banks/%s/%s" % (country_code, item_id))
 
     def set_account_sort_order(self, accounts):
         """
@@ -558,7 +611,8 @@ class FigoSession(FigoObject):
     @property
     def notifications(self):
         """An array of `Notification` objects, one for each registered notification."""
-        return self._query_api_object(Notification, "/rest/notifications", collection_name="notifications")
+        return self._query_api_object(Notification, "/rest/notifications",
+                                      collection_name="notifications")
 
     def get_notification(self, notification_id):
         """
@@ -582,7 +636,8 @@ class FigoSession(FigoObject):
         :Returns:
             'Notification' object for the newly created notification
         """
-        return self._query_api_object(Notification, "/rest/notifications", notification.dump(), "POST")
+        return self._query_api_object(Notification, "/rest/notifications", notification.dump(),
+                                      "POST")
 
     def modify_notification(self, notification):
         """
@@ -594,7 +649,9 @@ class FigoSession(FigoObject):
         :Returns:
             'Notification' object for the modified notification
         """
-        return self._query_api_object(Notification, "/rest/notifications/" + notification.notification_id, notification.dump(), "PUT")
+        return self._query_api_object(Notification,
+                                      "/rest/notifications/" + notification.notification_id,
+                                      notification.dump(), "PUT")
 
     def remove_notification(self, notification_or_notification_id):
         """Remove a notification.
@@ -603,9 +660,12 @@ class FigoSession(FigoObject):
          - `notification_or_notification_id` - notification to be removed or its ID
         """
         if isinstance(notification_or_notification_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id, method="DELETE")
+            self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id,
+                                           method="DELETE")
         else:
-            self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id.notification_id, method="DELETE")
+            self._query_api_with_exception(
+                "/rest/notifications/" + notification_or_notification_id.notification_id,
+                method="DELETE")
         return None
 
     @property
@@ -619,7 +679,8 @@ class FigoSession(FigoObject):
         return self._query_api_object(Payment, "/rest/payments", collection_name="payments")
 
     def get_payments(self, account_or_account_id):
-        """Get an array of `Payment` objects, one for each payment of the user on the specified account.
+        """Get an array of `Payment` objects, one for each payment of the user on
+        the specified account.
 
         :Parameters:
          - `account_or_account_id` - account to be removed or its ID
@@ -628,9 +689,12 @@ class FigoSession(FigoObject):
             `List` of Payment objects
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (account_or_account_id.account_id), collection_name="payments")
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (
+                account_or_account_id.account_id), collection_name="payments")
         else:
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (account_or_account_id), collection_name="payments")
+            return self._query_api_object(Payment,
+                                          "/rest/accounts/%s/payments" % account_or_account_id,
+                                          collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id):
         """
@@ -644,9 +708,11 @@ class FigoSession(FigoObject):
             `Payment` object
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (account_or_account_id.account_id, payment_id))
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
+                account_or_account_id.account_id, payment_id))
         else:
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (account_or_account_id, payment_id))
+            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
+                account_or_account_id, payment_id))
 
     def add_payment(self, payment):
         """
@@ -658,7 +724,8 @@ class FigoSession(FigoObject):
         :Returns:
             `Payment` object of the newly created payment as returned by the server
         """
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (payment.account_id), payment.dump(), "POST")
+        return self._query_api_object(Payment, "/rest/accounts/%s/payments" % payment.account_id,
+                                      payment.dump(), "POST")
 
     def modify_payment(self, payment):
         """Modify a payment.
@@ -669,7 +736,8 @@ class FigoSession(FigoObject):
         :Returns:
           'Payment' object for the updated payment
         """
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id), payment.dump(), "PUT")
+        return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
+            payment.account_id, payment.payment_id), payment.dump(), "PUT")
 
     def remove_payment(self, payment):
         """Remove a payment.
@@ -677,7 +745,9 @@ class FigoSession(FigoObject):
         :Parameters:
          - `payment` -  payment to be removed
         """
-        self._query_api_with_exception("/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id), method="DELETE")
+        self._query_api_with_exception(
+            "/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id),
+            method="DELETE")
         return None
 
     def submit_payment(self, payment, tan_scheme_id, state, redirect_uri=None):
@@ -688,7 +758,8 @@ class FigoSession(FigoObject):
          - `payment` - payment to be submitted
          - `tan_scheme_id` - TAN scheme ID of user-selected TAN scheme
          - `state` - Any kind of string that will be forwarded in the callback response message
-         - `redirect_uri` - At the end of the submission process a response will be sent to this callback URL
+         - `redirect_uri` - At the end of the submission process a response will
+         be sent to this callback URL
 
         :Returns:
             the URL to be opened by the user for the TAN process
@@ -697,12 +768,16 @@ class FigoSession(FigoObject):
         if redirect_uri is not None:
             params['redirect_uri'] = redirect_uri
 
-        response = self._query_api_with_exception("/rest/accounts/%s/payments/%s/submit" % (payment.account_id, payment.payment_id), params, "POST")
+        response = self._query_api_with_exception(
+            "/rest/accounts/%s/payments/%s/submit" % (payment.account_id, payment.payment_id),
+            params, "POST")
 
         if response is None:
             return None
         else:
-            return ("https" if self.API_SECURE else "http") + "://" + self.API_ENDPOINT + "/task/start?id=" + response["task_token"]
+            return (("https" if self.API_SECURE else "http") +
+                    "://" + self.API_ENDPOINT + "/task/start?id=" +
+                    response["task_token"])
 
     @property
     def payment_proposals(self):
@@ -724,12 +799,16 @@ class FigoSession(FigoObject):
         return self._query_api_with_exception("/task/start?id=%s" % task_token_obj.task_token)
 
     def get_task_state(self, task_token, **kwargs):
-        """Return the progress of the given task. The kwargs are used to submit additional content for the task.
+        """Return the progress of the given task. The kwargs are used to submit additional
+        content for the task.
 
         :Parameters:
-        - `pin` - Submit PIN. If this parameter is set, then the parameter save_pin must be set, too.
-        - `continue` - This flag signals to continue after an error condition or to skip a PIN or challenge-response entry
-        - `save_pin` - This flag indicates whether the user has chosen to save the PIN on the figo Connect server
+        - `pin` - Submit PIN. If this parameter is set, then the parameter save_pin must be
+        set, too.
+        - `continue` - This flag signals to continue after an error condition or to skip a
+        PIN or challenge-response entry
+        - `save_pin` - This flag indicates whether the user has chosen to save the PIN on
+        the figo Connect server
         - `response` - Submit response to challenge.
 
         :Returns:
@@ -744,7 +823,8 @@ class FigoSession(FigoObject):
             data["save_pin"] = kwargs["save_pin"]
         if "response" in kwargs:
             data["response"] = kwargs["response"]
-        return self._query_api_object(TaskState, "/task/progress?id=%s" % (task_token.task_token), data, "POST")
+        return self._query_api_object(TaskState, "/task/progress?id=%s" % task_token.task_token,
+                                      data, "POST")
 
     def cancel_task(self, task_token_obj):
         """Cancel a task if possible.
@@ -752,7 +832,8 @@ class FigoSession(FigoObject):
         :Parameters:
             - task_token_obj    -   TaskToken object of the task to cancel
         """
-        return self._query_api_with_exception("/task/cancel?id=%s" % (task_token_obj.task_token), {"id": task_token_obj.task_token}, "POST")
+        return self._query_api_with_exception("/task/cancel?id=%s" % task_token_obj.task_token,
+                                              {"id": task_token_obj.task_token}, "POST")
 
     def start_process(self, process_token):
         """
@@ -775,26 +856,35 @@ class FigoSession(FigoObject):
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction of the user."""
-        return self._query_api_object(Transaction, "/rest/transactions", collection_name="transactions")
+        return self._query_api_object(Transaction, "/rest/transactions",
+                                      collection_name="transactions")
 
-    def get_transactions(self, account_id=None, since=None, count=1000, offset=0, include_pending=False):
+    def get_transactions(self, account_id=None, since=None, count=1000, offset=0,
+                         include_pending=False):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
         :Parameters:
          - `account_id` - ID of the account for which to list the transactions
          - `since` - this parameter can either be a transaction ID or a date
          - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determine the first transaction to return (useful in combination with count)
-         - `include_pending` - this flag indicates whether pending transactions should be included in the response; pending transactions are always included as a complete set, regardless of the `since` parameter
+         - `offset` - which offset into the result set should be used to determine the
+         first transaction to return (useful in combination with count)
+         - `include_pending` - this flag indicates whether pending transactions should
+         be included in the response; pending transactions are always included as a
+         complete set, regardless of the `since` parameter
 
         :Returns:
             `List` of Transaction objects
         """
-        params = {'count': count, 'offset': offset, 'include_pending': ("1" if include_pending else "0")}
+        params = {'count': count, 'offset': offset,
+                  'include_pending': ("1" if include_pending else "0")}
         if since is not None:
             params['since'] = since
 
-        return self._query_api_object(Transaction, ("/rest/transactions?" if account_id is None else ("/rest/accounts/%s/transactions?" % account_id)) + urllib.urlencode(params), collection_name="transactions")
+        return self._query_api_object(Transaction, (
+            "/rest/transactions?" if account_id is None else (
+                "/rest/accounts/%s/transactions?" % account_id)) + urllib.urlencode(params),
+                                      collection_name="transactions")
 
     def get_transaction(self, account_or_account_id, transaction_id):
         """
@@ -808,9 +898,11 @@ class FigoSession(FigoObject):
             a `Transaction` object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_id))
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
+                account_or_account_id.account_id, transaction_id))
         else:
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_id))
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
+                account_or_account_id, transaction_id))
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     @property
@@ -826,8 +918,10 @@ class FigoSession(FigoObject):
          - `account_id` - ID of the account for which to list the securities
          - `since` - this parameter can either be a transaction ID or a date
          - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
-         - `accounts` - if retrieving the securities for all accounts, filter the securities to be only from these accounts
+         - `offset` - which offset into the result set should be used to determine the first
+         transaction to return (useful in combination with count)
+         - `accounts` - if retrieving the securities for all accounts, filter the
+         securities to be only from these accounts
 
         :Returns:
             `List` of Security objects
@@ -839,7 +933,9 @@ class FigoSession(FigoObject):
         if since is not None:
             params['since'] = since
 
-        return self._query_api_object(Security, ("/rest/securities?" if account_id is None else ("/rest/accounts/%s/securities?" % account_id)) + urllib.urlencode(params), collection_name="securities")
+        return self._query_api_object(Security, ("/rest/securities?" if account_id is None else (
+            "/rest/accounts/%s/securities?" % account_id)) + urllib.urlencode(params),
+                                      collection_name="securities")
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     def get_security(self, account_or_account_id, security_id):
@@ -854,9 +950,11 @@ class FigoSession(FigoObject):
             a `Security` object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (account_or_account_id.account_id, security_id))
+            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (
+                account_or_account_id.account_id, security_id))
         else:
-            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (account_or_account_id, security_id))
+            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (
+                account_or_account_id, security_id))
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
         """
@@ -870,10 +968,14 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(security_or_security_id, Security):
-            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (account_or_account_id.account_id, security_or_security_id.security_id), {"visited": visited}, "PUT")
+        if isinstance(account_or_account_id, Account) and isinstance(security_or_security_id,
+                                                                     Security):
+            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (
+                account_or_account_id.account_id, security_or_security_id.security_id),
+                                                  {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
+            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (
+                account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
 
     def modify_account_securities(self, account_or_account_id, visited=None):
         """
@@ -887,9 +989,13 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_with_exception("/rest/accounts/%s/securities" % (account_or_account_id.account_id), {"visited": visited}, "PUT")
+            return self._query_api_with_exception(
+                "/rest/accounts/%s/securities" % account_or_account_id.account_id,
+                {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/securities" % (account_or_account_id), {"visited": visited}, "PUT")
+            return self._query_api_with_exception(
+                "/rest/accounts/%s/securities" % account_or_account_id, {"visited": visited},
+                "PUT")
 
     def modify_user_securities(self, visited=None):
         """
@@ -903,7 +1009,8 @@ class FigoSession(FigoObject):
         """
         return self._query_api_with_exception("/rest/securities", {"visited": visited}, "PUT")
 
-    def modify_transaction(self, account_or_account_id, transaction_or_transaction_id, visited=None):
+    def modify_transaction(self, account_or_account_id, transaction_or_transaction_id,
+                           visited=None):
         """
         Modify a specific transaction.
 
@@ -915,10 +1022,14 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id, Transaction):
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_or_transaction_id.transaction_id), {"visited": visited}, "PUT")
+        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
+                                                                     Transaction):
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
+                account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
+                                          {"visited": visited}, "PUT")
         else:
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
+            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
+                account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
         """
@@ -932,9 +1043,13 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_with_exception("/rest/accounts/%s/transactions" % account_or_account_id.account_id, {"visited": visited}, "PUT")
+            return self._query_api_with_exception(
+                "/rest/accounts/%s/transactions" % account_or_account_id.account_id,
+                {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/transactions" % account_or_account_id, {"visited": visited}, "PUT")
+            return self._query_api_with_exception(
+                "/rest/accounts/%s/transactions" % account_or_account_id, {"visited": visited},
+                "PUT")
 
     def modify_user_transactions(self, visited=None):
         """Modify all transactions of the current user.
@@ -958,10 +1073,14 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id, Transaction):
-            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (account_or_account_id.account_id, transaction_or_transaction_id.transaction_id), method="DELETE")
+        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
+                                                                     Transaction):
+            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (
+            account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
+                                                  method="DELETE")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (account_or_account_id, transaction_or_transaction_id), method="DELETE")
+            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (
+            account_or_account_id, transaction_or_transaction_id), method="DELETE")
 
     def get_bank(self, bank_id):
         """
@@ -984,7 +1103,8 @@ class FigoSession(FigoObject):
          :Returns:
            'BankContact' object for the updated bank
         """
-        return self._query_api_object(BankContact, "/rest/banks/%s" % bank.bank_id, bank.dump(), "PUT")
+        return self._query_api_object(BankContact, "/rest/banks/%s" % bank.bank_id, bank.dump(),
+                                      "PUT")
 
     def remove_bank_pin(self, bank_or_bank_id):
         """
@@ -994,9 +1114,11 @@ class FigoSession(FigoObject):
         - `bank_or_bank_id` - bank whose pin should be removed or its ID
         """
         if isinstance(bank_or_bank_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/banks/%s/remove_pin" (bank_or_bank_id), method="POST")
+            self._query_api_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id,
+                                           method="POST")
         else:
-            self._query_api_with_exception("/rest/banks/%s/remove_pin" (bank_or_bank_id.bank_id), method="POST")
+            self._query_api_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
+                                           method="POST")
         return None
 
     @property
@@ -1028,20 +1150,28 @@ class FigoSession(FigoObject):
         """
         URL to trigger a synchronisation.
 
-        The user should open this URL in a web browser to synchronize his/her accounts with the respective bank servers. When the process is finished, the user is redirected to the provided URL.
+        The user should open this URL in a web browser to synchronize his/her accounts with
+        the respective bank servers. When the process is finished, the user is
+        redirected to the provided URL.
 
         :Parameters:
-         - `state` - String passed on through the complete synchronization process and to the redirect target at the end. It should be used to validated the authenticity of the call to the redirect URL
+         - `state` - String passed on through the complete synchronization process and to
+         the redirect target at the end. It should be used to validated the authenticity
+         of the call to the redirect URL
          - `redirect_uri` - URI the user is redirected to after the process completes
 
         :Returns:
             the URL to be opened by the user.
         """
-        response = self._query_api_with_exception("/rest/sync", {"state": state, "redirect_uri": redirect_uri}, method="POST")
+        response = self._query_api_with_exception("/rest/sync",
+                                                  {"state": state, "redirect_uri": redirect_uri},
+                                                  method="POST")
         if response is None:
             return None
         else:
-            return ("https://" if self.API_SECURE else "http://") + self.API_ENDPOINT + "/task/start?id=" + response['task_token']
+            return (("https://" if self.API_SECURE else "http://") +
+                    self.API_ENDPOINT + "/task/start?id=" +
+                    response['task_token'])
 
     def parse_webhook_notification(self, message_body):
         """
@@ -1061,10 +1191,12 @@ class FigoSession(FigoObject):
         data = self._query_api(notification.observe_key)
 
         if re.match("\/rest\/transactions", notification.observe_key):
-            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in data['transactions']]
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict
+                                 in data['transactions']]
 
         elif re.match("\/rest\/accounts\/(.*)\/transactions", notification.observe_key):
-            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict in data['transactions']]
+            notification.data = [Transaction.from_dict(self, transaction_dict) for transaction_dict
+                                 in data['transactions']]
 
         elif re.match("\/rest\/accounts\/(.*)\/balance", notification.observe_key):
             notification.data = AccountBalance.from_dict(data)

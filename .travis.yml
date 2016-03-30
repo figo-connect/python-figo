@@ -9,7 +9,7 @@ python:
 install:
   - pip install -U pip wheel tox-travis
 
-script: tox
+script: "tox -- -s"
 
 deploy:
   provider: pypi

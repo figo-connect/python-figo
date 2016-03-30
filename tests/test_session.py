@@ -1,3 +1,5 @@
+import platform
+
 import pytest
 
 from figo import Payment
@@ -66,24 +68,33 @@ def test_get_mail_from_user(demo_session):
 
 
 def test_create_update_delete_notification(demo_session):
+    state_version = "V{0}".format(platform.python_version())
     added_notification = demo_session.add_notification(
         Notification.from_dict(demo_session, dict(observe_key="/rest/transactions",
                                                   notify_uri="http://figo.me/test",
-                                                  state="qwe")))
+                                                  state=state_version)))
 
     assert added_notification.observe_key == "/rest/transactions"
     assert added_notification.notify_uri == "http://figo.me/test"
-    assert added_notification.state == "qwe"
+    assert added_notification.state == state_version
 
-    added_notification.state = "asd"
+    print("\n##############")
+    print("id: {0}, {1}".format(added_notification.notification_id, added_notification.state))
+
+    added_notification.state = state_version + "_modified"
     modified_notification = demo_session.modify_notification(added_notification)
     assert modified_notification.observe_key == "/rest/transactions"
     assert modified_notification.notify_uri == "http://figo.me/test"
-    assert modified_notification.state == "asd"
+    assert modified_notification.state == state_version + "_modified"
+
+    print("id: {0}, {1}".format(modified_notification.notification_id, modified_notification.state))
 
     demo_session.remove_notification(modified_notification.notification_id)
     with pytest.raises(FigoException):
-        demo_session.get_notification(modified_notification.notification_id)
+        deleted_notification = demo_session.get_notification(modified_notification.notification_id)
+        print("id: {0}, {1}".format(
+            deleted_notification.notification_id, deleted_notification.state))
+        print("#"*10)
 
 
 def test_create_update_delete_payment(demo_session):

@@ -4,75 +4,32 @@
 from __future__ import unicode_literals
 
 import base64
-import hashlib
-import json
 import logging
 import re
-import socket
-import ssl
 import sys
 from datetime import datetime, timedelta
 
+import requests
+from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
+
 if sys.version_info[0] > 2:
-    import http.client as httplib
-    from itertools import zip_longest as izip_longest
     import urllib.parse as urllib
 
     STRING_TYPES = (str)
 else:
-    import httplib
-    from itertools import izip_longest
     import urllib
 
     STRING_TYPES = (str, unicode)
 
 from .models import *
+import json
 
 logger = logging.getLogger(__name__)
 
-
-class VerifiedHTTPSConnection(httplib.HTTPSConnection):
-    """HTTPSConnection supporting certificate authentication based on fingerprint"""
-
-    VALID_FINGERPRINTS = ("38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07",
-                          "CF:C1:BC:7F:6A:16:09:2B:10:83:8A:B0:22:4F:3A:65:D2:70:D7:3E")
-
-    def connect(self):
-        # overrides the version in httplib so that we do certificate verification
-        if sys.hexversion >= 0x02070000:
-            sock = socket.create_connection((self.host, self.port), self.timeout,
-                                            self.source_address)
-        else:
-            sock = socket.create_connection((self.host, self.port), self.timeout)
-        if self._tunnel_host:
-            self.sock = sock
-            self._tunnel()
-
-        # wrap the socket
-        if sys.hexversion > 0x03010000:
-            server_hostname = self.host if ssl.HAS_SNI else None
-            self.sock = self._context.wrap_socket(sock, server_hostname=server_hostname)
-        else:
-            self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file)
-
-        # verify the certificate fingerprint
-        try:
-            certificate = self.sock.getpeercert(True)
-            if certificate is None:
-                raise ssl.SSLError("Certificate validation failed")
-            else:
-                fingerprint = hashlib.sha1(certificate).hexdigest()
-                fingerprint = ":".join(
-                    ["".join(x) for x in izip_longest(*[iter(fingerprint.upper())] * 2)])
-                if fingerprint not in VerifiedHTTPSConnection.VALID_FINGERPRINTS:
-                    raise ssl.SSLError("Certificate validation failed")
-        except Exception:
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
-            raise
-
+VALID_FINGERPRINT = ("38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07")
 
 ERROR_MESSAGES = {
+    400: {'message': "bad request", 'description': "Bad request"},
     401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
     403: {'message': "forbidden", 'description': "Insufficient permission."},
     404: {'message': "not_found", 'description': "Not found."},
@@ -81,14 +38,17 @@ ERROR_MESSAGES = {
 
 }
 
+USER_AGENT = "python_figo/1.5.2"
+
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
     API_ENDPOINT = "api.figo.me"
     API_SECURE = True
+    headers = None
 
-    def _query_api(self, path, data=None, method="GET"):
+    def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
 
         :Parameters:
@@ -98,50 +58,53 @@ class FigoObject(object):
         :Returns:
             the JSON-parsed result body
         """
-        connection = VerifiedHTTPSConnection(
-            self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
-        connection.request(method, path, None if data is None else json.dumps(data),
-                           {'Authorization': "Bearer %s" % self.access_token,
-                            'Accept': 'application/json', 'Content-Type': 'application/json'})
 
-        response = connection.getresponse()
-        response_status = response.status
-        response_data = response.read().decode("utf-8")
-        connection.close()
+        session = requests.Session()
+        prefix = 'https://'
+        complete_path = prefix + self.API_ENDPOINT + path
+        fingerprint_adapter = FingerprintAdapter(VALID_FINGERPRINT)
+        session.mount(prefix, fingerprint_adapter)
+        if self.headers:
+            session.headers.update(self.headers)
 
-        if 200 <= response_status < 300 or response_status == 400:
-            if response_data == "":
-                return {}
-            return json.loads(response_data)
-        elif response_status in ERROR_MESSAGES:
-            return {'error': ERROR_MESSAGES[response_status]}
-        else:
-            logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': {
-                'message': "internal_server_error",
-                'description': "We are very sorry, but something went wrong"}}
 
-    def _query_api_with_exception(self, path, data=None, method="GET"):
-        """Helper method analog to _query_api but raises an exception instead of
-        simply returning."""
-        response = self._query_api(path, data, method)
-        if response is None:
-            return None
-        elif isinstance(response, dict) and response.get("error"):
+        try:
+            response = session.request(method, complete_path, json=data)
+
+            if 200 <= response.status_code < 300:
+                if response.text == '':
+                    return {}
+                return response.json()
+            elif response.status_code in ERROR_MESSAGES:
+                return {'error': ERROR_MESSAGES[response.status_code]}
+            else:
+                logger.warn("Querying the API failed when accessing '%s': %d",
+                            complete_path,
+                            response.status_code)
+                return {'error': {
+                    'message': "internal_server_error",
+                    'description': "We are very sorry, but something went wrong"}}
+        finally:
+            session.close()
+
+    def _request_with_exception(self, path, data=None, method="GET"):
+
+        response = self._request_api(path, data, method)
+        if 'error' in response and response["error"] is not None:
             raise FigoException.from_dict(response)
         else:
             return response
 
-    def _query_api_object(self, type, path, data=None, method="GET", collection_name=None):
-        """Helper method using _query_api_with_exception but encapsulating the result
+    def _query_api_object(self, model, path, data=None, method="GET", collection_name=None):
+        """Helper method using _request_with_exception but encapsulating the result
         as an object."""
-        response = self._query_api_with_exception(path, data, method)
+        response = self._request_with_exception(path, data, method)
         if response is None:
             return None
         elif collection_name is None:
-            return type.from_dict(self, response)
+            return model.from_dict(self, response)
         else:
-            return [type.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
+            return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
 
 class FigoException(Exception):
@@ -207,6 +170,12 @@ class FigoConnection(FigoObject):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
+        self.headers = {
+            'Authorization': "Basic %s" % base64.b64encode(
+                (self.client_id + ":" + self.client_secret).encode("ascii")),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': USER_AGENT}
 
     def _query_api(self, path, data=None):
         """
@@ -219,27 +188,9 @@ class FigoConnection(FigoObject):
         :Returns:
             the JSON-parsed result body
         """
-        connection = VerifiedHTTPSConnection(
-            self.API_ENDPOINT) if self.API_SECURE else httplib.HTTPConnection(self.API_ENDPOINT)
-        encoded_data = urllib.urlencode(data)
-        connection.request("POST", path, encoded_data,
-                           {'Authorization': "Basic %s" % base64.b64encode(
-                               (self.client_id + ":" + self.client_secret).encode("ascii")),
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/x-www-form-urlencoded'})
-        response = connection.getresponse()
 
-        if 200 <= response.status < 300:
-            response_data = response.read().decode("utf-8")
-            if response_data == "":
-                return {}
-            return json.loads(response_data)
-        elif response.status in ERROR_MESSAGES:
-            return {'error': ERROR_MESSAGES[response.status]}
-        else:
-            logger.warn("Querying the API failed when accessing '%s': %d", path, response.status)
-            return {'error': {"message": "internal_server_error",
-                              'description': "We are very sorry, but something went wrong"}}
+        return self._request_api(path=path, data=data)
+
 
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
@@ -288,9 +239,13 @@ class FigoConnection(FigoObject):
         if authentication_code[0] != "O":
             raise Exception("Invalid authentication code")
 
-        response = self._query_api("/auth/token", data={
-            'code': authentication_code, 'redirect_uri': self.redirect_uri,
-            'grant_type': 'authorization_code'})
+        response = self._request_api(
+            "/auth/token",
+            data={'code': authentication_code,
+                  'redirect_uri': self.redirect_uri,
+                  'grant_type': 'authorization_code'},
+            method="POST")
+
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -309,9 +264,13 @@ class FigoConnection(FigoObject):
         :Return:
             Dictionary which contains an access token and a refresh token.
         """
-        response = self._query_api("/auth/token", data={"grant_type": "password",
-                                                        "username": username,
-                                                        "password": password})
+        response = self._request_api(
+            "/auth/token",
+            data={"grant_type": "password",
+                  "username": username,
+                  "password": password},
+            method="POST")
+
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -335,9 +294,9 @@ class FigoConnection(FigoObject):
         if refresh_token[0] != "R":
             raise Exception("Invalid refresh token")
 
-        response = self._query_api("/auth/token", data={
+        response = self._request_api("/auth/token", data={
             'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri,
-            'grant_type': 'refresh_token'})
+            'grant_type': 'refresh_token'}, method="POST")
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -354,7 +313,7 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `token` - access or refresh token to be revoked
         """
-        response = self._query_api("/auth/revoke?" + urllib.urlencode({'token': token}))
+        response = self._request_api("/auth/revoke?" + urllib.urlencode({'token': token}))
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -371,9 +330,15 @@ class FigoConnection(FigoObject):
         :Returns:
             Auto-generated recovery password.
         """
-        response = self._query_api("/auth/user",
-                                   {'name': name, 'email': email, 'password': password,
-                                    'language': language, 'affiliate_client_id': self.client_id})
+        response = self._request_api(
+            path="/auth/user",
+            data={'name': name,
+                  'email': email,
+                  'password': password,
+                  'language': language,
+                  'affiliate_client_id': self.client_id},
+            method="POST")
+
         if response is None:
             return None
         elif 'error' in response:
@@ -412,6 +377,11 @@ class FigoSession(FigoObject):
          - `access_token` - the access token to bind this session to a user
         """
         self.access_token = access_token
+        self.headers = {
+            'Authorization': "Bearer %s" % self.access_token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': USER_AGENT}
 
     @property
     def accounts(self):
@@ -470,11 +440,10 @@ class FigoSession(FigoObject):
         task_state = self.get_task_state(task_token)
         while task_state.message == "Connecting to server...":
             task_state = self.get_task_state(task_token)
-        if task_state.is_erroneous and task_state.message == "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.".decode(
-                "utf-8"):
+        if task_state.is_erroneous and ("Zugangsdaten" in task_state.message or
+                                        "credentials" in task_state.message):
             raise FigoPinException(country, credentials, bank_code, iban, save_pin)
-        elif task_state.is_erroneous and task_state.message == "Ihr Online-Zugang wurde von Ihrer Bank gesperrt. Bitte lassen Sie die Sperre von Ihrer Bank aufheben.".decode(
-                "utf-8"):
+        elif task_state.is_erroneous:
             raise FigoException("", task_state.message)
         else:
             return task_state
@@ -518,10 +487,10 @@ class FigoSession(FigoObject):
          - `account_or_account_id` - account to be removed or its ID
         """
         if isinstance(account_or_account_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id,
+            self._request_with_exception("/rest/accounts/%s" % account_or_account_id,
                                            method="DELETE")
         else:
-            self._query_api_with_exception("/rest/accounts/%s" % account_or_account_id.account_id,
+            self._request_with_exception("/rest/accounts/%s" % account_or_account_id.account_id,
                                            method="DELETE")
 
         return None
@@ -578,7 +547,7 @@ class FigoSession(FigoObject):
         :Returns:
             A list of Service objects
         """
-        services = self._query_api_with_exception("/rest/catalog/services/%s" % country_code)[
+        services = self._request_with_exception("/rest/catalog/services/%s" % country_code)[
             "services"]
         return [Service.from_dict(self, service) for service in services]
 
@@ -606,7 +575,7 @@ class FigoSession(FigoObject):
             empty response if successful
         """
         data = {"accounts": [{"account_id": account.account_id} for account in accounts]}
-        return self._query_api_with_exception("/rest/accounts", data, "POST")
+        return self._request_with_exception("/rest/accounts", data, "POST")
 
     @property
     def notifications(self):
@@ -660,10 +629,10 @@ class FigoSession(FigoObject):
          - `notification_or_notification_id` - notification to be removed or its ID
         """
         if isinstance(notification_or_notification_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/notifications/" + notification_or_notification_id,
+            self._request_with_exception("/rest/notifications/" + notification_or_notification_id,
                                            method="DELETE")
         else:
-            self._query_api_with_exception(
+            self._request_with_exception(
                 "/rest/notifications/" + notification_or_notification_id.notification_id,
                 method="DELETE")
         return None
@@ -745,7 +714,7 @@ class FigoSession(FigoObject):
         :Parameters:
          - `payment` -  payment to be removed
         """
-        self._query_api_with_exception(
+        self._request_with_exception(
             "/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id),
             method="DELETE")
         return None
@@ -768,7 +737,7 @@ class FigoSession(FigoObject):
         if redirect_uri is not None:
             params['redirect_uri'] = redirect_uri
 
-        response = self._query_api_with_exception(
+        response = self._request_with_exception(
             "/rest/accounts/%s/payments/%s/submit" % (payment.account_id, payment.payment_id),
             params, "POST")
 
@@ -786,7 +755,7 @@ class FigoSession(FigoObject):
 
     def get_payment_proposals(self):
         """Provide a address book-like list of proposed wire transfer partners."""
-        response = self._query_api_with_exception("/rest/address_book")
+        response = self._request_with_exception("/rest/address_book")
         return [PaymentProposal.from_dict(self, payment_proposal) for payment_proposal in response]
 
     def start_task(self, task_token_obj):
@@ -796,7 +765,7 @@ class FigoSession(FigoObject):
         :Parameters:
             - task_token_obj    -   TaskToken object of the task to start
         """
-        return self._query_api_with_exception("/task/start?id=%s" % task_token_obj.task_token)
+        return self._request_with_exception("/task/start?id=%s" % task_token_obj.task_token)
 
     def get_task_state(self, task_token, **kwargs):
         """Return the progress of the given task. The kwargs are used to submit additional
@@ -832,8 +801,10 @@ class FigoSession(FigoObject):
         :Parameters:
             - task_token_obj    -   TaskToken object of the task to cancel
         """
-        return self._query_api_with_exception("/task/cancel?id=%s" % task_token_obj.task_token,
-                                              {"id": task_token_obj.task_token}, "POST")
+        return self._request_with_exception(
+            path="/task/cancel?id=%s" % task_token_obj.task_token,
+            data={"id": task_token_obj.task_token},
+            method="POST")
 
     def start_process(self, process_token):
         """
@@ -842,7 +813,7 @@ class FigoSession(FigoObject):
         :Parameters:
             - process_token -   ProcessToken object for the process to start
         """
-        return self._query_api_with_exception("/process/start?id=%s" % process_token.process_token)
+        return self._request_with_exception("/process/start?id=%s" % process_token.process_token)
 
     def create_process(self, process):
         """
@@ -970,11 +941,11 @@ class FigoSession(FigoObject):
         """
         if isinstance(account_or_account_id, Account) and isinstance(security_or_security_id,
                                                                      Security):
-            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (
+            return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id.account_id, security_or_security_id.security_id),
                                                   {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/securities/%s" % (
+            return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
 
     def modify_account_securities(self, account_or_account_id, visited=None):
@@ -989,11 +960,11 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_with_exception(
+            return self._request_with_exception(
                 "/rest/accounts/%s/securities" % account_or_account_id.account_id,
                 {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception(
+            return self._request_with_exception(
                 "/rest/accounts/%s/securities" % account_or_account_id, {"visited": visited},
                 "PUT")
 
@@ -1007,7 +978,7 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        return self._query_api_with_exception("/rest/securities", {"visited": visited}, "PUT")
+        return self._request_with_exception("/rest/securities", {"visited": visited}, "PUT")
 
     def modify_transaction(self, account_or_account_id, transaction_or_transaction_id,
                            visited=None):
@@ -1043,11 +1014,11 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_with_exception(
+            return self._request_with_exception(
                 "/rest/accounts/%s/transactions" % account_or_account_id.account_id,
                 {"visited": visited}, "PUT")
         else:
-            return self._query_api_with_exception(
+            return self._request_with_exception(
                 "/rest/accounts/%s/transactions" % account_or_account_id, {"visited": visited},
                 "PUT")
 
@@ -1060,7 +1031,7 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        return self._query_api_with_exception("/rest/transactions", {"visited": visited}, "PUT")
+        return self._request_with_exception("/rest/transactions", {"visited": visited}, "PUT")
 
     def delete_transaction(self, account_or_account_id, transaction_or_transaction_id):
         """
@@ -1075,11 +1046,11 @@ class FigoSession(FigoObject):
         """
         if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
                                                                      Transaction):
-            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (
+            return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
             account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
                                                   method="DELETE")
         else:
-            return self._query_api_with_exception("/rest/accounts/%s/transactions/%s" % (
+            return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
             account_or_account_id, transaction_or_transaction_id), method="DELETE")
 
     def get_bank(self, bank_id):
@@ -1114,10 +1085,10 @@ class FigoSession(FigoObject):
         - `bank_or_bank_id` - bank whose pin should be removed or its ID
         """
         if isinstance(bank_or_bank_id, STRING_TYPES):
-            self._query_api_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id,
+            self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id,
                                            method="POST")
         else:
-            self._query_api_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
+            self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
                                            method="POST")
         return None
 
@@ -1143,7 +1114,7 @@ class FigoSession(FigoObject):
 
     def remove_user(self):
         """Delete figo Account."""
-        self._query_api_with_exception("/rest/user", method="DELETE")
+        self._request_with_exception("/rest/user", method="DELETE")
         return None
 
     def get_sync_url(self, state, redirect_uri):
@@ -1163,7 +1134,7 @@ class FigoSession(FigoObject):
         :Returns:
             the URL to be opened by the user.
         """
-        response = self._query_api_with_exception("/rest/sync",
+        response = self._request_with_exception("/rest/sync",
                                                   {"state": state, "redirect_uri": redirect_uri},
                                                   method="POST")
         if response is None:

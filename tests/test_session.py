@@ -66,8 +66,13 @@ def test_sync_uri(demo_session):
 def test_get_mail_from_user(demo_session):
     assert demo_session.user.email == "demo@figo.me"
 
-
+@pytest.mark.skip(reason="race condition on travis")
 def test_create_update_delete_notification(demo_session):
+    """
+    This test sometimes fails, when run for different versions in parallel, e.g. on travis
+    It happens because the notification id will always be the same for the demo client.
+    This will be solved with running tests against an enhanced sandbox.
+    """
     state_version = "V{0}".format(platform.python_version())
     added_notification = demo_session.add_notification(
         Notification.from_dict(demo_session, dict(observe_key="/rest/transactions",

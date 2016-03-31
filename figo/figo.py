@@ -170,9 +170,10 @@ class FigoConnection(FigoObject):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
+        basic_auth = "{0}:{1}".format(self.client_id, self.client_secret).encode("ascii")
+        basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
         self.headers = {
-            'Authorization': "Basic %s" % base64.b64encode(
-                (self.client_id + ":" + self.client_secret).encode("ascii")),
+            'Authorization': "Basic {0}".format(basic_auth_encoded),
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': USER_AGENT}

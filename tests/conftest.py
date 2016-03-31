@@ -22,7 +22,6 @@ def figo_connection():
 def figo_session(figo_connection):
     figo_connection.add_user("Test", USER, PASSWORD)
     response = figo_connection.credential_login(USER, PASSWORD)
-    assert isinstance(response["access_token"], (str, unicode))
     session = FigoSession(response["access_token"])
 
     yield session

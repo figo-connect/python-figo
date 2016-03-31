@@ -2,14 +2,21 @@ language: python
 python:
   - "2.6"
   - "2.7"
-  - "3.2"
-  - "3.3"
   - "3.4"
+  - "3.5"
   - "pypy"
 # command to install dependencies
 install:
-  - pip install .
-  - pip install flake8
-before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then flake8 figo; fi
-script: nosetests
+  - pip install -U pip wheel tox-travis
+
+script: "tox -- -s"
+
+deploy:
+  provider: pypi
+  user: figo
+  password:
+    secure: cGRGfvb4HApwkUuMvM/0nhomT/XJzlbzBnX2YmlqmIUbaygMwgHsKp/gYUL4GuNWU5iUvgQn5zHZy/DscuTCJW/u5WaS4z4TQ1uojugwxl3paX0J/cVOVHuzrYqB5gBmnU2Dj4riZ18UffOJPs8gOzdBewNcn9p2RWs5p8o2vbWfrUpU1b80hU+lj4CjTWnstI0Lg9c1zDGmN8qobM8W/VIZs2utfO9nWn+biaRZbvX+bVEhTlmzBR4dg9lt2tnWxBThcVkq9r2m2OHeLeLRzNhr4O4cOzxjQPHiccTyN1milKX6RJDK9NUGUNwhRvZAEJoDOq4jyy3ULbW28a3aXcgaytvJBZoMUce62dT81ISU2zbC3r/XYMLCWwdCNzoMvpf/51RCTvOWEd2gm50Qj8PWRssUzvxm+AnG+Ovqg7gAIAHSUnh/cwTdrW9S9Rl2OCAf96kzY28nHv+BXK0eq0ZbAq1SZ4lgjJHNJeEgb5OsNRBzfjTomr8qLwFCcizib9Gp3itWOVCxlsoQpn6sPIuyJA7lYjkMM8eZcQbQC25iw9LCcIXnQ7Cvm6Ukv95LSGMnFQTPYoo8ZGN7MchFeBCXsm3uAWV2GAd1hFxaemo2ulwjLupbQvJEP44oOLT6H1XC66/nTHdgyrAV/ecsoajEnrZD75TvuKiYWMe3mXg=
+  distributions: 'sdist bdist_wheel'
+  on:
+    tags: true
+    branch: master

@@ -40,7 +40,7 @@ ERROR_MESSAGES = {
 
 }
 
-USER_AGENT = "python_figo/1.5.2"
+USER_AGENT = "python_figo/1.5.3"
 
 
 class FigoObject(object):

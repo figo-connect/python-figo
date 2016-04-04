@@ -1,4 +1,5 @@
-python-figo [![Build Status](https://travis-ci.org/figo-connect/python-figo.png)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg)](https://pypi.python.org/pypi/python-figo)
+python-figo [![Build Status](https://img.shields.io/travis/figo-connect/python-figo.svg?style=flat-square)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg?style=flat-square)](https://pypi.python.org/pypi/python-figo) [![Code Coverage](https://img.shields.io/codecov/c/github/figo-connect/python-figo.svg?style=flat-square)](https://codecov.io/github/figo-connect/python-figo)
+
 ===========
 
 Python bindings for the figo Connect API: http://docs.figo.io

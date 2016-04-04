@@ -1,4 +1,4 @@
 pytest
-coverage
+pytest-cov
 mock
 nose

@@ -6,7 +6,7 @@ python:
 - '3.5'
 - pypy
 install:
-- pip install -U pip wheel tox-travis
+- pip install -U pip wheel tox-travis codecov
 script: tox
 deploy:
   provider: pypi
@@ -18,3 +18,5 @@ deploy:
     tags: true
     python: '3.5'
     all_branches: true
+after_success:
+  - codecov

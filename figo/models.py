@@ -654,15 +654,15 @@ class TaskState(ModelBase):
     waits for a continuation"""
 
     is_ended = None
-    """If this flag is set, then the communication with the bank server has been
-    completed"""
+    """If this flag is set, then the communication with the bank server has been completed"""
 
     challenge = None
     """Challenge object"""
 
     def __str__(self, *args, **kwargs):
         """Short String representation of a TaskState."""
-        return "TaskState: %s" % (self.message)
+        return "TaskState: '{self.message}' erroneous: {self.is_erroneous} " \
+               "ended: {self.is_ended}".format(self=self)
 
 
 class Challenge(ModelBase):

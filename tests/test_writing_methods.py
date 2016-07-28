@@ -12,7 +12,7 @@ BANK_CODE = "90090042"
 
 def test_03_get_supported_payment_services(figo_session):
     services = figo_session.get_supported_payment_services("de")
-    assert len(services) == 26
+    assert len(services) == 29
     assert isinstance(services[0], Service)
 
 
@@ -39,6 +39,7 @@ def test_050_add_account_and_sync_wrong_pin(figo_session):
 
 def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
+    figo_session.sync_poll_retry = 100
     try:
         task_state = figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
     except FigoPinException as pin_exception:

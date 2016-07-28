@@ -7,9 +7,13 @@ import base64
 import logging
 import re
 import sys
+from time import sleep
+import os
 from datetime import datetime, timedelta
+import json
 
 import requests
+from requests.exceptions import SSLError
 from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 
 from .models import *
@@ -23,12 +27,14 @@ else:
 
     STRING_TYPES = (str, unicode)
 
-from .models import *
-import json
 
 logger = logging.getLogger(__name__)
 
-VALID_FINGERPRINT = ("38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07")
+VALID_FINGERPRINTS = os.getenv(
+    'FIGO_SSL_FINGERPRINT',
+    "38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07"
+).split(',')
+
 
 ERROR_MESSAGES = {
     400: {'message': "bad request", 'description': "Bad request"},
@@ -40,15 +46,15 @@ ERROR_MESSAGES = {
 
 }
 
-USER_AGENT = "python_figo/1.5.3"
+USER_AGENT = "python_figo/1.5.4"
+API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
 
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    API_ENDPOINT = "api.figo.me"
     API_SECURE = True
-    headers = None
+    headers = {}
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -61,38 +67,45 @@ class FigoObject(object):
             the JSON-parsed result body
         """
 
+        complete_path = API_ENDPOINT + path
+
         session = requests.Session()
-        prefix = 'https://'
-        complete_path = prefix + self.API_ENDPOINT + path
-        fingerprint_adapter = FingerprintAdapter(VALID_FINGERPRINT)
-        session.mount(prefix, fingerprint_adapter)
-        if self.headers:
-            session.headers.update(self.headers)
+        session.headers.update(self.headers)
 
-
-        try:
-            response = session.request(method, complete_path, json=data)
-
-            if 200 <= response.status_code < 300:
-                if response.text == '':
-                    return {}
-                return response.json()
-            elif response.status_code in ERROR_MESSAGES:
-                return {'error': ERROR_MESSAGES[response.status_code]}
+        for fingerprint in VALID_FINGERPRINTS:
+            session.mount(API_ENDPOINT, FingerprintAdapter(fingerprint))
+            try:
+                response = session.request(method, complete_path, json=data)
+            except SSLError as fingerprint_error:
+                logging.warn('Fingerprint "%s"£# was invalid', fingerprint)
             else:
-                logger.warn("Querying the API failed when accessing '%s': %d",
-                            complete_path,
-                            response.status_code)
-                return {'error': {
-                    'message': "internal_server_error",
-                    'description': "We are very sorry, but something went wrong"}}
-        finally:
-            session.close()
+                break
+            finally:
+                session.close()
+        else:
+            raise fingerprint_error
+
+        if 200 <= response.status_code < 300:
+            if response.text == '':
+                return {}
+            return response.json()
+        elif response.status_code in ERROR_MESSAGES:
+            return {'error': ERROR_MESSAGES[response.status_code]}
+
+        logger.warn("Querying the API failed when accessing '%s': %d",
+                    complete_path,
+                    response.status_code)
+        return {'error': {
+            'message': "internal_server_error",
+            'description': "We are very sorry, but something went wrong"}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
 
         response = self._request_api(path, data, method)
-        if 'error' in response and response["error"] is not None:
+        # the check for is_erroneous in response is here to not confuse a task/progress
+        # response with an error object
+        # FIXME(dennis.lutter): refactor error handling
+        if 'error' in response and response["error"] and 'is_erroneous' not in response:
             raise FigoException.from_dict(response)
         else:
             return response
@@ -117,14 +130,12 @@ class FigoException(Exception):
 
     def __init__(self, error, error_description):
         """Create a Exception with a error code and error description."""
-        super(FigoException, self).__init__()
+        message = u"%s (%s)" % (error_description, error)
+        super(FigoException, self).__init__(message)
 
+        # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
         self.error = error
         self.error_description = error_description
-
-    def __str__(self):
-        """String representation of the FigoException."""
-        return "FigoException: %s(%s)" % (repr(self.error_description), repr(self.error))
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -194,7 +205,6 @@ class FigoConnection(FigoObject):
 
         return self._request_api(path=path, data=data)
 
-
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 
@@ -212,7 +222,7 @@ class FigoConnection(FigoObject):
             the URL of the first page of the login process
         """
         return (("https://" if self.API_SECURE else "http://") +
-                self.API_ENDPOINT +
+                API_ENDPOINT +
                 "/auth/code?" +
                 urllib.urlencode(
                     {'response_type': 'code',
@@ -373,7 +383,7 @@ class FigoSession(FigoObject):
     """Represents a user-bound connection to the figo connect API and allows access to
     the users data."""
 
-    def __init__(self, access_token):
+    def __init__(self, access_token, sync_poll_retry=20):
         """Create a FigoSession instance.
 
         :Parameters:
@@ -385,6 +395,7 @@ class FigoSession(FigoObject):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': USER_AGENT}
+        self.sync_poll_retry = 20
 
     @property
     def accounts(self):
@@ -441,15 +452,23 @@ class FigoSession(FigoObject):
         """
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         task_state = self.get_task_state(task_token)
-        while task_state.message == "Connecting to server...":
-            task_state = self.get_task_state(task_token)
-        if task_state.is_erroneous and ("Zugangsdaten" in task_state.message or
-                                        "credentials" in task_state.message):
-            raise FigoPinException(country, credentials, bank_code, iban, save_pin)
-        elif task_state.is_erroneous:
-            raise FigoException("", task_state.message)
+        for _ in range(self.sync_poll_retry):
+            logger.info('task message: %s', task_state.message)
+            logger.debug('task "%s"', task_state)
+            if task_state.is_ended or task_state.is_erroneous:
+                break
+            sleep(0.5)
         else:
-            return task_state
+            raise FigoException(
+                'could not sync',
+                'task was not finished after {} tries'.format(self.sync_poll_retry)
+            )
+
+        if task_state.is_erroneous:
+            if any([msg in task_state.message for msg in ["Zugangsdaten", "credentials"]]):
+                raise FigoPinException(country, credentials, bank_code, iban, save_pin)
+            raise FigoException("", task_state.message)
+        return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):
         """
@@ -467,7 +486,8 @@ class FigoSession(FigoObject):
                                          pin_exception.credentials,
                                          pin_exception.bank_code,
                                          pin_exception.iban,
-                                         pin_exception.save_pin)
+                                         pin_exception.save_pin,
+                                         )
 
     def modify_account(self, account):
         """
@@ -748,7 +768,7 @@ class FigoSession(FigoObject):
             return None
         else:
             return (("https" if self.API_SECURE else "http") +
-                    "://" + self.API_ENDPOINT + "/task/start?id=" +
+                    "://" + API_ENDPOINT + "/task/start?id=" +
                     response["task_token"])
 
     @property
@@ -786,6 +806,7 @@ class FigoSession(FigoObject):
         :Returns:
         A TaskState object which indicates the current status of the queried task
         """
+        logger.debug('Geting task state for: %s', task_token)
         data = {"id": task_token.task_token}
         if "pin" in kwargs:
             data["pin"] = kwargs["pin"]
@@ -795,8 +816,12 @@ class FigoSession(FigoObject):
             data["save_pin"] = kwargs["save_pin"]
         if "response" in kwargs:
             data["response"] = kwargs["response"]
-        return self._query_api_object(TaskState, "/task/progress?id=%s" % task_token.task_token,
-                                      data, "POST")
+        return self._query_api_object(
+            TaskState,
+            "/task/progress?id=%s" % task_token.task_token,
+            data,
+            "POST",
+        )
 
     def cancel_task(self, task_token_obj):
         """Cancel a task if possible.
@@ -1144,7 +1169,7 @@ class FigoSession(FigoObject):
             return None
         else:
             return (("https://" if self.API_SECURE else "http://") +
-                    self.API_ENDPOINT + "/task/start?id=" +
+                    API_ENDPOINT + "/task/start?id=" +
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):

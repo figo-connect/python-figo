@@ -1,4 +1,7 @@
 import uuid
+from logging import basicConfig
+
+basicConfig(level='DEBUG')
 
 import pytest
 
@@ -9,8 +12,7 @@ CLIENT_SECRET = "Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28"
 USER = "{0}testuser@example.com".format(uuid.uuid4())
 PASSWORD = "some_words"
 
-DEMO_TOKEN = "ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2X" \
-             "LFZQ0Hro15HikJQT_eNeT_9XQ"
+DEMO_TOKEN = "ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ"
 
 
 @pytest.fixture

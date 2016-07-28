@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 
 VALID_FINGERPRINTS = os.getenv(
     'FIGO_SSL_FINGERPRINT',
-    "38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07"
+    "38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07,"
+    "DB:E2:E9:15:8F:C9:90:30:84:FE:36:CA:A6:11:38:D8:5A:20:5D:93"
 ).split(',')
 
 
@@ -451,8 +452,8 @@ class FigoSession(FigoObject):
          State of the sync task.
         """
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
-        task_state = self.get_task_state(task_token)
         for _ in range(self.sync_poll_retry):
+            task_state = self.get_task_state(task_token)
             logger.info('task message: %s', task_state.message)
             logger.debug('task "%s"', task_state)
             if task_state.is_ended or task_state.is_erroneous:
@@ -461,7 +462,7 @@ class FigoSession(FigoObject):
         else:
             raise FigoException(
                 'could not sync',
-                'task was not finished after {} tries'.format(self.sync_poll_retry)
+                'task was not finished after {0} tries'.format(self.sync_poll_retry)
             )
 
         if task_state.is_erroneous:

@@ -18,6 +18,8 @@ Now you can create a new session and access data:
 from figo import FigoSession
 
 session = FigoSession("ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ")
+```
+
 
 # print out a list of accounts including its balance
 for account in session.accounts:
@@ -61,6 +63,15 @@ def process_redirect(authentication_code, state):
 
 You can find more documentation at http://python-figo.readthedocs.org
 
-Demos
------
+#Demos
+
 In this repository you can also have a look at a simple console(`console_demo.py`) and web demo(`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
+
+
+#Alternative Fingerprints 
+
+You can override the default fingerprints by setting the environment variable `FIGO_SSL_FINGERPRINT` with a comma seperated list of fingerprints.
+
+#Alternative API endpoint
+
+You can overwrite the default api_endpoint by setting the environment variable `FIGO_API_ENDPOINT`.

@@ -207,9 +207,6 @@ class FigoConnection(FigoObject):
 
         return self._request_api(path=path, data=data)
 
-    def test(self):
-        print(self.SEC_API_ENDPOINT)
-
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 

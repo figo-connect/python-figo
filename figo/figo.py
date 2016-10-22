@@ -32,8 +32,7 @@ logger = logging.getLogger(__name__)
 
 VALID_FINGERPRINTS = os.getenv(
     'FIGO_SSL_FINGERPRINT',
-    "38:AE:4A:32:6F:16:EA:15:81:33:8B:B0:D8:E4:A6:35:E7:27:F1:07,"
-    "DB:E2:E9:15:8F:C9:90:30:84:FE:36:CA:A6:11:38:D8:5A:20:5D:93"
+    "DB:E2:E9:15:8F:C9:90:30:84:FE:36:CA:A6:11:38:D8:5A:20:5D:93",
 ).split(',')
 
 
@@ -48,13 +47,15 @@ ERROR_MESSAGES = {
 }
 
 USER_AGENT = "python_figo/1.5.4"
-API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
+API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "api.figo.me")
 
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
     API_SECURE = True
+    SEC_API_ENDPOINT = (("https://" if API_SECURE else "http://") + API_ENDPOINT)
+
     headers = {}
 
     def _request_api(self, path, data=None, method="GET"):
@@ -68,13 +69,13 @@ class FigoObject(object):
             the JSON-parsed result body
         """
 
-        complete_path = API_ENDPOINT + path
+        complete_path = self.SEC_API_ENDPOINT + path
 
         session = requests.Session()
         session.headers.update(self.headers)
 
         for fingerprint in VALID_FINGERPRINTS:
-            session.mount(API_ENDPOINT, FingerprintAdapter(fingerprint))
+            session.mount(self.SEC_API_ENDPOINT, FingerprintAdapter(fingerprint))
             try:
                 response = session.request(method, complete_path, json=data)
             except SSLError as fingerprint_error:
@@ -206,6 +207,9 @@ class FigoConnection(FigoObject):
 
         return self._request_api(path=path, data=data)
 
+    def test(self):
+        print(self.SEC_API_ENDPOINT)
+
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the login process.
 
@@ -222,8 +226,7 @@ class FigoConnection(FigoObject):
         :Returns:
             the URL of the first page of the login process
         """
-        return (("https://" if self.API_SECURE else "http://") +
-                API_ENDPOINT +
+        return (self.SEC_API_ENDPOINT +
                 "/auth/code?" +
                 urllib.urlencode(
                     {'response_type': 'code',
@@ -768,8 +771,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https" if self.API_SECURE else "http") +
-                    "://" + API_ENDPOINT + "/task/start?id=" +
+            return (self.SEC_API_ENDPOINT + "/task/start?id=" +
                     response["task_token"])
 
     @property
@@ -1169,8 +1171,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https://" if self.API_SECURE else "http://") +
-                    API_ENDPOINT + "/task/start?id=" +
+            return (self.SEC_API_ENDPOINT + "/task/start?id=" +
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):

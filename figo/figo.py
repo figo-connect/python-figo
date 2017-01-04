@@ -178,8 +178,8 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `client_id` - the OAuth Client ID as provided by your figo developer contact
          - `client_secret` - the OAuth Client Secret as provided by your figo developer contact
-         - `redirect_uri` - the URI the users gets redirected to after the login is finished
-         or if he presses cancels
+         - `redirect_uri` - the URI the user gets redirected to after the login is finished
+         or if he presses cancel
         """
         self.client_id = client_id
         self.client_secret = client_secret
@@ -216,7 +216,7 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
          - `state` - String passed on through the complete login process and to the redirect
-         target at the end. It should be used to validated the authenticity of the
+         target at the end. It should be used to validate the authenticity of the
          call to the redirect URL
 
         :Returns:
@@ -244,7 +244,7 @@ class FigoConnection(FigoObject):
         :returns:
             Dictionary with the following keys:
              - `access_token` - the access token for data access. You can pass it into
-             `FigoConnection.open_session` to get a FigoSession and access the users data
+             `FigoConnection.open_session` to get a FigoSession and access the user's data
              - `refresh_token` - if the scope contained the `offline` flag, also a
              refresh token is generated. It can be used to generate new access tokens,
              when the first one has expired.
@@ -364,7 +364,7 @@ class FigoConnection(FigoObject):
         """
         Create a new figo account and get a session token for the new account.
 
-        :Parameters:
+xf        :Parameters:
         - `name` - First and last name
         - `email` - Email address; It must obey the figo username & password policy
         - `password` - New figo Account password; It must obey the figo
@@ -524,7 +524,7 @@ class FigoSession(FigoObject):
         Get balance and account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `AccountBalance` object for the respective account
@@ -543,7 +543,7 @@ class FigoSession(FigoObject):
         Modify balance or account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `account_balance` - modified AccountBalance object to be saved
 
          :Returns:
@@ -562,9 +562,9 @@ class FigoSession(FigoObject):
 
     def get_supported_payment_services(self, country_code):
         """
-        Return a list of supported credit cards an other payment services.
+        Return a list of supported credit cards and other payment services.
 
-        A fake bank code is used for identification
+        A fake bank code is used for identification.
 
         :Parameters:
             - 'country_code'    -   country code of the requested payment services
@@ -676,7 +676,7 @@ class FigoSession(FigoObject):
         the specified account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `List` of Payment objects
@@ -694,7 +694,7 @@ class FigoSession(FigoObject):
         Get a single `Payment` object.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `payment_id` - ID of the payment to be retrieved
 
         :Returns:
@@ -846,7 +846,7 @@ class FigoSession(FigoObject):
 
     def create_process(self, process):
         """
-        Create a new process to be executed by the user Returns a process token.
+        Create a new process to be executed by the user. Returns a process token.
 
         :Parameters:
             - process   -   Process object which will be sent to the API
@@ -891,7 +891,7 @@ class FigoSession(FigoObject):
         Retrieve a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `transaction_id` - ID of the transaction to be retrieved
 
         :Returns:
@@ -943,7 +943,7 @@ class FigoSession(FigoObject):
         Retrieve a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `security_id` - ID of the security to be retrieved
 
         :Returns:
@@ -961,7 +961,7 @@ class FigoSession(FigoObject):
         Modify a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `securities_or_security_id` - Security or its ID to be modified
          - `visited` - new value of the visited field for the security
 
@@ -982,7 +982,7 @@ class FigoSession(FigoObject):
         Modify all securities of an account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the security
 
         :Returns:
@@ -1015,7 +1015,7 @@ class FigoSession(FigoObject):
         Modify a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `transaction_or_transaction_id` - Transactions or its ID to be modified
          - `visited` - new value of the visited field for the transaction
 
@@ -1036,7 +1036,7 @@ class FigoSession(FigoObject):
         Modify all transactions of a specific account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the transactions
 
         :Returns:
@@ -1067,8 +1067,8 @@ class FigoSession(FigoObject):
         Delete a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
-         - `transaction_or_transaction_id` - Transaction or its ID to be modified
+         - `account_or_account_id` - account to be modified or its ID
+         - `transaction_or_transaction_id` - Transaction or its ID to be deleted
 
         :Returns:
             Nothing if the request was successful
@@ -1156,7 +1156,7 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `state` - String passed on through the complete synchronization process and to
-         the redirect target at the end. It should be used to validated the authenticity
+         the redirect target at the end. It should be used to validate the authenticity
          of the call to the redirect URL
          - `redirect_uri` - URI the user is redirected to after the process completes
 

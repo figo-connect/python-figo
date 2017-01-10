@@ -402,8 +402,9 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `access_token` - the access token to bind this session to a user
-          - `api_endpoint` - base URI of the server to call
-          - `fingerprints` - list of the server's SSL fingerprints
+         - `api_endpoint` - base URI of the server to call
+         - `fingerprints` - list of the server's SSL fingerprints
+         - `sync_poll_retry` - maximum number of synchronization poll retries
         """
         super(FigoSession,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
@@ -413,7 +414,7 @@ class FigoSession(FigoObject):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': USER_AGENT}
-        self.sync_poll_retry = 20
+        self.sync_poll_retry = sync_poll_retry
 
     @property
     def accounts(self):
@@ -1162,7 +1163,7 @@ class FigoSession(FigoObject):
 
     def get_sync_url(self, state, redirect_uri):
         """
-        URL to trigger a synchronisation.
+        URL to trigger a synchronization.
 
         The user should open this URL in a web browser to synchronize his/her accounts with
         the respective bank servers. When the process is finished, the user is

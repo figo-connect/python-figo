@@ -54,8 +54,6 @@ API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    API_SECURE = True
-
     def __init__(self, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """
         Create a FigoObject instance.
@@ -238,8 +236,7 @@ class FigoConnection(FigoObject):
         :Returns:
             the URL of the first page of the login process
         """
-        return (("https://" if self.API_SECURE else "http://") +
-                self.api_endpoint +
+        return (self.api_endpoint +
                 "/auth/code?" +
                 urllib.urlencode(
                     {'response_type': 'code',
@@ -788,8 +785,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https" if self.API_SECURE else "http") +
-                    "://" + self.api_endpoint + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response["task_token"])
 
     @property
@@ -1189,8 +1185,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https://" if self.API_SECURE else "http://") +
-                    self.api_endpoint + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):

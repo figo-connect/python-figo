@@ -179,7 +179,7 @@ def test_delete_transaction(demo_session):
 
 def test_get_payment_proposals(demo_session):
     proposals = demo_session.get_payment_proposals()
-    assert len(proposals) == 2
+    assert len(proposals) == 12
 
 
 def test_start_task(demo_session):

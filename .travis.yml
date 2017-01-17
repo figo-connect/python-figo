@@ -12,7 +12,7 @@ deploy:
   provider: pypi
   user: figo
   password:
-    secure: RnjoyK822dVuT4vo3sA2nvqJVX3H6OJeHA6wtkm0rQ8YacCagIEKYzIJaoBdVi2AZsn6UAsi1AyVotSHkrk/7AVl4PG0jRGP290YOajWn+sEdJRuPqLQWknoEMuA44XuxwIIfh93beGU4dgZWnJ5vjgKFImLiKCONvm7CRtXCfs=
+    secure: eUed0HUoykbVI+5RNjWpgP3WAKl1zO9JvTMsJa2fbrV2VaBISBTahPo7VXIFHqswdSb0aLac9PEKZHI30Xvvnm3lgSrgruBCJU7TAYgbCxBXiJjYz+qObQy5xL4gfpnvoOj5Ufd9TbHM0a9W3cKixevzCNlzobEWilucSCo106c=
   distributions: sdist bdist_wheel
   on:
     tags: true

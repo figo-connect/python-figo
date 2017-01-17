@@ -510,12 +510,10 @@ class FigoSession(FigoObject):
         :Parameters:
          - `account_or_account_id` - account to be removed or its ID
         """
-        if isinstance(account_or_account_id, STRING_TYPES):
-            self._request_with_exception("/rest/accounts/%s" % account_or_account_id,
-                                           method="DELETE")
-        else:
-            self._request_with_exception("/rest/accounts/%s" % account_or_account_id.account_id,
-                                           method="DELETE")
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+
+        self._request_with_exception("/rest/accounts/%s" % account_or_account_id, method="DELETE")
 
         return None
 
@@ -530,13 +528,10 @@ class FigoSession(FigoObject):
             `AccountBalance` object for the respective account
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(
-                AccountBalance,
-                "/rest/accounts/%s/balance" % account_or_account_id.account_id)
-        else:
-            return self._query_api_object(
-                AccountBalance,
-                "/rest/accounts/%s/balance" % account_or_account_id)
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(AccountBalance,
+                                      "/rest/accounts/%s/balance" % account_or_account_id)
 
     def modify_account_balance(self, account_or_account_id, account_balance):
         """
@@ -550,15 +545,11 @@ class FigoSession(FigoObject):
            'AccountBalance' object for the updated account as returned by the server
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(
-                AccountBalance,
-                "/rest/accounts/%s/balance" % account_or_account_id.account_id,
-                account_balance.dump(), "PUT")
-        else:
-            return self._query_api_object(
-                AccountBalance,
-                "/rest/accounts/%s/balance" % account_or_account_id,
-                account_balance.dump(), "PUT")
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(AccountBalance,
+                                      "/rest/accounts/%s/balance" % account_or_account_id,
+                                      account_balance.dump(), "PUT")
 
     def get_supported_payment_services(self, country_code):
         """
@@ -652,13 +643,12 @@ class FigoSession(FigoObject):
         :Parameters:
          - `notification_or_notification_id` - notification to be removed or its ID
         """
-        if isinstance(notification_or_notification_id, STRING_TYPES):
-            self._request_with_exception("/rest/notifications/" + notification_or_notification_id,
-                                           method="DELETE")
-        else:
-            self._request_with_exception(
-                "/rest/notifications/" + notification_or_notification_id.notification_id,
-                method="DELETE")
+        if isinstance(notification_or_notification_id, Notification):
+            notification_or_notification_id = notification_or_notification_id.notification_id
+
+        self._request_with_exception("/rest/notifications/" + notification_or_notification_id,
+                                     method="DELETE")
+
         return None
 
     @property
@@ -682,12 +672,11 @@ class FigoSession(FigoObject):
             `List` of Payment objects
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments" % (
-                account_or_account_id.account_id), collection_name="payments")
-        else:
-            return self._query_api_object(Payment,
-                                          "/rest/accounts/%s/payments" % account_or_account_id,
-                                          collection_name="payments")
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(Payment,
+                                      "/rest/accounts/%s/payments" % account_or_account_id,
+                                      collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id):
         """
@@ -701,11 +690,10 @@ class FigoSession(FigoObject):
             `Payment` object
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
-                account_or_account_id.account_id, payment_id))
-        else:
-            return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
-                account_or_account_id, payment_id))
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" %
+                                      (account_or_account_id, payment_id))
 
     def add_payment(self, payment):
         """
@@ -898,11 +886,10 @@ class FigoSession(FigoObject):
             a `Transaction` object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
-                account_or_account_id.account_id, transaction_id))
-        else:
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
-                account_or_account_id, transaction_id))
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" %
+                                      (account_or_account_id, transaction_id))
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     @property
@@ -950,11 +937,10 @@ class FigoSession(FigoObject):
             a `Security` object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
-            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (
-                account_or_account_id.account_id, security_id))
-        else:
-            return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" % (
-                account_or_account_id, security_id))
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" %
+                                      (account_or_account_id, security_id))
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
         """
@@ -968,14 +954,15 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(security_or_security_id,
-                                                                     Security):
-            return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
-                account_or_account_id.account_id, security_or_security_id.security_id),
-                                                  {"visited": visited}, "PUT")
-        else:
-            return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
-                account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+        if isinstance(security_or_security_id, Security):
+            security_or_security_id = security_or_security_id.security_id
+
+        return self._request_with_exception("/rest/accounts/%s/securities/%s" %
+                                            (account_or_account_id, security_or_security_id),
+                                            {"visited": visited},
+                                            "PUT")
 
     def modify_account_securities(self, account_or_account_id, visited=None):
         """
@@ -989,13 +976,10 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._request_with_exception(
-                "/rest/accounts/%s/securities" % account_or_account_id.account_id,
-                {"visited": visited}, "PUT")
-        else:
-            return self._request_with_exception(
-                "/rest/accounts/%s/securities" % account_or_account_id, {"visited": visited},
-                "PUT")
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._request_with_exception("/rest/accounts/%s/securities" % account_or_account_id,
+                                            {"visited": visited}, "PUT")
 
     def modify_user_securities(self, visited=None):
         """
@@ -1022,14 +1006,15 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
-                                                                     Transaction):
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
-                account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                                          {"visited": visited}, "PUT")
-        else:
-            return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
-                account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+        if isinstance(transaction_or_transaction_id, Transaction):
+            transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
+
+        return self._query_api_object(Transaction,
+                                      "/rest/accounts/%s/transactions/%s" %
+                                      (account_or_account_id, transaction_or_transaction_id),
+                                      {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
         """
@@ -1043,13 +1028,11 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
-            return self._request_with_exception(
-                "/rest/accounts/%s/transactions" % account_or_account_id.account_id,
-                {"visited": visited}, "PUT")
-        else:
-            return self._request_with_exception(
-                "/rest/accounts/%s/transactions" % account_or_account_id, {"visited": visited},
-                "PUT")
+            account_or_account_id = account_or_account_id.account_id
+
+        return self._request_with_exception("/rest/accounts/%s/transactions" %
+                                            account_or_account_id,
+                                            {"visited": visited}, "PUT")
 
     def modify_user_transactions(self, visited=None):
         """Modify all transactions of the current user.
@@ -1073,14 +1056,14 @@ class FigoSession(FigoObject):
         :Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
-                                                                     Transaction):
-            return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
-            account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                                                  method="DELETE")
-        else:
-            return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
-            account_or_account_id, transaction_or_transaction_id), method="DELETE")
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+        if isinstance(transaction_or_transaction_id, Transaction):
+            transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
+
+        return self._request_with_exception("/rest/accounts/%s/transactions/%s" %
+                                            (account_or_account_id, transaction_or_transaction_id),
+                                            method="DELETE")
 
     def get_bank(self, bank_id):
         """
@@ -1103,7 +1086,8 @@ class FigoSession(FigoObject):
          :Returns:
            'BankContact' object for the updated bank
         """
-        return self._query_api_object(BankContact, "/rest/banks/%s" % bank.bank_id, bank.dump(),
+        return self._query_api_object(BankContact, "/rest/banks/%s" % bank.bank_id,
+                                      bank.dump(),
                                       "PUT")
 
     def remove_bank_pin(self, bank_or_bank_id):
@@ -1113,12 +1097,11 @@ class FigoSession(FigoObject):
         :Parameters:
         - `bank_or_bank_id` - bank whose pin should be removed or its ID
         """
-        if isinstance(bank_or_bank_id, STRING_TYPES):
-            self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id,
-                                           method="POST")
-        else:
-            self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
-                                           method="POST")
+        if isinstance(bank_or_bank_id, BankContact):
+            bank_or_bank_id = bank_or_bank_id
+
+        self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
+                                     method="POST")
         return None
 
     @property
@@ -1164,8 +1147,8 @@ class FigoSession(FigoObject):
             the URL to be opened by the user.
         """
         response = self._request_with_exception("/rest/sync",
-                                                  {"state": state, "redirect_uri": redirect_uri},
-                                                  method="POST")
+                                                {"state": state, "redirect_uri": redirect_uri},
+                                                method="POST")
         if response is None:
             return None
         else:

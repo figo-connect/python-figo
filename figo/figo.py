@@ -564,8 +564,6 @@ class FigoSession(FigoObject):
         """
         Return a list of supported credit cards an other payment services.
 
-        A fake bank code is used for identification
-
         :Parameters:
             - 'country_code'    -   country code of the requested payment services
         :Returns:

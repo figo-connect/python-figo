@@ -881,11 +881,14 @@ class FigoSession(FigoObject):
         if since is not None:
             params['since'] = since
 
-        query = "/rest/transactions?" if account_id is None \
-                else "/rest/accounts/%s/transactions?" % account_id
+        params = urllib.urlencode(params)
 
-        return self._query_api_object(Transaction, query + urllib.urlencode(params),
-                                      collection_name="transactions")
+        if account_id:
+            query = "/rest/accounts/{0}/transactions?{1}".format(account_id, params)
+        else:
+            query = "/rest/transactions?{0}".format(params)
+
+        return self._query_api_object(Transaction, query, collection_name="transactions")
 
     def get_transaction(self, account_or_account_id, transaction_id):
         """
@@ -934,11 +937,14 @@ class FigoSession(FigoObject):
         if since is not None:
             params['since'] = since
 
-        query = "/rest/securities?" if account_id is None \
-                else "/rest/accounts/%s/securities?" % account_id
+        params = urllib.urlencode(params)
 
-        return self._query_api_object(Security, query + urllib.urlencode(params),
-                                      collection_name="securities")
+        if account_id:
+            query = "/rest/accounts/{0}/securities?{1}".format(account_id, params)
+        else:
+            query = "/rest/securities?{0}".format(params)
+
+        return self._query_api_object(Security, query, collection_name="securities")
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     def get_security(self, account_or_account_id, security_id):

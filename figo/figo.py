@@ -88,7 +88,7 @@ class FigoObject(object):
             try:
                 response = session.request(method, complete_path, json=data)
             except SSLError as fingerprint_error:
-                logging.warn('Fingerprint "%s"£# was invalid', fingerprint)
+                logging.warn('Fingerprint "%s" was invalid', fingerprint)
             else:
                 break
             finally:

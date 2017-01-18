@@ -799,7 +799,7 @@ class FigoSession(FigoObject):
         - `task_token`- The token for the queried task.
         - `pin` - Submit PIN. If this parameter is set, then the parameter save_pin must be
         set, too.
-        - `continue` - This flag signals to continue after an error condition or to skip a
+        - `continue_` - This flag signals to continue after an error condition or to skip a
         PIN or challenge-response entry
         - `save_pin` - This flag indicates whether the user has chosen to save the PIN on
         the figo Connect server
@@ -809,10 +809,17 @@ class FigoSession(FigoObject):
         A TaskState object which indicates the current status of the queried task
         """
         logger.debug('Geting task state for: %s', task_token)
-        data = {"id": task_token.task_token}
-        for x in ["pin","continue_","save_pin","response"]:
-            if eval(x) is not None:
-                data[x] = eval(x)
+
+        data = {
+                    "id": task_token.task_token,
+                    "pin": pin,
+                    "continue": continue_,
+                    "save_pin": save_pin,
+                    "response": response
+                }
+
+        data = {k: v for k, v in data.items() if v is not None}
+
         return self._query_api_object(TaskState,
                                       "/task/progress?id=%s" % task_token.task_token,
                                       data, "POST")

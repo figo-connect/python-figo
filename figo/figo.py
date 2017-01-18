@@ -858,7 +858,7 @@ class FigoSession(FigoObject):
                                       collection_name="transactions")
 
     def get_transactions(self, account_id=None, since=None, count=1000, offset=0,
-                         include_pending=False):
+                         include_pending=False, sort='desc'):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
         :Parameters:
@@ -874,7 +874,7 @@ class FigoSession(FigoObject):
         :Returns:
             `List` of Transaction objects
         """
-        params = {'count': count, 'offset': offset,
+        params = {'count': count, 'offset': offset, 'sort': sort,
                   'include_pending': ("1" if include_pending else "0")}
         if since is not None:
             params['since'] = since

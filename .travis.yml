@@ -19,4 +19,9 @@ deploy:
     python: '3.5'
     all_branches: true
 after_success:
-  - codecov
+- codecov
+env:
+  global:
+  - secure: aVH3msquDRz6wqSvhsI0rcyYCk5ABzeEqQb5w1NQztq72nzs9fAwgVQ+ogtwmAstf4mg/U56dZI05h0gaBCa5eEiOVLJpElIQWyqnIAGEAvRb975R9u0Dgmp29YPAyGAUQqVfIIVqlepd9+z2HmnVuQNH0J8WmHfHdzo38tzJSs=
+  - secure: GCQiW9D/mOUT9t+HNrUh7XPD6Zd9dfrq4nQYIfdFboATvekozGz0HyoDJThglt/CVM08suUGzRKPqoGzdvzMusdDzd6lfLhEOJz7V/F9cf/9Wu94UebqdWm1/c8WH4hGKuX9dNuLffoRWEkmJctb237QpkfjZFJt5ilXnITVZcQ=
+  - secure: DuKlU8KEF5pwTwnR2QXfJ6Lxa7/bhNHeeFeY4ieBYxIAcqaGnFnwOKmxR9o7Wtdbd/WS4AjpdrsSyptyLsWYmUEyKkLOv20YZERskEtpiuCuOHpO63C+5Zg1TLpzINgZE8zlzCiPOVeeXS/s1Ja9bqpbDkUIO6BqdN9D29Tu5Ak=

@@ -377,7 +377,7 @@ class FigoConnection(FigoObject):
         """
         Create a new figo account and get a session token for the new account.
 
-xf        :Parameters:
+        :Parameters:
         - `name` - First and last name
         - `email` - Email address; It must obey the figo username & password policy
         - `password` - New figo Account password; It must obey the figo

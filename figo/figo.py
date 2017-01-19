@@ -54,8 +54,18 @@ API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    API_SECURE = True
-    headers = {}
+    def __init__(self, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+        """
+        Create a FigoObject instance.
+
+        :Parameters:
+        - `api_endpoint` - base URI of the server to call
+        - `fingerprints` - list of the server's SSL fingerprints
+        """
+        self.headers = {}
+        self.api_endpoint = api_endpoint
+        self.fingerprints = fingerprints
+
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -68,17 +78,17 @@ class FigoObject(object):
             the JSON-parsed result body
         """
 
-        complete_path = API_ENDPOINT + path
+        complete_path = self.api_endpoint + path
 
         session = requests.Session()
         session.headers.update(self.headers)
 
-        for fingerprint in VALID_FINGERPRINTS:
-            session.mount(API_ENDPOINT, FingerprintAdapter(fingerprint))
+        for fingerprint in self.fingerprints:
+            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint))
             try:
                 response = session.request(method, complete_path, json=data)
             except SSLError as fingerprint_error:
-                logging.warn('Fingerprint "%s"£# was invalid', fingerprint)
+                logging.warn('Fingerprint "%s" was invalid', fingerprint)
             else:
                 break
             finally:
@@ -171,16 +181,20 @@ class FigoConnection(FigoObject):
     Its main purpose is to let user login via the OAuth2 API.
     """
 
-    def __init__(self, client_id, client_secret, redirect_uri):
+    def __init__(self, client_id, client_secret, redirect_uri, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """
         Create a FigoConnection instance.
 
         :Parameters:
          - `client_id` - the OAuth Client ID as provided by your figo developer contact
          - `client_secret` - the OAuth Client Secret as provided by your figo developer contact
-         - `redirect_uri` - the URI the user gets redirected to after the login is finished
-         or if he presses cancel
+         - `redirect_uri` - the URI the users gets redirected to after the login is finished
+         or if he presses cancels
+         - `api_endpoint` - base URI of the server to call
+         - `fingerprints` - list of the server's SSL fingerprints
         """
+        super(FigoConnection,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -222,8 +236,7 @@ class FigoConnection(FigoObject):
         :Returns:
             the URL of the first page of the login process
         """
-        return (("https://" if self.API_SECURE else "http://") +
-                API_ENDPOINT +
+        return (self.api_endpoint +
                 "/auth/code?" +
                 urllib.urlencode(
                     {'response_type': 'code',
@@ -384,12 +397,16 @@ class FigoSession(FigoObject):
     """Represents a user-bound connection to the figo connect API and allows access to
     the users data."""
 
-    def __init__(self, access_token, sync_poll_retry=20):
+    def __init__(self, access_token, sync_poll_retry=20, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """Create a FigoSession instance.
 
         :Parameters:
          - `access_token` - the access token to bind this session to a user
+          - `api_endpoint` - base URI of the server to call
+          - `fingerprints` - list of the server's SSL fingerprints
         """
+        super(FigoSession,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+
         self.access_token = access_token
         self.headers = {
             'Authorization': "Bearer %s" % self.access_token,
@@ -563,8 +580,6 @@ class FigoSession(FigoObject):
     def get_supported_payment_services(self, country_code):
         """
         Return a list of supported credit cards and other payment services.
-
-        A fake bank code is used for identification.
 
         :Parameters:
             - 'country_code'    -   country code of the requested payment services
@@ -768,8 +783,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https" if self.API_SECURE else "http") +
-                    "://" + API_ENDPOINT + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response["task_token"])
 
     @property
@@ -860,7 +874,7 @@ class FigoSession(FigoObject):
                                       collection_name="transactions")
 
     def get_transactions(self, account_id=None, since=None, count=1000, offset=0,
-                         include_pending=False):
+                         include_pending=False, sort='desc'):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
         :Parameters:
@@ -876,7 +890,7 @@ class FigoSession(FigoObject):
         :Returns:
             `List` of Transaction objects
         """
-        params = {'count': count, 'offset': offset,
+        params = {'count': count, 'offset': offset, 'sort': sort,
                   'include_pending': ("1" if include_pending else "0")}
         if since is not None:
             params['since'] = since
@@ -1169,8 +1183,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https://" if self.API_SECURE else "http://") +
-                    API_ENDPOINT + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):

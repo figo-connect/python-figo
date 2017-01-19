@@ -513,7 +513,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        self._request_with_exception("/rest/accounts/%s" % account_or_account_id, method="DELETE")
+        query = "/rest/accounts/{0}".format(account_or_account_id)
+        self._request_with_exception(query, method="DELETE")
 
         return None
 
@@ -530,8 +531,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(AccountBalance,
-                                      "/rest/accounts/%s/balance" % account_or_account_id)
+        query = "/rest/accounts/{0}/balance".format(account_or_account_id)
+        return self._query_api_object(AccountBalance, query)
 
     def modify_account_balance(self, account_or_account_id, account_balance):
         """
@@ -547,9 +548,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(AccountBalance,
-                                      "/rest/accounts/%s/balance" % account_or_account_id,
-                                      account_balance.dump(), "PUT")
+        query = "/rest/accounts/{0}/balance".format(account_or_account_id)
+        return self._query_api_object(AccountBalance, query, account_balance.dump(), "PUT")
 
     def get_supported_payment_services(self, country_code):
         """
@@ -646,8 +646,8 @@ class FigoSession(FigoObject):
         if isinstance(notification_or_notification_id, Notification):
             notification_or_notification_id = notification_or_notification_id.notification_id
 
-        self._request_with_exception("/rest/notifications/" + notification_or_notification_id,
-                                     method="DELETE")
+        query = "/rest/notifications/" + notification_or_notification_id
+        self._request_with_exception(query, method="DELETE")
 
         return None
 
@@ -674,9 +674,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(Payment,
-                                      "/rest/accounts/%s/payments" % account_or_account_id,
-                                      collection_name="payments")
+        query = "/rest/accounts/{0}/payments".format(account_or_account_id)
+        return self._query_api_object(Payment, query, collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id):
         """
@@ -692,8 +691,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" %
-                                      (account_or_account_id, payment_id))
+        query = "/rest/accounts/{0}/payments/{1}".format(account_or_account_id, payment_id)
+        return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
         """
@@ -705,7 +704,8 @@ class FigoSession(FigoObject):
         :Returns:
             `Payment` object of the newly created payment as returned by the server
         """
-        return self._query_api_object(Payment, "/rest/accounts/%s/payments" % payment.account_id,
+        return self._query_api_object(Payment,
+                                      "/rest/accounts/{0}/payments".format(payment.account_id),
                                       payment.dump(), "POST")
 
     def modify_payment(self, payment):
@@ -888,8 +888,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" %
-                                      (account_or_account_id, transaction_id))
+        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id, transaction_id)
+        return self._query_api_object(Transaction, query)
 
     # Method added by Fincite (http://fincite.de) on 06/03/2015
     @property
@@ -939,8 +939,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._query_api_object(Security, "/rest/accounts/%s/securities/%s" %
-                                      (account_or_account_id, security_id))
+        query = "/rest/accounts/{0}/securities/{1}".format(account_or_account_id, security_id)
+        return self._query_api_object(Security,query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
         """
@@ -959,10 +959,9 @@ class FigoSession(FigoObject):
         if isinstance(security_or_security_id, Security):
             security_or_security_id = security_or_security_id.security_id
 
-        return self._request_with_exception("/rest/accounts/%s/securities/%s" %
-                                            (account_or_account_id, security_or_security_id),
-                                            {"visited": visited},
-                                            "PUT")
+        query = "/rest/accounts/{0}/securities/{1}".format(account_or_account_id,
+                                                           security_or_security_id)
+        return self._request_with_exception(query, {"visited": visited}, "PUT")
 
     def modify_account_securities(self, account_or_account_id, visited=None):
         """
@@ -978,8 +977,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._request_with_exception("/rest/accounts/%s/securities" % account_or_account_id,
-                                            {"visited": visited}, "PUT")
+        query = "/rest/accounts/{0}/securities".format(account_or_account_id)
+        return self._request_with_exception(query, {"visited": visited}, "PUT")
 
     def modify_user_securities(self, visited=None):
         """
@@ -1011,10 +1010,9 @@ class FigoSession(FigoObject):
         if isinstance(transaction_or_transaction_id, Transaction):
             transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
 
-        return self._query_api_object(Transaction,
-                                      "/rest/accounts/%s/transactions/%s" %
-                                      (account_or_account_id, transaction_or_transaction_id),
-                                      {"visited": visited}, "PUT")
+        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id,
+                                                             transaction_or_transaction_id)
+        return self._query_api_object(Transaction, query, {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
         """
@@ -1030,9 +1028,8 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        return self._request_with_exception("/rest/accounts/%s/transactions" %
-                                            account_or_account_id,
-                                            {"visited": visited}, "PUT")
+        query = "/rest/accounts/{0}/transactions".format(account_or_account_id)
+        return self._request_with_exception(query, {"visited": visited}, "PUT")
 
     def modify_user_transactions(self, visited=None):
         """Modify all transactions of the current user.
@@ -1061,9 +1058,9 @@ class FigoSession(FigoObject):
         if isinstance(transaction_or_transaction_id, Transaction):
             transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
 
-        return self._request_with_exception("/rest/accounts/%s/transactions/%s" %
-                                            (account_or_account_id, transaction_or_transaction_id),
-                                            method="DELETE")
+        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id,
+                                                             transaction_or_transaction_id)
+        return self._request_with_exception(query, method="DELETE")
 
     def get_bank(self, bank_id):
         """
@@ -1100,8 +1097,9 @@ class FigoSession(FigoObject):
         if isinstance(bank_or_bank_id, BankContact):
             bank_or_bank_id = bank_or_bank_id
 
-        self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
-                                     method="POST")
+        query = "/rest/banks/{0}/remove_pin".format(bank_or_bank_id.bank_id)
+        self._request_with_exception(query, method="POST")
+
         return None
 
     @property

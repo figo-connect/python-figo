@@ -1,5 +1,6 @@
 import uuid
 from logging import basicConfig
+import os
 
 basicConfig(level='DEBUG')
 
@@ -7,8 +8,8 @@ import pytest
 
 from figo.figo import FigoConnection, FigoSession
 
-CLIENT_ID = "C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI"
-CLIENT_SECRET = "Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28"
+CLIENT_ID = os.getenv('CLIENT_ID','C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI')
+CLIENT_SECRET = os.getenv('CLIENT_SECRET','Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28')
 USER = "{0}testuser@example.com".format(uuid.uuid4())
 PASSWORD = "some_words"
 

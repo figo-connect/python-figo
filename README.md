@@ -1,12 +1,11 @@
-python-figo [![Build Status](https://img.shields.io/travis/figo-connect/python-figo.svg?style=flat-square)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg?style=flat-square)](https://pypi.python.org/pypi/python-figo) [![Code Coverage](https://img.shields.io/codecov/c/github/figo-connect/python-figo.svg?style=flat-square)](https://codecov.io/github/figo-connect/python-figo)
-===========
+# python-figo [![Build Status](https://img.shields.io/travis/figo-connect/python-figo.svg?style=flat-square)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg?style=flat-square)](https://pypi.python.org/pypi/python-figo) [![Code Coverage](https://img.shields.io/codecov/c/github/figo-connect/python-figo.svg?style=flat-square)](https://codecov.io/github/figo-connect/python-figo)
+
 
 Python bindings for the figo Connect API: http://docs.figo.io
 
-Usage
-=====
+# Usage
 
-First, you've to install the package:
+First, you have to install the package:
 
 ```bash
 pip install python-figo
@@ -20,7 +19,7 @@ from figo import FigoSession
 session = FigoSession("ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ")
 ```
 
-
+```python
 # Print out a list of accounts including its balance
 for account in session.accounts:
     print account
@@ -63,15 +62,14 @@ def process_redirect(authentication_code, state):
 
 You can find more documentation at http://python-figo.readthedocs.org
 
-#Demos
+# Demos
 
-In this repository you can also have a look at a simple console(`console_demo.py`) and web demo(`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
+In this repository you can also have a look at a simple console (`console_demo.py`) and web demo (`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
 
-
-#Alternative Fingerprints 
+# Alternative Fingerprints 
 
 You can override the default fingerprints by setting the environment variable `FIGO_SSL_FINGERPRINT` with a comma seperated list of fingerprints.
 
-#Alternative API endpoint
+# Alternative API endpoint
 
 You can overwrite the default api_endpoint by setting the environment variable `FIGO_API_ENDPOINT`.

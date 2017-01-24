@@ -54,8 +54,18 @@ API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    API_SECURE = True
-    headers = {}
+    def __init__(self, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+        """
+        Create a FigoObject instance.
+
+        :Parameters:
+        - `api_endpoint` - base URI of the server to call
+        - `fingerprints` - list of the server's SSL fingerprints
+        """
+        self.headers = {}
+        self.api_endpoint = api_endpoint
+        self.fingerprints = fingerprints
+
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -68,17 +78,17 @@ class FigoObject(object):
             the JSON-parsed result body
         """
 
-        complete_path = API_ENDPOINT + path
+        complete_path = self.api_endpoint + path
 
         session = requests.Session()
         session.headers.update(self.headers)
 
-        for fingerprint in VALID_FINGERPRINTS:
-            session.mount(API_ENDPOINT, FingerprintAdapter(fingerprint))
+        for fingerprint in self.fingerprints:
+            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint))
             try:
                 response = session.request(method, complete_path, json=data)
             except SSLError as fingerprint_error:
-                logging.warn('Fingerprint "%s"£# was invalid', fingerprint)
+                logging.warn('Fingerprint "%s" was invalid', fingerprint)
             else:
                 break
             finally:
@@ -171,7 +181,7 @@ class FigoConnection(FigoObject):
     Its main purpose is to let user login via the OAuth2 API.
     """
 
-    def __init__(self, client_id, client_secret, redirect_uri):
+    def __init__(self, client_id, client_secret, redirect_uri, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """
         Create a FigoConnection instance.
 
@@ -180,7 +190,11 @@ class FigoConnection(FigoObject):
          - `client_secret` - the OAuth Client Secret as provided by your figo developer contact
          - `redirect_uri` - the URI the users gets redirected to after the login is finished
          or if he presses cancels
+         - `api_endpoint` - base URI of the server to call
+         - `fingerprints` - list of the server's SSL fingerprints
         """
+        super(FigoConnection,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -216,14 +230,13 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
          - `state` - String passed on through the complete login process and to the redirect
-         target at the end. It should be used to validated the authenticity of the
+         target at the end. It should be used to validate the authenticity of the
          call to the redirect URL
 
         :Returns:
             the URL of the first page of the login process
         """
-        return (("https://" if self.API_SECURE else "http://") +
-                API_ENDPOINT +
+        return (self.api_endpoint +
                 "/auth/code?" +
                 urllib.urlencode(
                     {'response_type': 'code',
@@ -244,7 +257,7 @@ class FigoConnection(FigoObject):
         :returns:
             Dictionary with the following keys:
              - `access_token` - the access token for data access. You can pass it into
-             `FigoConnection.open_session` to get a FigoSession and access the users data
+             `FigoConnection.open_session` to get a FigoSession and access the user's data
              - `refresh_token` - if the scope contained the `offline` flag, also a
              refresh token is generated. It can be used to generate new access tokens,
              when the first one has expired.
@@ -384,13 +397,17 @@ class FigoSession(FigoObject):
     """Represents a user-bound connection to the figo connect API and allows access to
     the users data."""
 
-    def __init__(self, access_token, sync_poll_retry=20):
+    def __init__(self, access_token, sync_poll_retry=20, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """Create a FigoSession instance.
 
         :Parameters:
          - `access_token` - the access token to bind this session to a user
          - `sync_poll_retry` - maximum number of synchronization poll retries
+          - `api_endpoint` - base URI of the server to call
+          - `fingerprints` - list of the server's SSL fingerprints
         """
+        super(FigoSession,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+
         self.access_token = access_token
         self.headers = {
             'Authorization': "Bearer %s" % self.access_token,
@@ -525,7 +542,7 @@ class FigoSession(FigoObject):
         Get balance and account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `AccountBalance` object for the respective account
@@ -544,7 +561,7 @@ class FigoSession(FigoObject):
         Modify balance or account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `account_balance` - modified AccountBalance object to be saved
 
          :Returns:
@@ -563,9 +580,7 @@ class FigoSession(FigoObject):
 
     def get_supported_payment_services(self, country_code):
         """
-        Return a list of supported credit cards an other payment services.
-
-        A fake bank code is used for identification
+        Return a list of supported credit cards and other payment services.
 
         :Parameters:
             - 'country_code'    -   country code of the requested payment services
@@ -677,7 +692,7 @@ class FigoSession(FigoObject):
         the specified account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `List` of Payment objects
@@ -695,7 +710,7 @@ class FigoSession(FigoObject):
         Get a single `Payment` object.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `payment_id` - ID of the payment to be retrieved
 
         :Returns:
@@ -769,8 +784,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https" if self.API_SECURE else "http") +
-                    "://" + API_ENDPOINT + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response["task_token"])
 
     @property
@@ -847,7 +861,7 @@ class FigoSession(FigoObject):
 
     def create_process(self, process):
         """
-        Create a new process to be executed by the user Returns a process token.
+        Create a new process to be executed by the user. Returns a process token.
 
         :Parameters:
             - process   -   Process object which will be sent to the API
@@ -861,7 +875,7 @@ class FigoSession(FigoObject):
                                       collection_name="transactions")
 
     def get_transactions(self, account_id=None, since=None, count=1000, offset=0,
-                         include_pending=False):
+                         include_pending=False, sort='desc'):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
         :Parameters:
@@ -877,7 +891,7 @@ class FigoSession(FigoObject):
         :Returns:
             `List` of Transaction objects
         """
-        params = {'count': count, 'offset': offset,
+        params = {'count': count, 'offset': offset, 'sort': sort,
                   'include_pending': ("1" if include_pending else "0")}
         if since is not None:
             params['since'] = since
@@ -892,7 +906,7 @@ class FigoSession(FigoObject):
         Retrieve a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `transaction_id` - ID of the transaction to be retrieved
 
         :Returns:
@@ -944,7 +958,7 @@ class FigoSession(FigoObject):
         Retrieve a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `security_id` - ID of the security to be retrieved
 
         :Returns:
@@ -962,7 +976,7 @@ class FigoSession(FigoObject):
         Modify a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `securities_or_security_id` - Security or its ID to be modified
          - `visited` - new value of the visited field for the security
 
@@ -983,7 +997,7 @@ class FigoSession(FigoObject):
         Modify all securities of an account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the security
 
         :Returns:
@@ -1016,7 +1030,7 @@ class FigoSession(FigoObject):
         Modify a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `transaction_or_transaction_id` - Transactions or its ID to be modified
          - `visited` - new value of the visited field for the transaction
 
@@ -1037,7 +1051,7 @@ class FigoSession(FigoObject):
         Modify all transactions of a specific account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the transactions
 
         :Returns:
@@ -1068,8 +1082,8 @@ class FigoSession(FigoObject):
         Delete a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
-         - `transaction_or_transaction_id` - Transaction or its ID to be modified
+         - `account_or_account_id` - account to be modified or its ID
+         - `transaction_or_transaction_id` - Transaction or its ID to be deleted
 
         :Returns:
             Nothing if the request was successful
@@ -1157,7 +1171,7 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `state` - String passed on through the complete synchronization process and to
-         the redirect target at the end. It should be used to validated the authenticity
+         the redirect target at the end. It should be used to validate the authenticity
          of the call to the redirect URL
          - `redirect_uri` - URI the user is redirected to after the process completes
 
@@ -1170,8 +1184,7 @@ class FigoSession(FigoObject):
         if response is None:
             return None
         else:
-            return (("https://" if self.API_SECURE else "http://") +
-                    API_ENDPOINT + "/task/start?id=" +
+            return (self.api_endpoint + "/task/start?id=" +
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):

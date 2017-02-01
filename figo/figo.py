@@ -106,6 +106,7 @@ class FigoObject(object):
         logger.warn("Querying the API failed when accessing '%s': %d",
                     complete_path,
                     response.status_code)
+
         return {'error': {
             'message': "internal_server_error",
             'description': "We are very sorry, but something went wrong"}}
@@ -436,44 +437,52 @@ class FigoSession(FigoObject):
 
     def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
         """
-        Add an account.
+        Add a bank account to the figo user.
 
-        :Parameters:
-        - `bank_code` - bank code of the bank to add
-        - `country` - country code of the bank to add
-        - `credentials` - list of credentials needed for bank login
+        Note:
+            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
 
-        :Returns:
-         A task token for the account creation task
+        Args:
+            country (str): country code of the bank to add
+            credentials ([str]): list of credentials needed for bank login
+            bank_code (str): bank code of the bank to add
+            iban (str): iban of the account to add
+            save_pin (bool): save credentials on the figo Connect server
+
+        Returns:
+         TaskToken: A task token for the account creation task
         """
-        data = {}
-        if iban is not None:
-            data = {"iban": iban, "country": country, "credentials": credentials,
-                    "save_pin": save_pin}
-        elif bank_code is not None:
-            data = {"bank_code": bank_code, "country": country, "credentials": credentials,
-                    "save_pin": save_pin}
+        data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
+        if iban:
+            data['iban'] = iban 
+        elif bank_code:
+            data['bank_code'] = bank_code
+
         return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
     def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
         """
-        Add a bank account to the Figo user and start syncing it.
+        Add a bank account and start syncing it.
 
-        bank_code or iban has to be set.
+        Note:
+            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
+            The number of sync retries is determined by `FigoSession.sync_poll_retry`.
 
-        :Parameters:
-        - `bank_code` - bank code of the bank to add
-        - `country` - country code of the bank to add
-        - `credentials` - list of credentials needed for bank login
+        Args:
+            country (str): country code of the bank to add
+            credentials ([str]): list of credentials needed for bank login
+            bank_code (str): bank code of the bank to add
+            iban (str): iban of the account to add
+            save_pin (bool): save credentials on the figo Connect server
 
-        :Returns:
-         State of the sync task.
+        Returns:
+         TaskToken: A task token for the account creation task
         """
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         for _ in range(self.sync_poll_retry):
             task_state = self.get_task_state(task_token)
-            logger.info('task message: %s', task_state.message)
-            logger.debug('task "%s"', task_state)
+            logger.info("Adding account {0}/{1}: {2}".format(bank_code,iban,task_state.message))
+            logger.debug(str(task_state))
             if task_state.is_ended or task_state.is_erroneous:
                 break
             sleep(0.5)

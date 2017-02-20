@@ -22,12 +22,16 @@ CREDENTIALS = {
     'ssl_fingerprint': os.getenv('FIGO_SSL_FINGERPRINT', DEMO_CREDENTIALS['ssl_fingerprint']),
 }
 
+
 def is_demo(credentials):
     return credentials['client_id'] == DEMO_CREDENTIALS['client_id']
 
+
 PASSWORD = 'some_words'
 
+
 DEMO_TOKEN = 'ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ'
+
 
 @pytest.fixture(scope='session')
 def figo_connection():
@@ -37,9 +41,11 @@ def figo_connection():
                           api_endpoint=CREDENTIALS['api_endpoint'],
                           fingerprints=[CREDENTIALS['ssl_fingerprint']])
 
+
 @pytest.fixture
 def new_user_id():
     return "{0}testuser@example.com".format(uuid.uuid4())
+
 
 @pytest.yield_fixture
 def figo_session(figo_connection, new_user_id):
@@ -53,6 +59,7 @@ def figo_session(figo_connection, new_user_id):
     yield session
 
     session.remove_user()
+
 
 @pytest.yield_fixture(scope='module')
 def demo_session():

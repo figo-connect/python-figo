@@ -1,9 +1,11 @@
+# -*- coding:utf-8 -*-
+
 import time
-from uuid import uuid4
 
 import pytest
+from mock import patch
 
-from figo.figo import FigoPinException
+from figo.figo import FigoException, FigoPinException
 from figo.models import TaskToken, TaskState, Service, LoginSettings
 
 CREDENTIALS = ["figo", "figo"]
@@ -32,9 +34,57 @@ def t_05_add_account(figo_session):
 
 def test_050_add_account_and_sync_wrong_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
-    with pytest.raises(FigoPinException):
-        figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
-    assert len(figo_session.accounts) == 0
+    try:
+        with pytest.raises(FigoException):
+            figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
+        assert len(figo_session.accounts) == 0
+    except FigoException as figo_exception:
+        # BBB(Valentin): prevent demo account from complaining - it returns no code on error
+        if "Please use demo account credentials" not in figo_exception.error_description:
+            raise
+
+
+def test_add_account_and_sync_wrong_pin_postbank(figo_session):
+    """
+    Check that `FigoPinException` is raised correctly on given task state, which occurs
+    when attempting to add an account to Postbank with syntactically correct (9-digit login), but
+    invalid credentials. Note that syntactically incorrect credentials return code `20000` and a
+    different message.
+    """
+
+    mock_task_state = {
+        "is_ended": True,
+        "account_id": "A2248267.0",
+        "is_waiting_for_pin": False,
+        "is_erroneous": True,
+        "message": "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
+                   "Bitteüberprüfen Sie Ihre Benutzerkennung.",
+        "error": {
+            "code": 10000,
+            "group": "user",
+            "name": "Login credentials are invalid",
+            "message": "9050 Die Nachricht enthält Fehler.; 9800 Dialog abgebrochen; "
+                       "9010 Initialisierung fehlgeschlagen, Auftrag nicht bearbeitet.; "
+                       "3920 Zugelassene Zwei-Schritt-Verfahren für den Benutzer.; "
+                       "9010 PIN/TAN Prüfung fehlgeschlagen; "
+                       "9931 Anmeldename oder PIN ist falsch.",
+            "data": {},
+            "description": "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
+                           "Bitte überprüfen Sie Ihre Benutzerkennung."
+        },
+        "challenge": {},
+        "is_waiting_for_response": False
+    }
+
+    with patch.object(figo_session, 'get_task_state') as mock_state:
+        with patch.object(figo_session, 'add_account') as mock_account:
+
+            mock_state.return_value = TaskState.from_dict(figo_session, mock_task_state)
+            mock_account.return_value = None
+
+            with pytest.raises(FigoPinException):
+                figo_session.add_account_and_sync("de", None, None)
+            assert len(figo_session.accounts) == 0
 
 
 def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
@@ -44,9 +94,12 @@ def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
         task_state = figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
     except FigoPinException as pin_exception:
         task_state = figo_session.add_account_and_sync_with_new_pin(pin_exception, CREDENTIALS[1])
-    time.sleep(5)
-    assert isinstance(task_state, TaskState)
-    assert len(figo_session.accounts) == 3
+        assert isinstance(task_state, TaskState)
+        assert len(figo_session.accounts) == 3
+    except FigoException as figo_exception:
+        # BBB(Valentin): prevent demo account from complaining - it returns no code on error
+        if "Please use demo account credentials" not in figo_exception.error_description:
+            raise
 
 
 @pytest.mark.skip(reason="test expects state of account, that are not prepared at the moment")

@@ -154,13 +154,11 @@ class FigoException(Exception):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
         if 'code' in dictionary['error']:
-            code = ['code']
+            code = dictionary['error']['code']
         else:
             code = None
 
-        return cls(dictionary['error']['message'],
-                   dictionary['error']['description'],
-                   code)
+        return cls(dictionary['error']['message'], dictionary['error']['description'], code)
 
 
 class FigoPinException(FigoException):
@@ -484,7 +482,7 @@ class FigoSession(FigoObject):
             logger.debug('task "%s"', task_state)
             if task_state.is_ended or task_state.is_erroneous:
                 break
-            sleep(0.5)
+            sleep(2)
         else:
             raise FigoException(
                 'could not sync',
@@ -492,9 +490,9 @@ class FigoSession(FigoObject):
             )
 
         if task_state.is_erroneous:
-            if task_state.error['code'] == 10000:
+            if task_state.error and task_state.error['code'] == 10000:
                 raise FigoPinException(country, credentials, bank_code, iban, save_pin)
-            raise FigoException("", task_state.message, task_state.error['code'])
+            raise FigoException("", task_state.message)
         return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):

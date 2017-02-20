@@ -634,7 +634,7 @@ class TaskState(ModelBase):
 
     __dump_attributes__ = ["account_id", "message", "is_waiting_for_pin",
                            "is_waiting_for_response", "is_erroneous",
-                           "is_ended", "challenge"]
+                           "is_ended", "challenge", "error"]
 
     account_id = None
     """Account ID of currently processed account"""
@@ -658,6 +658,9 @@ class TaskState(ModelBase):
 
     challenge = None
     """Challenge object"""
+
+    error = None
+    """Error dict if error occurred"""
 
     def __str__(self, *args, **kwargs):
         """Short String representation of a TaskState."""

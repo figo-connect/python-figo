@@ -139,12 +139,13 @@ class FigoException(Exception):
     They consist of a code-like `error` and a human readable `error_description`.
     """
 
-    def __init__(self, error, error_description):
+    def __init__(self, error, error_description, code=None):
         """Create a Exception with a error code and error description."""
         message = u"%s (%s)" % (error_description, error)
         super(FigoException, self).__init__(message)
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
+        self.code = code
         self.error = error
         self.error_description = error_description
 
@@ -152,7 +153,14 @@ class FigoException(Exception):
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
-        return cls(dictionary['error']['message'], dictionary['error']['description'])
+        if 'code' in dictionary['error']:
+            code = ['code']
+        else:
+            code = None
+
+        return cls(dictionary['error']['message'],
+                   dictionary['error']['description'],
+                   code)
 
 
 class FigoPinException(FigoException):
@@ -484,9 +492,9 @@ class FigoSession(FigoObject):
             )
 
         if task_state.is_erroneous:
-            if any([msg in task_state.message for msg in ["Zugangsdaten", "credentials"]]):
+            if task_state.error['code'] == 10000:
                 raise FigoPinException(country, credentials, bank_code, iban, save_pin)
-            raise FigoException("", task_state.message)
+            raise FigoException("", task_state.message, task_state.error['code'])
         return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):

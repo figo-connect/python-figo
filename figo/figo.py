@@ -646,7 +646,7 @@ class FigoSession(FigoObject):
         if isinstance(notification_or_notification_id, Notification):
             notification_or_notification_id = notification_or_notification_id.notification_id
 
-        query = "/rest/notifications/" + notification_or_notification_id
+        query = "/rest/notifications/{0}".format(notification_or_notification_id)
         self._request_with_exception(query, method="DELETE")
 
         return None
@@ -1095,9 +1095,9 @@ class FigoSession(FigoObject):
         - `bank_or_bank_id` - bank whose pin should be removed or its ID
         """
         if isinstance(bank_or_bank_id, BankContact):
-            bank_or_bank_id = bank_or_bank_id
+            bank_or_bank_id = bank_or_bank_id.bank_id
 
-        query = "/rest/banks/{0}/remove_pin".format(bank_or_bank_id.bank_id)
+        query = "/rest/banks/{0}/remove_pin".format(bank_or_bank_id)
         self._request_with_exception(query, method="POST")
 
         return None

@@ -280,23 +280,26 @@ class FigoConnection(FigoObject):
                 'refresh_token': response['refresh_token'] if 'refresh_token' in response else None,
                 'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
 
-    def credential_login(self, username, password):
+    def credential_login(self, username, password, scope=None):
         """
         Return a Token dictionary which tokens are used for further API actions.
 
-        :Parameters:
-            -   'username' - Figo username
-            -   'password' - Figo password
+        Args:
+            username (str): Figo username
+            password (str): Figo password
+            scope (str): Space delimited set of requested permissions.
+                         Example: "accounts=ro balance=ro transactions=ro offline"
 
-        :Return:
+        Returns:
             Dictionary which contains an access token and a refresh token.
         """
-        response = self._request_api(
-            "/auth/token",
-            data={"grant_type": "password",
-                  "username": username,
-                  "password": password},
-            method="POST")
+        data = {"grant_type": "password",
+                "username": username,
+                "password": password}
+        if scope:
+            data["scope"] = scope
+
+        response = self._request_api("/auth/token", data, method="POST")
 
         if 'error' in response:
             raise FigoException.from_dict(response)

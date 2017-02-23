@@ -230,7 +230,7 @@ class FigoConnection(FigoObject):
         :Parameters:
          - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
          - `state` - String passed on through the complete login process and to the redirect
-         target at the end. It should be used to validated the authenticity of the
+         target at the end. It should be used to validate the authenticity of the
          call to the redirect URL
 
         :Returns:
@@ -257,7 +257,7 @@ class FigoConnection(FigoObject):
         :returns:
             Dictionary with the following keys:
              - `access_token` - the access token for data access. You can pass it into
-             `FigoConnection.open_session` to get a FigoSession and access the users data
+             `FigoConnection.open_session` to get a FigoSession and access the user's data
              - `refresh_token` - if the scope contained the `offline` flag, also a
              refresh token is generated. It can be used to generate new access tokens,
              when the first one has expired.
@@ -405,8 +405,9 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `access_token` - the access token to bind this session to a user
-          - `api_endpoint` - base URI of the server to call
-          - `fingerprints` - list of the server's SSL fingerprints
+         - `api_endpoint` - base URI of the server to call
+         - `fingerprints` - list of the server's SSL fingerprints
+         - `sync_poll_retry` - maximum number of synchronization poll retries
         """
         super(FigoSession,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
@@ -416,7 +417,7 @@ class FigoSession(FigoObject):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': USER_AGENT}
-        self.sync_poll_retry = 20
+        self.sync_poll_retry = sync_poll_retry
 
     @property
     def accounts(self):
@@ -544,7 +545,7 @@ class FigoSession(FigoObject):
         Get balance and account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `AccountBalance` object for the respective account
@@ -563,7 +564,7 @@ class FigoSession(FigoObject):
         Modify balance or account limits.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `account_balance` - modified AccountBalance object to be saved
 
          :Returns:
@@ -580,32 +581,77 @@ class FigoSession(FigoObject):
                 "/rest/accounts/%s/balance" % account_or_account_id,
                 account_balance.dump(), "PUT")
 
+    def get_catalog(self):
+        """
+        Return a dict with lists of supported banks and payment services.
+
+        Returns:
+            dict {'banks': [Service], 'services': [Service]}: 
+                dict with lists of supported banks and payment services
+        """
+        catalog = self._request_with_exception("/rest/catalog/")
+        for k, v in catalog.items():
+            catalog[k] = [Service.from_dict(self, service) for service in v]
+
+        return catalog
+
     def get_supported_payment_services(self, country_code):
         """
-        Return a list of supported credit cards an other payment services.
+        Return a list of supported credit cards and other payment services.
 
-        :Parameters:
-            - 'country_code'    -   country code of the requested payment services
-        :Returns:
-            A list of Service objects
+        Args:
+            country_code (str): country code of the requested payment services
+
+        Returns:
+            [Service]: list of supported credit cards and other payment services
         """
         services = self._request_with_exception("/rest/catalog/services/%s" % country_code)[
             "services"]
         return [Service.from_dict(self, service) for service in services]
 
+    def get_supported_banks(self, country_code):
+        """
+        Return a list of supported banks.
+
+        Args:
+            country_code (str): country code of the requested banks
+
+        Retursn:
+            [BankContact]: list of supported banks
+        """
+        banks = self._request_with_exception("/rest/catalog/banks/%s" % country_code)[
+            "banks"]
+        return [BankContact.from_dict(self, bank) for bank in banks]
+
     def get_login_settings(self, country_code, item_id):
         """
-        Return the login settings of a bank or service.
+        Return the login settings of a bank.
 
-        :Parameters:
-            - 'country_code'    -   country code of the requested bank or service
-            - 'item_id'         -   bank code or fake bank code of the requested bank or service
-        :Returns:
-            A LoginSettings object which contains information which are needed for
-            logging in to the bank or service.
+        Args:
+            country_code (str): country code of the requested bank
+            item_id (str): bank code or fake bank code of the requested bank
+        
+        Returns:
+            LoginSettings: Object that contains information which are needed for
+                           logging in to the bank
         """
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+
+    def get_service_login_settings(self, country_code, item_id):
+        """
+        Return the login settings of a payment service.
+
+        Args:
+            country_code (str): country code of the requested payment service
+            item_id (str): bank code or fake bank code of the requested payment service
+        
+        Returns:
+            LoginSettings: Object that contains information which are needed for
+                           logging in to the payment service.
+        """
+        return self._query_api_object(LoginSettings,
+                                      "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
     def set_account_sort_order(self, accounts):
         """
@@ -694,7 +740,7 @@ class FigoSession(FigoObject):
         the specified account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
 
         :Returns:
             `List` of Payment objects
@@ -712,7 +758,7 @@ class FigoSession(FigoObject):
         Get a single `Payment` object.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `payment_id` - ID of the payment to be retrieved
 
         :Returns:
@@ -863,7 +909,7 @@ class FigoSession(FigoObject):
 
     def create_process(self, process):
         """
-        Create a new process to be executed by the user Returns a process token.
+        Create a new process to be executed by the user. Returns a process token.
 
         :Parameters:
             - process   -   Process object which will be sent to the API
@@ -908,7 +954,7 @@ class FigoSession(FigoObject):
         Retrieve a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `transaction_id` - ID of the transaction to be retrieved
 
         :Returns:
@@ -960,7 +1006,7 @@ class FigoSession(FigoObject):
         Retrieve a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be queried or its ID
          - `security_id` - ID of the security to be retrieved
 
         :Returns:
@@ -978,7 +1024,7 @@ class FigoSession(FigoObject):
         Modify a specific security.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `securities_or_security_id` - Security or its ID to be modified
          - `visited` - new value of the visited field for the security
 
@@ -999,7 +1045,7 @@ class FigoSession(FigoObject):
         Modify all securities of an account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the security
 
         :Returns:
@@ -1032,7 +1078,7 @@ class FigoSession(FigoObject):
         Modify a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `transaction_or_transaction_id` - Transactions or its ID to be modified
          - `visited` - new value of the visited field for the transaction
 
@@ -1053,7 +1099,7 @@ class FigoSession(FigoObject):
         Modify all transactions of a specific account.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+         - `account_or_account_id` - account to be modified or its ID
          - `visited` - new value of the visited field for the transactions
 
         :Returns:
@@ -1084,8 +1130,8 @@ class FigoSession(FigoObject):
         Delete a specific transaction.
 
         :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
-         - `transaction_or_transaction_id` - Transaction or its ID to be modified
+         - `account_or_account_id` - account to be modified or its ID
+         - `transaction_or_transaction_id` - Transaction or its ID to be deleted
 
         :Returns:
             Nothing if the request was successful
@@ -1165,7 +1211,7 @@ class FigoSession(FigoObject):
 
     def get_sync_url(self, state, redirect_uri):
         """
-        URL to trigger a synchronisation.
+        URL to trigger a synchronization.
 
         The user should open this URL in a web browser to synchronize his/her accounts with
         the respective bank servers. When the process is finished, the user is
@@ -1173,7 +1219,7 @@ class FigoSession(FigoObject):
 
         :Parameters:
          - `state` - String passed on through the complete synchronization process and to
-         the redirect target at the end. It should be used to validated the authenticity
+         the redirect target at the end. It should be used to validate the authenticity
          of the call to the redirect URL
          - `redirect_uri` - URI the user is redirected to after the process completes
 

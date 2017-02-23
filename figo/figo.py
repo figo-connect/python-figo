@@ -578,32 +578,77 @@ class FigoSession(FigoObject):
                 "/rest/accounts/%s/balance" % account_or_account_id,
                 account_balance.dump(), "PUT")
 
+    def get_catalog(self):
+        """
+        Return a dict with lists of supported banks and payment services.
+
+        Returns:
+            dict {'banks': [Service], 'services': [Service]}: 
+                dict with lists of supported banks and payment services
+        """
+        catalog = self._request_with_exception("/rest/catalog/")
+        for k, v in catalog.items():
+            catalog[k] = [Service.from_dict(self, service) for service in v]
+
+        return catalog
+
     def get_supported_payment_services(self, country_code):
         """
         Return a list of supported credit cards and other payment services.
 
-        :Parameters:
-            - 'country_code'    -   country code of the requested payment services
-        :Returns:
-            A list of Service objects
+        Args:
+            country_code (str): country code of the requested payment services
+
+        Returns:
+            [Service]: list of supported credit cards and other payment services
         """
         services = self._request_with_exception("/rest/catalog/services/%s" % country_code)[
             "services"]
         return [Service.from_dict(self, service) for service in services]
 
+    def get_supported_banks(self, country_code):
+        """
+        Return a list of supported banks.
+
+        Args:
+            country_code (str): country code of the requested banks
+
+        Retursn:
+            [BankContact]: list of supported banks
+        """
+        banks = self._request_with_exception("/rest/catalog/banks/%s" % country_code)[
+            "banks"]
+        return [BankContact.from_dict(self, bank) for bank in banks]
+
     def get_login_settings(self, country_code, item_id):
         """
-        Return the login settings of a bank or service.
+        Return the login settings of a bank.
 
-        :Parameters:
-            - 'country_code'    -   country code of the requested bank or service
-            - 'item_id'         -   bank code or fake bank code of the requested bank or service
-        :Returns:
-            A LoginSettings object which contains information which are needed for
-            logging in to the bank or service.
+        Args:
+            country_code (str): country code of the requested bank
+            item_id (str): bank code or fake bank code of the requested bank
+        
+        Returns:
+            LoginSettings: Object that contains information which are needed for
+                           logging in to the bank
         """
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+
+    def get_service_login_settings(self, country_code, item_id):
+        """
+        Return the login settings of a payment service.
+
+        Args:
+            country_code (str): country code of the requested payment service
+            item_id (str): bank code or fake bank code of the requested payment service
+        
+        Returns:
+            LoginSettings: Object that contains information which are needed for
+                           logging in to the payment service.
+        """
+        return self._query_api_object(LoginSettings,
+                                      "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
     def set_account_sort_order(self, accounts):
         """

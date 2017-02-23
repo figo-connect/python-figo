@@ -812,12 +812,12 @@ class FigoSession(FigoObject):
         logger.debug('Geting task state for: %s', task_token)
 
         data = {
-                    "id": task_token.task_token,
-                    "pin": pin,
-                    "continue": continue_,
-                    "save_pin": save_pin,
-                    "response": response
-                }
+            "id": task_token.task_token,
+            "pin": pin,
+            "continue": continue_,
+            "save_pin": save_pin,
+            "response": response
+        }
 
         data = dict((k, v) for k, v in data.items() if v is not None)
 

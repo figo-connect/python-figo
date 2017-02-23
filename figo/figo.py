@@ -863,18 +863,18 @@ class FigoSession(FigoObject):
                          include_pending=False):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
-        :Parameters:
-         - `account_id` - ID of the account for which to list the transactions
-         - `since` - this parameter can either be a transaction ID or a date
-         - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determine the
+        Args
+            account_id (str): ID of the account for which to list the transactions
+            since (str): This parameter can either be a transaction ID or a date.
+            count (int): Limit the number of returned transactions.
+            offset (int): Which offset into the result set should be used to determine the
          first transaction to return (useful in combination with count)
-         - `include_pending` - this flag indicates whether pending transactions should
-         be included in the response; pending transactions are always included as a
-         complete set, regardless of the `since` parameter
+            include_pending (bool): - This flag indicates whether pending transactions should
+         be included in the response. Pending transactions are always included as a
+         complete set, regardless of the `since` parameter.
 
-        :Returns:
-            `List` of Transaction objects
+        Returns:
+            [Transaction]: List of `Transaction` objects
         """
         params = {'count': count, 'offset': offset,
                   'include_pending': ("1" if include_pending else "0")}
@@ -883,7 +883,7 @@ class FigoSession(FigoObject):
 
         params = urllib.urlencode(params)
 
-        if account_id:
+        if account_id is not None:
             query = "/rest/accounts/{0}/transactions?{1}".format(account_id, params)
         else:
             query = "/rest/transactions?{0}".format(params)

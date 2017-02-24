@@ -595,7 +595,7 @@ class FigoSession(FigoObject):
         Return a dict with lists of supported banks and payment services.
 
         Returns:
-            dict {'banks': [Service], 'services': [Service]}: 
+            dict {'banks': [Service], 'services': [Service]}:
                 dict with lists of supported banks and payment services
         """
         catalog = self._request_with_exception("/rest/catalog/")
@@ -626,11 +626,11 @@ class FigoSession(FigoObject):
             country_code (str): country code of the requested banks
 
         Retursn:
-            [BankContact]: list of supported banks
+            [Service]: list of supported banks
         """
         banks = self._request_with_exception("/rest/catalog/banks/%s" % country_code)[
             "banks"]
-        return [BankContact.from_dict(self, bank) for bank in banks]
+        return [Service.from_dict(self, bank) for bank in banks]
 
     def get_login_settings(self, country_code, item_id):
         """
@@ -639,7 +639,7 @@ class FigoSession(FigoObject):
         Args:
             country_code (str): country code of the requested bank
             item_id (str): bank code or fake bank code of the requested bank
-        
+
         Returns:
             LoginSettings: Object that contains information which are needed for
                            logging in to the bank
@@ -654,7 +654,7 @@ class FigoSession(FigoObject):
         Args:
             country_code (str): country code of the requested payment service
             item_id (str): bank code or fake bank code of the requested payment service
-        
+
         Returns:
             LoginSettings: Object that contains information which are needed for
                            logging in to the payment service.

@@ -10,7 +10,9 @@ class ModelBase(object):
 
     @classmethod
     def from_dict(cls, session, data_dict):
-        """Creating an instance of the specific type from the data passed in the dictionary `data_dict`."""
+        """
+        Creating an instance of the specific type from the data passed
+        in the dictionary `data_dict`."""
         return cls(session, **data_dict)
 
     def __init__(self, session, **kwargs):
@@ -72,7 +74,16 @@ class Account(ModelBase):
     """BIC"""
 
     type = None
-    """Account type: Giro account, Savings account, Credit card, Loan account, PayPal, Cash book or Unknown"""
+    """
+    Account type:
+        Giro account
+        Savings account
+        Credit card
+        Loan account
+        PayPal
+        Cash book
+        Unknown
+    """
 
     supported_tan_schemes = None
     """List of supported tan schemes"""
@@ -120,14 +131,17 @@ class Account(ModelBase):
         """
         Get an array of `Transaction` objects, one for each transaction of the user.
 
-        :Parameters:
-         - `since` - this parameter can either be a transaction ID or a date
-         - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
-         - `include_pending` - this flag indicates whether pending transactions should be included in the response; pending transactions are always included as a complete set, regardless of the `since` parameter
+        Args:
+         since (str): This parameter can either be a transaction ID or a date.
+         count (int): Limit the number of returned transactions
+         offset (int): Offset into the result set to determine the first transaction returned
+                       (useful in combination with count)
+         nclude_pending (bool): This flag indicates whether pending transactions should be included
+                                in the response; pending transactions are always included as a
+                                complete set, regardless of the `since` parameter.
 
-        :Returns:
-            `List` of Transaction objects
+        Returns:
+            [Transaction]: List of Transaction objects
         """
         return self.session.get_transactions(self.account_id, since, count, offset, include_pending)
 
@@ -154,15 +168,17 @@ class Account(ModelBase):
         """
         Get an array of `Security` objects, one for each security of the user.
 
-        :Parameters:
-         - `account_id` - ID of the account for which to list the securities
-         - `since` - this parameter can either be a transaction ID or a date
-         - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determin the first transaction to return (useful in combination with count)
-         - `accounts` - if retrieving the securities for all accounts, filter the securities to be only from these accounts
+        Args:
+         account_id (str): ID of the account for which to list the securities
+         since (str): This parameter can either be a transaction ID or a date.
+         count (int): Limit the number of returned transactions
+         offset (int): Offset into the result set to determine the first security returned
+                       (useful in combination with count)
+         accounts ([str]): If retrieving the securities for all accounts, filter the securities
+                           to be only from these accounts.
 
-        :Returns:
-            `List` of Security objects
+        Returns:
+            [Security]: List of Security objects
         """
         return self.session.get_securities(self.account_id, since, count, offset, accounts)
 
@@ -204,7 +220,9 @@ class BankContact(ModelBase):
     """SEPA direct debit creditor ID."""
 
     save_pin = None
-    """This flag indicates whether the user has chosen to save the PIN on the figo Connect server."""
+    """
+    This flag indicates whether the user has chosen to save the PIN on the figo Connect server.
+    """
 
     def __str__(self):
         """Short String representation of the bank contact."""
@@ -270,7 +288,8 @@ class Payment(ModelBase):
         - cents                     -   If true, the amount is submitted and displayed as cents
     """
 
-    __dump_attributes__ = ["type", "name", "account_number", "bank_code", "amount", "currency", "purpose"]
+    __dump_attributes__ = ["type", "name", "account_number", "bank_code",
+                           "amount", "currency", "purpose"]
 
     payment_id = None
     """Internal figo Connect payment ID"""
@@ -381,7 +400,15 @@ class Transaction(ModelBase):
     """Purpose text"""
 
     type = None
-    """Transaction type: Transfer, Standing order, Direct debit, Salary or rent, Electronic cash, GeldKarte, ATM, Charges or interest or Unknown"""
+    """
+    Transaction type:
+        Transfer
+        Standing order
+        Direct debit
+        Salary or rent
+        GeldKarte
+        Charges or interest
+        """
 
     booking_text = None
     """Booking text"""
@@ -412,7 +439,8 @@ class Transaction(ModelBase):
 
     def __str__(self):
         """Short String representation of a Transaction."""
-        return "Transaction: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.value_date))
+        return "Transaction: %d %s to %s at %s" % (self.amount, self.currency,
+                                                   self.name, str(self.value_date))
 
 
 class Notification(ModelBase):
@@ -440,7 +468,10 @@ class Notification(ModelBase):
 
 class SynchronizationStatus(ModelBase):
 
-    """Object representing the synchronization status of the figo servers with e banks, payment providers or financial service providers."""
+    """
+    Object representing the synchronization status of the figo servers with e banks,
+    payment providers or financial service providers.
+    """
 
     __dump_attributes__ = []
 
@@ -867,4 +898,5 @@ class Security(ModelBase):
 
     def __str__(self):
         """Short String representation of a Security."""
-        return "Security: %d %s to %s at %s" % (self.amount, self.currency, self.name, str(self.trade_timestamp))
+        return "Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
+                                                str(self.trade_timestamp))

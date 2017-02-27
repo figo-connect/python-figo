@@ -878,38 +878,39 @@ class FigoSession(FigoObject):
         """
         return self._request_with_exception("/task/start?id=%s" % task_token_obj.task_token)
 
-    def get_task_state(self, task_token, **kwargs):
-        """Return the progress of the given task. The kwargs are used to submit additional
+    def get_task_state(self, task_token, pin=None, continue_=None, save_pin=None, response=None):
+        """
+        Return the progress of the given task. The kwargs are used to submit additional
         content for the task.
 
-        :Parameters:
-        - `pin` - Submit PIN. If this parameter is set, then the parameter save_pin must be
-        set, too.
-        - `continue` - This flag signals to continue after an error condition or to skip a
-        PIN or challenge-response entry
-        - `save_pin` - This flag indicates whether the user has chosen to save the PIN on
-        the figo Connect server
-        - `response` - Submit response to challenge.
+        Args:
+            task_token (TaskToken): Token of the task to poll.
+            pin (str): Submit PIN. If this parameter is set, then the parameter save_pin must be
+                       set, too.
+            continue (bool): This flag signals to continue after an error condition or to skip a
+                             PIN or challenge-response entry
+            save_pin (bool): This flag indicates whether the user has chosen to save the PIN on
+                             the figo Connect server
+            response (dict): Submit response to challenge.
 
-        :Returns:
-        A TaskState object which indicates the current status of the queried task
+        Returns:
+            TaskState: Object that indicates the current status of the queried task
         """
         logger.debug('Geting task state for: %s', task_token)
-        data = {"id": task_token.task_token}
-        if "pin" in kwargs:
-            data["pin"] = kwargs["pin"]
-        if "continue" in kwargs:
-            data["continue"] = kwargs["continue"]
-        if "save_pin" in kwargs:
-            data["save_pin"] = kwargs["save_pin"]
-        if "response" in kwargs:
-            data["response"] = kwargs["response"]
-        return self._query_api_object(
-            TaskState,
-            "/task/progress?id=%s" % task_token.task_token,
-            data,
-            "POST",
-        )
+
+        data = {
+            "id": task_token.task_token,
+            "pin": pin,
+            "continue": continue_,
+            "save_pin": save_pin,
+            "response": response
+        }
+
+        data = dict((k, v) for k, v in data.items() if v is not None)
+
+        return self._query_api_object(TaskState,
+                                      "/task/progress?id=%s" % task_token.task_token,
+                                      data, "POST")
 
     def cancel_task(self, task_token_obj):
         """Cancel a task if possible.

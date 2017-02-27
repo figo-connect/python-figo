@@ -16,7 +16,21 @@ import requests
 from requests.exceptions import SSLError
 from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 
-from .models import *
+from .models import Account
+from .models import AccountBalance
+from .models import BankContact
+from .models import Payment
+from .models import Transaction
+from .models import Notification
+from .models import User
+from .models import WebhookNotification
+from .models import Service
+from .models import LoginSettings
+from .models import TaskToken
+from .models import TaskState
+from .models import PaymentProposal
+from .models import ProcessToken
+from .models import Security
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
@@ -65,7 +79,6 @@ class FigoObject(object):
         self.headers = {}
         self.api_endpoint = api_endpoint
         self.fingerprints = fingerprints
-
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -182,7 +195,8 @@ class FigoConnection(FigoObject):
     Its main purpose is to let user login via the OAuth2 API.
     """
 
-    def __init__(self, client_id, client_secret, redirect_uri, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+    def __init__(self, client_id, client_secret, redirect_uri,
+                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """
         Create a FigoConnection instance.
 
@@ -194,7 +208,7 @@ class FigoConnection(FigoObject):
          - `api_endpoint` - base URI of the server to call
          - `fingerprints` - list of the server's SSL fingerprints
         """
-        super(FigoConnection,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+        super(FigoConnection, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
         self.client_id = client_id
         self.client_secret = client_secret
@@ -401,7 +415,8 @@ class FigoSession(FigoObject):
     """Represents a user-bound connection to the figo connect API and allows access to
     the users data."""
 
-    def __init__(self, access_token, sync_poll_retry=20, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+    def __init__(self, access_token, sync_poll_retry=20,
+                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
         """Create a FigoSession instance.
 
         :Parameters:
@@ -410,7 +425,7 @@ class FigoSession(FigoObject):
          - `fingerprints` - list of the server's SSL fingerprints
          - `sync_poll_retry` - maximum number of synchronization poll retries
         """
-        super(FigoSession,self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+        super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
         self.access_token = access_token
         self.headers = {
@@ -542,10 +557,10 @@ class FigoSession(FigoObject):
         """
         if isinstance(account_or_account_id, STRING_TYPES):
             self._request_with_exception("/rest/accounts/%s" % account_or_account_id,
-                                           method="DELETE")
+                                         method="DELETE")
         else:
             self._request_with_exception("/rest/accounts/%s" % account_or_account_id.account_id,
-                                           method="DELETE")
+                                         method="DELETE")
 
         return None
 
@@ -727,7 +742,7 @@ class FigoSession(FigoObject):
         """
         if isinstance(notification_or_notification_id, STRING_TYPES):
             self._request_with_exception("/rest/notifications/" + notification_or_notification_id,
-                                           method="DELETE")
+                                         method="DELETE")
         else:
             self._request_with_exception(
                 "/rest/notifications/" + notification_or_notification_id.notification_id,
@@ -1053,7 +1068,7 @@ class FigoSession(FigoObject):
                                                                      Security):
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id.account_id, security_or_security_id.security_id),
-                                                  {"visited": visited}, "PUT")
+                {"visited": visited}, "PUT")
         else:
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
@@ -1107,7 +1122,7 @@ class FigoSession(FigoObject):
                                                                      Transaction):
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                                          {"visited": visited}, "PUT")
+                {"visited": visited}, "PUT")
         else:
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
@@ -1157,11 +1172,11 @@ class FigoSession(FigoObject):
         if isinstance(account_or_account_id, Account) and isinstance(transaction_or_transaction_id,
                                                                      Transaction):
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
-            account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                                                  method="DELETE")
+                account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
+                method="DELETE")
         else:
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
-            account_or_account_id, transaction_or_transaction_id), method="DELETE")
+                account_or_account_id, transaction_or_transaction_id), method="DELETE")
 
     def get_bank(self, bank_id):
         """
@@ -1196,10 +1211,10 @@ class FigoSession(FigoObject):
         """
         if isinstance(bank_or_bank_id, STRING_TYPES):
             self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id,
-                                           method="POST")
+                                         method="POST")
         else:
             self._request_with_exception("/rest/banks/%s/remove_pin" % bank_or_bank_id.bank_id,
-                                           method="POST")
+                                         method="POST")
         return None
 
     @property
@@ -1245,8 +1260,8 @@ class FigoSession(FigoObject):
             the URL to be opened by the user.
         """
         response = self._request_with_exception("/rest/sync",
-                                                  {"state": state, "redirect_uri": redirect_uri},
-                                                  method="POST")
+                                                {"state": state, "redirect_uri": redirect_uri},
+                                                method="POST")
         if response is None:
             return None
         else:

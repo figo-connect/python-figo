@@ -82,8 +82,9 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
             mock_state.return_value = TaskState.from_dict(figo_session, mock_task_state)
             mock_account.return_value = None
 
-            with pytest.raises(FigoPinException):
+            with pytest.raises(FigoPinException) as e:
                 figo_session.add_account_and_sync("de", None, None)
+            assert e.value.code == 1000
             assert len(figo_session.accounts) == 0
 
 

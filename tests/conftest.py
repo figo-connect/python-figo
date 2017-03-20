@@ -2,35 +2,35 @@ import uuid
 from logging import basicConfig
 import os
 
-basicConfig(level='DEBUG')
-
 import pytest
 
 from figo.figo import FigoConnection, FigoSession
+
+basicConfig(level='DEBUG')
 
 DEMO_CREDENTIALS = {
     'client_id': 'C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI',
     'client_secret': 'Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28',
     'api_endpoint': 'https://api.figo.me',
-    'ssl_fingerprint': 'DB:E2:E9:15:8F:C9:90:30:84:FE:36:CA:A6:11:38:D8:5A:20:5D:93',
+    'ssl_fingerprint': ('07:0F:14:AE:B9:4A:FB:3D:F8:00:E8:2B:69:A8:51:5C:'
+                        'EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33'),
 }
 
 CREDENTIALS = {
-    'client_id': os.getenv('CLIENT_ID', DEMO_CREDENTIALS['client_id']),
-    'client_secret': os.getenv('CLIENT_SECRET', DEMO_CREDENTIALS['client_secret']),
+    'client_id': os.getenv('FIGO_CLIENT_ID', DEMO_CREDENTIALS['client_id']),
+    'client_secret': os.getenv('FIGO_CLIENT_SECRET', DEMO_CREDENTIALS['client_secret']),
     'api_endpoint': os.getenv('FIGO_API_ENDPOINT', DEMO_CREDENTIALS['api_endpoint']),
     'ssl_fingerprint': os.getenv('FIGO_SSL_FINGERPRINT', DEMO_CREDENTIALS['ssl_fingerprint']),
 }
 
+PASSWORD = 'some_words'
+
+DEMO_TOKEN = ('ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexT'
+              'o22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ')
+
 
 def is_demo(credentials):
     return credentials['client_id'] == DEMO_CREDENTIALS['client_id']
-
-
-PASSWORD = 'some_words'
-
-
-DEMO_TOKEN = 'ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ'
 
 
 @pytest.fixture(scope='session')

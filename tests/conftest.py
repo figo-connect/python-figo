@@ -50,11 +50,22 @@ def new_user_id():
 
 @pytest.yield_fixture
 def figo_session(figo_connection, new_user_id):
-    if is_demo(CREDENTIALS):
-        pytest.skip("The demo client has no write access to the servers.")
-
     figo_connection.add_user("Test", new_user_id, PASSWORD)
     response = figo_connection.credential_login(new_user_id, PASSWORD)
+
+    scope = response['scope']
+
+    required_scopes = [
+        'accounts=rw',
+        'transactions=rw',
+        'user=rw',
+        'categorization=rw',
+        'create_user',
+    ]
+
+    if any(s not in scope for s in required_scopes):
+        pytest.skip("The client ID needs write access to the servers.")
+
     session = FigoSession(response['access_token'])
 
     yield session

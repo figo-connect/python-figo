@@ -107,6 +107,45 @@ def test_create_transaction_from_dict(demo_session):
     assert isinstance(transaction, Transaction)
 
 
+def test_create_transaction_with_categories(demo_session):
+    data = {
+        "account_id": "A1.1",
+        "account_number": "4711951501",
+        "amount": -17.89,
+        "bank_code": "90090042",
+        "bank_name": "Demobank",
+        "booked": False,
+        "booking_date": "2013-04-11T12:00:00.000Z",
+        "booking_text": "Ueberweisung",
+        "creation_timestamp": "2013-04-11T13:54:02.000Z",
+        "currency": "EUR",
+        "modification_timestamp": "2013-04-11T13:54:02.000Z",
+        "name": "Rogers Shipping, Inc.",
+        "purpose": "Ihre Sendung 0815 vom 01.03.2012, Vielen Dank",
+        "transaction_id": "T1.1.25",
+        "type": "Transfer",
+        "categories": [
+            {
+                "parent_id": None,
+                "id": 150,
+                "name": "Lebenshaltung"
+            },
+            {
+                "parent_id": 150,
+                "id": 162,
+                "name": "Spende"
+            }
+        ],
+        "value_date": "2013-04-11T12:00:00.000Z",
+        "visited": True
+    }
+    transaction = Transaction.from_dict(demo_session, data)
+    assert hasattr(transaction, 'categories')
+    for category in transaction.categories:
+        assert isinstance(category, Category)
+        assert hasattr(category, 'id')
+
+
 def test_create_notification_from_dict(demo_session):
     data = {
         "notification_id": "N1.7",

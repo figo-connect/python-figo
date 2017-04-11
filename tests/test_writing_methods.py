@@ -1,10 +1,15 @@
-import time
-from uuid import uuid4
+# coding:utf-8
 
 import pytest
+import time
 
+from figo.figo import FigoException
 from figo.figo import FigoPinException
-from figo.models import TaskToken, TaskState, Service, LoginSettings
+from figo.models import LoginSettings
+from figo.models import Service
+from figo.models import TaskState
+from figo.models import TaskToken
+
 
 CREDENTIALS = ["figo", "figo"]
 BANK_CODE = "90090042"

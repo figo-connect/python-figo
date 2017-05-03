@@ -123,7 +123,7 @@ class FigoObject(object):
             return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
 
-class FigoException(Exception):#pragma: no cover
+class FigoException(Exception):
     """Base class for all exceptions transported via the figo connect API.
 
     They consist of a code-like `error` and a human readable `error_description`.

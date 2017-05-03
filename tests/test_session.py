@@ -213,7 +213,6 @@ def test_start_process(demo_session):
     with pytest.raises(FigoException):
         demo_session.start_process(process_token)
 
-
 def test_create_process(demo_session):
     # Access token with process=rw needed
     process = Process(demo_session, email="demo@demo.de", password="figo",

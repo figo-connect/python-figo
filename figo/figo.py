@@ -38,13 +38,12 @@ VALID_FINGERPRINTS = os.getenv(
 
 
 ERROR_MESSAGES = {
-    400: {'message': "bad request", 'description': "Bad request"},
-    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
-    403: {'message': "forbidden", 'description': "Insufficient permission."},
-    404: {'message': "not_found", 'description': "Not found."},
-    405: {'message': "method_not_allowed", 'description': "Unexpected request method."},
-    503: {'message': "service_unavailable", 'description': "Exceeded rate limit."}
-
+    400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
+    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token.", 'code': 90000},
+    403: {'message': "forbidden", 'description': "Insufficient permission.", 'code': 90000},
+    404: {'message': "not_found", 'description': "Not found.", 'code': 90000},
+    405: {'message': "method_not_allowed", 'description': "Unexpected request method.", 'code': 90000},
+    503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
 }
 
 USER_AGENT = "python_figo/1.5.4"
@@ -98,7 +97,8 @@ class FigoObject(object):
                     response.status_code)
         return {'error': {
             'message': "internal_server_error",
-            'description': "We are very sorry, but something went wrong"}}
+            'description': "We are very sorry, but something went wrong",
+            'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
 

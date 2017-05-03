@@ -123,27 +123,30 @@ class FigoObject(object):
             return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
 
-class FigoException(Exception):
+class FigoException(Exception):#pragma: no cover
     """Base class for all exceptions transported via the figo connect API.
 
     They consist of a code-like `error` and a human readable `error_description`.
     """
 
-    def __init__(self, error, error_description):
+    def __init__(self, error, error_description, code):
         """Create a Exception with a error code and error description."""
-        message = u"%s (%s)" % (error_description, error)
-        super(FigoException, self).__init__(message)
+        super(FigoException, self).__init__()
 
-        # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
         self.error = error
-        self.code = code
         self.error_description = error_description
+        self.code = code
+
+    def __str__(self):
+        """String representation of the FigoException."""
+        return "FigoException: %s(%s)" % (repr(self.error_description), repr(self.error))
 
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
-        return cls(dictionary['error']['message'], dictionary['error']['description'])
+        return cls(dictionary['error']['message'], dictionary['error']['description'], dictionary['error']['code'])
+
 
 
 class FigoPinException(FigoException):

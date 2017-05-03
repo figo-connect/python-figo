@@ -136,6 +136,7 @@ class FigoException(Exception):
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
         self.error = error
+        self.code = code
         self.error_description = error_description
 
     @classmethod

@@ -35,6 +35,3 @@ htmlcov/*
 .mr.developer.cfg
 .project
 .pydevproject
-
-# Mac OSX
-*.DS_Store

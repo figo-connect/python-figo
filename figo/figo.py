@@ -129,23 +129,31 @@ class FigoException(Exception):
     They consist of a code-like `error` and a human readable `error_description`.
     """
 
-    def __init__(self, error, error_description, code):
+    def __init__(self, error, error_description, code = None):
         """Create a Exception with a error code and error description."""
         super(FigoException, self).__init__()
 
+        # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
         self.error = error
         self.error_description = error_description
         self.code = code
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: %s(%s)" % (repr(self.error_description), repr(self.error))
+        return "FigoException: {}({})" .format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
-        return cls(dictionary['error']['message'], dictionary['error']['description'], dictionary['error']['code'])
+        if 'code' in dictionary['error']:
+            code = ['code']
+        else:
+            code = None
+
+        return cls(dictionary['error']['message'],
+                    dictionary['error']['description'],
+                    code)
 
 
 
@@ -166,7 +174,7 @@ class FigoPinException(FigoException):
 
     def __str__(self):
         """String representation of the FigoPinException."""
-        return "FigoPinException: %s(%s)" % (repr(self.error_description), repr(self.error))
+        return "FigoPinException: {}({})".format(self.error_description, self.error)
 
 
 class FigoConnection(FigoObject):
@@ -465,8 +473,8 @@ class FigoSession(FigoObject):
             sleep(0.5)
         else:
             raise FigoException(
-                'could not sync',
-                'task was not finished after {0} tries'.format(self.sync_poll_retry)
+                "could not sync",
+                "task was not finished after {0} tries".format(self.sync_poll_retry)
             )
 
         if task_state.is_erroneous:

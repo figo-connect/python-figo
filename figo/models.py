@@ -702,15 +702,15 @@ class TaskState(ModelBase):
     def __str__(self, *args, **kwargs):
         """Short String representation of a TaskState."""
         string = (u"TaskState: '{self.message}' "
-                   "(is_erroneous: {self.is_erroneous}, "
-                   "is_ended: {self.is_ended})")
+                  u"(is_erroneous: {self.is_erroneous}, "
+                  u"is_ended: {self.is_ended})")
 
         # BBB(Valentin): All strings come in UTF-8 from JSON. But:
         #   - python2.6: encode knows no kwargs
         #   - python2.7: `u"{0}".format(x)` returns `unicode`, `__str__()` excpects `str` (ASCII)
         #   - python3.x: encode returns `bytes`,`__str__` expects `str` (UTF-8)
         #   This is really ugly, but works in all pythons.
-        return str(string.format(self=self).encode('ascii','replace'))
+        return str(string.format(self=self).encode('ascii', 'replace'))
 
 
 class Challenge(ModelBase):

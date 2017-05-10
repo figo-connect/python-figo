@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# coding:utf-8
 
 import time
 
@@ -54,23 +54,23 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
 
     mock_task_state = {
         "is_ended": True,
-        "account_id": "A2248267.0",
+        "account_id": u"A2248267.0",
         "is_waiting_for_pin": False,
         "is_erroneous": True,
-        "message": "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
-                   "Bitteüberprüfen Sie Ihre Benutzerkennung.",
+        "message": u"Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
+                   u"Bitte überprüfen Sie Ihre Benutzerkennung.",
         "error": {
             "code": 10000,
-            "group": "user",
-            "name": "Login credentials are invalid",
-            "message": "9050 Die Nachricht enthält Fehler.; 9800 Dialog abgebrochen; "
-                       "9010 Initialisierung fehlgeschlagen, Auftrag nicht bearbeitet.; "
-                       "3920 Zugelassene Zwei-Schritt-Verfahren für den Benutzer.; "
-                       "9010 PIN/TAN Prüfung fehlgeschlagen; "
-                       "9931 Anmeldename oder PIN ist falsch.",
+            "group": u"user",
+            "name": u"Login credentials are invalid",
+            "message": u"9050 Die Nachricht enthält Fehler.; 9800 Dialog abgebrochen; "
+                       u"9010 Initialisierung fehlgeschlagen, Auftrag nicht bearbeitet.; "
+                       u"3920 Zugelassene Zwei-Schritt-Verfahren für den Benutzer.; "
+                       u"9010 PIN/TAN Prüfung fehlgeschlagen; "
+                       u"9931 Anmeldename oder PIN ist falsch.",
             "data": {},
-            "description": "Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
-                           "Bitte überprüfen Sie Ihre Benutzerkennung."
+            "description": u"Die Anmeldung zum Online-Zugang Ihrer Bank ist fehlgeschlagen. "
+                           u"Bitte überprüfen Sie Ihre Benutzerkennung."
         },
         "challenge": {},
         "is_waiting_for_response": False

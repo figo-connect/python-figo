@@ -697,7 +697,7 @@ class TaskState(ModelBase):
     """Challenge object"""
 
     error = None
-    """Error dict if error occurred"""
+    """Dict populated in case of an error"""
 
     def __str__(self, *args, **kwargs):
         """Short String representation of a TaskState."""

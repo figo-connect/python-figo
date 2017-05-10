@@ -176,10 +176,13 @@ class FigoPinException(FigoException):
     """This exception is thrown if the wrong pin was submitted to a task. It contains
     information about current state of the task."""
 
-    def __init__(self, country, credentials, bank_code, iban, save_pin):
+    def __init__(self, country, credentials, bank_code, iban, save_pin,
+                 error="Wrong PIN",
+                 error_description="You've entered a wrong PIN, please provide a new one.",
+                 code=None,
+                 ):
         """Initialiase an Exception for a wrong PIN which contains information about the task."""
-        self.error = "Wrong PIN"
-        self.error_description = "You've entered a wrong PIN, please provide a new one."
+        super(FigoPinException, self).__init__(error, error_description, code)
 
         self.country = country
         self.credentials = credentials
@@ -502,7 +505,7 @@ class FigoSession(FigoObject):
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         for _ in range(self.sync_poll_retry):
             task_state = self.get_task_state(task_token)
-            logger.info("Adding account {0}/{1}: {2}".format(bank_code,iban,task_state.message))
+            logger.info("Adding account {0}/{1}: {2}".format(bank_code, iban, task_state.message))
             logger.debug(str(task_state))
             if task_state.is_ended or task_state.is_erroneous:
                 break
@@ -515,7 +518,10 @@ class FigoSession(FigoObject):
 
         if task_state.is_erroneous:
             if task_state.error and task_state.error['code'] == 10000:
-                raise FigoPinException(country, credentials, bank_code, iban, save_pin)
+                raise FigoPinException(country, credentials, bank_code, iban, save_pin,
+                                       error=task_state.error['name'],
+                                       error_description=task_state.error['description'],
+                                       code=task_state.error['code'])
             raise FigoException("", task_state.message)
         return task_state
 

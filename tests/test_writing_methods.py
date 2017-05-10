@@ -84,7 +84,7 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
 
             with pytest.raises(FigoPinException) as e:
                 figo_session.add_account_and_sync("de", None, None)
-            assert e.value.code == 1000
+            assert e.value.code == 10000
             assert len(figo_session.accounts) == 0
 
 

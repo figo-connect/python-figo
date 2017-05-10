@@ -66,6 +66,7 @@ def test_sync_uri(demo_session):
 def test_get_mail_from_user(demo_session):
     assert demo_session.user.email == "demo@figo.me"
 
+
 @pytest.mark.skip(reason="race condition on travis")
 def test_create_update_delete_notification(demo_session):
     """

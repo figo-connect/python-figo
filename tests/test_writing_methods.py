@@ -14,7 +14,7 @@ BANK_CODE = "90090042"
 
 def test_03_get_supported_payment_services(figo_session):
     services = figo_session.get_supported_payment_services("de")
-    assert len(services) == 27
+    assert len(services) > 10  # this a changing value, this tests that at least some are returned
     assert isinstance(services[0], Service)
 
 

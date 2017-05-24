@@ -4,13 +4,13 @@
 from __future__ import unicode_literals
 
 import base64
+import json
 import logging
+import os
 import re
 import sys
-from time import sleep
-import os
 from datetime import datetime, timedelta
-import json
+from time import sleep
 
 import requests
 from requests.exceptions import SSLError
@@ -19,18 +19,18 @@ from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from .models import Account
 from .models import AccountBalance
 from .models import BankContact
-from .models import Payment
-from .models import Transaction
-from .models import Notification
-from .models import User
-from .models import WebhookNotification
-from .models import Service
 from .models import LoginSettings
-from .models import TaskToken
-from .models import TaskState
+from .models import Notification
+from .models import Payment
 from .models import PaymentProposal
 from .models import ProcessToken
 from .models import Security
+from .models import Service
+from .models import TaskState
+from .models import TaskToken
+from .models import Transaction
+from .models import User
+from .models import WebhookNotification
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
@@ -41,7 +41,6 @@ else:
 
     STRING_TYPES = (str, unicode)
 
-
 logger = logging.getLogger(__name__)
 
 VALID_FINGERPRINTS = os.getenv(
@@ -49,7 +48,6 @@ VALID_FINGERPRINTS = os.getenv(
     "07:0F:14:AE:B9:4A:FB:3D:F8:00:E8:2B:69:A8:51:5C:"
     "EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33"
 ).split(',')
-
 
 ERROR_MESSAGES = {
     400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
@@ -61,7 +59,7 @@ ERROR_MESSAGES = {
 }
 
 USER_AGENT = "python_figo/1.5.4"
-API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
+API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT', "https://api.figo.me")
 
 
 class FigoObject(object):
@@ -130,6 +128,7 @@ class FigoObject(object):
         # the check for is_erroneous in response is here to not confuse a task/progress
         # response with an error object
         # FIXME(dennis.lutter): refactor error handling
+        print(response)
         if 'error' in response and response["error"] and 'is_erroneous' not in response:
             raise FigoException.from_dict(response)
         else:
@@ -165,7 +164,7 @@ class FigoException(Exception):
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: {}({})" .format(self.error_description, self.error)
+        return "FigoException: {}({})".format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -482,7 +481,7 @@ class FigoSession(FigoObject):
         """
         data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
         if iban:
-            data['iban'] = iban 
+            data['iban'] = iban
         elif bank_code:
             data['bank_code'] = bank_code
 
@@ -576,6 +575,29 @@ class FigoSession(FigoObject):
                                          method="DELETE")
 
         return None
+
+    def sync_account(self, state, redirect_uri, account_ids, if_not_synced_since, sync_tasks=['transactions'],
+                     disable_notifications=False, auto_continue=False):
+        """
+        Trigger bank account sync
+        
+        :Parameters:
+         - `account` - account ID to be synced
+          
+        :Returns:
+         - `task_token` - task token
+        """
+        data = {'state': state,
+                'redirect_uri': redirect_uri,
+                'disable_notifications': disable_notifications,
+                'if_not_synced_since': if_not_synced_since,
+                'auto_continue': auto_continue,
+                'account_ids': account_ids,
+                'sync_tasks': sync_tasks}
+
+        task_token = self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+
+        return task_token
 
     def get_account_balance(self, account_or_account_id):
         """
@@ -1082,7 +1104,7 @@ class FigoSession(FigoObject):
                                                                      Security):
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id.account_id, security_or_security_id.security_id),
-                {"visited": visited}, "PUT")
+                                                {"visited": visited}, "PUT")
         else:
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
@@ -1136,7 +1158,7 @@ class FigoSession(FigoObject):
                                                                      Transaction):
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                {"visited": visited}, "PUT")
+                                          {"visited": visited}, "PUT")
         else:
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
@@ -1187,7 +1209,7 @@ class FigoSession(FigoObject):
                                                                      Transaction):
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                method="DELETE")
+                                                method="DELETE")
         else:
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id, transaction_or_transaction_id), method="DELETE")

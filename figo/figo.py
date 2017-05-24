@@ -128,7 +128,6 @@ class FigoObject(object):
         # the check for is_erroneous in response is here to not confuse a task/progress
         # response with an error object
         # FIXME(dennis.lutter): refactor error handling
-        print(response)
         if 'error' in response and response["error"] and 'is_erroneous' not in response:
             raise FigoException.from_dict(response)
         else:

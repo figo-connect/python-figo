@@ -316,6 +316,7 @@ class FigoConnection(FigoObject):
         Returns:
             Dictionary which contains an access token and a refresh token.
         """
+
         data = {"grant_type": "password",
                 "username": username,
                 "password": password}
@@ -327,9 +328,12 @@ class FigoConnection(FigoObject):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-        return {'access_token': response['access_token'],
-                'refresh_token': response['refresh_token'] if 'refresh_token' in response else None,
-                'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
+        return {
+            'access_token': response['access_token'],
+            'refresh_token': response['refresh_token'] if 'refresh_token' in response else None,
+            'expires': datetime.now() + timedelta(seconds=response['expires_in']),
+            'scope': response['scope'],
+        }
 
     def convert_refresh_token(self, refresh_token):
         """Convert a refresh token (granted for offline access and returned by
@@ -524,7 +528,8 @@ class FigoSession(FigoObject):
                                        error=task_state.error['name'],
                                        error_description=task_state.error['description'],
                                        code=task_state.error['code'])
-            raise FigoException("", task_state.message)
+            raise FigoException("", error_description=task_state.error['message'],
+                                code=task_state.error['code'])
         return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):

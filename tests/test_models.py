@@ -1,7 +1,23 @@
-from figo.models import Account, BankContact, AccountBalance, Payment, \
-    Transaction, Notification, SynchronizationStatus, User, Service, \
-    LoginSettings, Credential, TaskToken, TaskState, Challenge, PaymentProposal, \
-    Process, ProcessStep, ProcessOptions, Security
+from figo.models import Account
+from figo.models import AccountBalance
+from figo.models import BankContact
+from figo.models import Category
+from figo.models import Challenge
+from figo.models import Credential
+from figo.models import LoginSettings
+from figo.models import Notification
+from figo.models import Payment
+from figo.models import PaymentProposal
+from figo.models import Process
+from figo.models import ProcessOptions
+from figo.models import ProcessStep
+from figo.models import Security
+from figo.models import Service
+from figo.models import SynchronizationStatus
+from figo.models import TaskState
+from figo.models import TaskToken
+from figo.models import Transaction
+from figo.models import User
 
 
 def test_create_account_from_dict(demo_session):
@@ -105,6 +121,45 @@ def test_create_transaction_from_dict(demo_session):
     }
     transaction = Transaction.from_dict(demo_session, data)
     assert isinstance(transaction, Transaction)
+
+
+def test_create_transaction_with_categories(demo_session):
+    data = {
+        "account_id": "A1.1",
+        "account_number": "4711951501",
+        "amount": -17.89,
+        "bank_code": "90090042",
+        "bank_name": "Demobank",
+        "booked": False,
+        "booking_date": "2013-04-11T12:00:00.000Z",
+        "booking_text": "Ueberweisung",
+        "creation_timestamp": "2013-04-11T13:54:02.000Z",
+        "currency": "EUR",
+        "modification_timestamp": "2013-04-11T13:54:02.000Z",
+        "name": "Rogers Shipping, Inc.",
+        "purpose": "Ihre Sendung 0815 vom 01.03.2012, Vielen Dank",
+        "transaction_id": "T1.1.25",
+        "type": "Transfer",
+        "categories": [
+            {
+                "parent_id": None,
+                "id": 150,
+                "name": "Lebenshaltung"
+            },
+            {
+                "parent_id": 150,
+                "id": 162,
+                "name": "Spende"
+            }
+        ],
+        "value_date": "2013-04-11T12:00:00.000Z",
+        "visited": True
+    }
+    transaction = Transaction.from_dict(demo_session, data)
+    assert hasattr(transaction, 'categories')
+    for category in transaction.categories:
+        assert isinstance(category, Category)
+        assert hasattr(category, 'id')
 
 
 def test_create_notification_from_dict(demo_session):

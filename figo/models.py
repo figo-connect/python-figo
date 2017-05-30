@@ -363,7 +363,7 @@ class Transaction(ModelBase):
     __dump_attributes__ = ["transaction_id", "account_id", "name",
                            "account_number", "bank_code", "bank_name", "amount",
                            "currency", "booking_date", "value_date", "purpose",
-                           "type", "booking_text", "booked", "creation_timestamp",
+                           "type", "booking_text", "booked", "categories", "creation_timestamp",
                            "modification_timestamp", "visited", "additional_info"]
 
     transaction_id = None
@@ -416,6 +416,9 @@ class Transaction(ModelBase):
     booked = None
     """This flag indicates whether the transaction is booked or pending"""
 
+    categories = None
+    """List of categories assigned to this transaction, ordered from general to specific"""
+
     creation_timestamp = None
     """creation date"""
 
@@ -443,10 +446,29 @@ class Transaction(ModelBase):
         if self.value_date:
             self.value_date = dateutil.parser.parse(self.value_date)
 
+        if self.categories:
+            self.categories = [Category.from_dict(session, c) for c in self.categories]
+
     def __str__(self):
         """Short String representation of a Transaction."""
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency,
                                                    self.name, str(self.value_date))
+
+
+class Category(ModelBase):
+
+    """Object representing a category for a transaction"""
+
+    __dump_attributes__ = ["id", "parent_id", "name"]
+
+    id = None
+
+    parent_id = None
+
+    name = None
+
+    def __str__(self):
+        return self.name
 
 
 class Notification(ModelBase):

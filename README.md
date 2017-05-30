@@ -11,15 +11,13 @@ First, you have to install the package:
 pip install python-figo
 ```
 
-Now you can create a new session and access data:
+Now you can create a new session from the demo access token and read data:
 
 ```python
 from figo import FigoSession
 
 session = FigoSession("ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ")
-```
 
-```python
 # Print out a list of accounts including its balance
 for account in session.accounts:
     print account
@@ -39,7 +37,7 @@ from figo import FigoConnection, FigoSession
 connection = FigoConnection("<client ID>", "<client secret>", "http://my-domain.org/redirect-url")
 
 def start_login():
-    # open the webbrowser to kick of the login process
+    # open the webbrowser to kick off the login process
     webbrowser.open(connection.login_url(scope="accounts=ro transactions=ro", state="qweqwe"))
 
 def process_redirect(authentication_code, state):
@@ -66,10 +64,12 @@ You can find more documentation at http://python-figo.readthedocs.org
 
 In this repository you can also have a look at a simple console (`console_demo.py`) and web demo (`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
 
-# Alternative Fingerprints 
+# Environment variables
 
-You can override the default fingerprints by setting the environment variable `FIGO_SSL_FINGERPRINT` with a comma seperated list of fingerprints.
-
-# Alternative API endpoint
-
-You can overwrite the default api_endpoint by setting the environment variable `FIGO_API_ENDPOINT`.
+- `FIGO_SSL_FINGERPRINT`
+  - Override the default fingerprints with a comma seperated list of fingerprints.
+- `FIGO_API_ENDPOINT`
+  - Override the default API endpoint by setting the environment variable.
+- `FIGO_CLIENT_ID`, `FIGO_CLIENT_SECRET`
+  - Override to run tests with a client other than the demo client
+  

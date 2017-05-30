@@ -103,8 +103,8 @@ def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
         assert isinstance(task_state, TaskState)
         assert len(figo_session.accounts) == 3
     except FigoException as figo_exception:
-        # BBB(Valentin): prevent demo account from complaining - it returns no code on error
-        if "Please use demo account credentials" not in figo_exception.error_description:
+        # XXXValentin): prevent demo account from complaining
+        if figo_exception.code != 90000:
             raise
 
 

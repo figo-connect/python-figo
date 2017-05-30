@@ -530,7 +530,8 @@ class FigoSession(FigoObject):
                                        error=task_state.error['name'],
                                        error_description=task_state.error['description'],
                                        code=task_state.error['code'])
-            raise FigoException("", task_state.message)
+            raise FigoException("", error_description=task_state.error['message'],
+                                code=task_state.error['code'])
         return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):

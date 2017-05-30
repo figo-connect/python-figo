@@ -4,13 +4,13 @@
 from __future__ import unicode_literals
 
 import base64
+import json
 import logging
+import os
 import re
 import sys
-from time import sleep
-import os
 from datetime import datetime, timedelta
-import json
+from time import sleep
 
 import requests
 from requests.exceptions import SSLError
@@ -19,18 +19,18 @@ from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from .models import Account
 from .models import AccountBalance
 from .models import BankContact
-from .models import Payment
-from .models import Transaction
-from .models import Notification
-from .models import User
-from .models import WebhookNotification
-from .models import Service
 from .models import LoginSettings
-from .models import TaskToken
-from .models import TaskState
+from .models import Notification
+from .models import Payment
 from .models import PaymentProposal
 from .models import ProcessToken
 from .models import Security
+from .models import Service
+from .models import TaskState
+from .models import TaskToken
+from .models import Transaction
+from .models import User
+from .models import WebhookNotification
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
@@ -41,7 +41,6 @@ else:
 
     STRING_TYPES = (str, unicode)
 
-
 logger = logging.getLogger(__name__)
 
 VALID_FINGERPRINTS = os.getenv(
@@ -50,19 +49,17 @@ VALID_FINGERPRINTS = os.getenv(
     "EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33"
 ).split(',')
 
-
 ERROR_MESSAGES = {
-    400: {'message': "bad request", 'description': "Bad request"},
-    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
-    403: {'message': "forbidden", 'description': "Insufficient permission."},
-    404: {'message': "not_found", 'description': "Not found."},
-    405: {'message': "method_not_allowed", 'description': "Unexpected request method."},
-    503: {'message': "service_unavailable", 'description': "Exceeded rate limit."}
-
+    400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
+    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token.", 'code': 90000},
+    403: {'message': "forbidden", 'description': "Insufficient permission.", 'code': 90000},
+    404: {'message': "not_found", 'description': "Not found.", 'code': 90000},
+    405: {'message': "method_not_allowed", 'description': "Unexpected request method.", 'code': 90000},
+    503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
 }
 
 USER_AGENT = "python_figo/1.5.4"
-API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT',  "https://api.figo.me")
+API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT', "https://api.figo.me")
 
 
 class FigoObject(object):
@@ -122,7 +119,8 @@ class FigoObject(object):
 
         return {'error': {
             'message': "internal_server_error",
-            'description': "We are very sorry, but something went wrong"}}
+            'description': "We are very sorry, but something went wrong",
+            'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
 
@@ -153,30 +151,40 @@ class FigoException(Exception):
     They consist of a code-like `error` and a human readable `error_description`.
     """
 
-    def __init__(self, error, error_description):
+    def __init__(self, error, error_description, code=None):
         """Create a Exception with a error code and error description."""
-        message = u"%s (%s)" % (error_description, error)
-        super(FigoException, self).__init__(message)
+        super(FigoException, self).__init__()
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
+        self.code = code
         self.error = error
         self.error_description = error_description
+        self.code = code
+
+    def __str__(self):
+        """String representation of the FigoException."""
+        return "FigoException: {}({})".format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
-        return cls(dictionary['error']['message'], dictionary['error']['description'])
+        return cls(dictionary['error']['message'],
+                   dictionary['error']['description'],
+                   dictionary['error'].get('code'))
 
 
 class FigoPinException(FigoException):
     """This exception is thrown if the wrong pin was submitted to a task. It contains
     information about current state of the task."""
 
-    def __init__(self, country, credentials, bank_code, iban, save_pin):
+    def __init__(self, country, credentials, bank_code, iban, save_pin,
+                 error="Wrong PIN",
+                 error_description="You've entered a wrong PIN, please provide a new one.",
+                 code=None,
+                 ):
         """Initialiase an Exception for a wrong PIN which contains information about the task."""
-        self.error = "Wrong PIN"
-        self.error_description = "You've entered a wrong PIN, please provide a new one."
+        super(FigoPinException, self).__init__(error, error_description, code)
 
         self.country = country
         self.credentials = credentials
@@ -186,7 +194,7 @@ class FigoPinException(FigoException):
 
     def __str__(self):
         """String representation of the FigoPinException."""
-        return "FigoPinException: %s(%s)" % (repr(self.error_description), repr(self.error))
+        return "FigoPinException: {}({})".format(self.error_description, self.error)
 
 
 class FigoConnection(FigoObject):
@@ -472,7 +480,7 @@ class FigoSession(FigoObject):
         """
         data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
         if iban:
-            data['iban'] = iban 
+            data['iban'] = iban
         elif bank_code:
             data['bank_code'] = bank_code
 
@@ -499,20 +507,23 @@ class FigoSession(FigoObject):
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         for _ in range(self.sync_poll_retry):
             task_state = self.get_task_state(task_token)
-            logger.info("Adding account {0}/{1}: {2}".format(bank_code,iban,task_state.message))
+            logger.info("Adding account {0}/{1}: {2}".format(bank_code, iban, task_state.message))
             logger.debug(str(task_state))
             if task_state.is_ended or task_state.is_erroneous:
                 break
-            sleep(0.5)
+            sleep(2)
         else:
             raise FigoException(
-                'could not sync',
-                'task was not finished after {0} tries'.format(self.sync_poll_retry)
+                "could not sync",
+                "task was not finished after {0} tries".format(self.sync_poll_retry)
             )
 
         if task_state.is_erroneous:
-            if any([msg in task_state.message for msg in ["Zugangsdaten", "credentials"]]):
-                raise FigoPinException(country, credentials, bank_code, iban, save_pin)
+            if task_state.error and task_state.error['code'] == 10000:
+                raise FigoPinException(country, credentials, bank_code, iban, save_pin,
+                                       error=task_state.error['name'],
+                                       error_description=task_state.error['description'],
+                                       code=task_state.error['code'])
             raise FigoException("", task_state.message)
         return task_state
 
@@ -563,6 +574,29 @@ class FigoSession(FigoObject):
                                          method="DELETE")
 
         return None
+
+    def sync_account(self, state, redirect_uri, account_ids, if_not_synced_since, sync_tasks=['transactions'],
+                     disable_notifications=False, auto_continue=False):
+        """
+        Trigger bank account sync
+        
+        :Parameters:
+         - `account` - account ID to be synced
+          
+        :Returns:
+         - `task_token` - task token
+        """
+        data = {'state': state,
+                'redirect_uri': redirect_uri,
+                'disable_notifications': disable_notifications,
+                'if_not_synced_since': if_not_synced_since,
+                'auto_continue': auto_continue,
+                'account_ids': account_ids,
+                'sync_tasks': sync_tasks}
+
+        task_token = self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+
+        return task_token
 
     def get_account_balance(self, account_or_account_id):
         """
@@ -1069,7 +1103,7 @@ class FigoSession(FigoObject):
                                                                      Security):
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id.account_id, security_or_security_id.security_id),
-                {"visited": visited}, "PUT")
+                                                {"visited": visited}, "PUT")
         else:
             return self._request_with_exception("/rest/accounts/%s/securities/%s" % (
                 account_or_account_id, security_or_security_id), {"visited": visited}, "PUT")
@@ -1123,7 +1157,7 @@ class FigoSession(FigoObject):
                                                                      Transaction):
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                {"visited": visited}, "PUT")
+                                          {"visited": visited}, "PUT")
         else:
             return self._query_api_object(Transaction, "/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id, transaction_or_transaction_id), {"visited": visited}, "PUT")
@@ -1174,7 +1208,7 @@ class FigoSession(FigoObject):
                                                                      Transaction):
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id.account_id, transaction_or_transaction_id.transaction_id),
-                method="DELETE")
+                                                method="DELETE")
         else:
             return self._request_with_exception("/rest/accounts/%s/transactions/%s" % (
                 account_or_account_id, transaction_or_transaction_id), method="DELETE")

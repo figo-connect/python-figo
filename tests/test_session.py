@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import platform
 
 import pytest
@@ -65,6 +67,7 @@ def test_sync_uri(demo_session):
 
 def test_get_mail_from_user(demo_session):
     assert demo_session.user.email == "demo@figo.me"
+
 
 @pytest.mark.skip(reason="race condition on travis")
 def test_create_update_delete_notification(demo_session):
@@ -221,3 +224,7 @@ def test_create_process(demo_session):
 
     with pytest.raises(FigoException):
         demo_session.create_process(process)
+
+
+def test_sync_account(demo_session):
+    assert demo_session.sync_account(state="qweqwe")

@@ -374,7 +374,7 @@ class FigoConnection(FigoObject):
         if 'error' in response:
             raise FigoException.from_dict(response)
 
-    def add_user(self, name, email, password, language='de'):
+    def add_user(self, name, email, password, language='de', send_newsletter=False):
         """
         Create a new figo Account.
 
@@ -383,6 +383,8 @@ class FigoConnection(FigoObject):
         - `email` - Email address; It must obey the figo username & password policy
         - `password` - New figo Account password; It must obey the figo username & password policy
         - `language` - Two-letter code of preferred language
+        - `send_newsletter` - This flag indicates whether the user has agreed to be
+        contacted by email
 
         :Returns:
             Auto-generated recovery password.
@@ -393,6 +395,7 @@ class FigoConnection(FigoObject):
                   'email': email,
                   'password': password,
                   'language': language,
+                  'send_newsletter': send_newsletter,
                   'affiliate_client_id': self.client_id},
             method="POST")
 
@@ -403,7 +406,7 @@ class FigoConnection(FigoObject):
         else:
             return response['recovery_password']
 
-    def add_user_and_login(self, name, email, password, language='de'):
+    def add_user_and_login(self, name, email, password, language='de', send_newsletter=False):
         """
         Create a new figo account and get a session token for the new account.
 
@@ -419,7 +422,7 @@ class FigoConnection(FigoObject):
         :Returns:
             Token dictionary for further API access
         """
-        self.add_user(name, email, password, language)
+        self.add_user(name, email, password, language, send_newsletter)
         return self.credential_login(email, password)
 
 

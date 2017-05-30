@@ -52,13 +52,12 @@ VALID_FINGERPRINTS = os.getenv(
 
 
 ERROR_MESSAGES = {
-    400: {'message': "bad request", 'description': "Bad request"},
-    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token."},
-    403: {'message': "forbidden", 'description': "Insufficient permission."},
-    404: {'message': "not_found", 'description': "Not found."},
-    405: {'message': "method_not_allowed", 'description': "Unexpected request method."},
-    503: {'message': "service_unavailable", 'description': "Exceeded rate limit."}
-
+    400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
+    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token.", 'code': 90000},
+    403: {'message': "forbidden", 'description': "Insufficient permission.", 'code': 90000},
+    404: {'message': "not_found", 'description': "Not found.", 'code': 90000},
+    405: {'message': "method_not_allowed", 'description': "Unexpected request method.", 'code': 90000},
+    503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
 }
 
 USER_AGENT = "python_figo/1.5.4"
@@ -122,7 +121,8 @@ class FigoObject(object):
 
         return {'error': {
             'message': "internal_server_error",
-            'description': "We are very sorry, but something went wrong"}}
+            'description': "We are very sorry, but something went wrong",
+            'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
 
@@ -153,30 +153,40 @@ class FigoException(Exception):
     They consist of a code-like `error` and a human readable `error_description`.
     """
 
-    def __init__(self, error, error_description):
+    def __init__(self, error, error_description, code=None):
         """Create a Exception with a error code and error description."""
-        message = u"%s (%s)" % (error_description, error)
-        super(FigoException, self).__init__(message)
+        super(FigoException, self).__init__()
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
+        self.code = code
         self.error = error
         self.error_description = error_description
+        self.code = code
+
+    def __str__(self):
+        """String representation of the FigoException."""
+        return "FigoException: {}({})" .format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
         """Helper function creating an exception instance from the dictionary returned
         by the server."""
-        return cls(dictionary['error']['message'], dictionary['error']['description'])
+        return cls(dictionary['error']['message'],
+                   dictionary['error']['description'],
+                   dictionary['error'].get('code'))
 
 
 class FigoPinException(FigoException):
     """This exception is thrown if the wrong pin was submitted to a task. It contains
     information about current state of the task."""
 
-    def __init__(self, country, credentials, bank_code, iban, save_pin):
+    def __init__(self, country, credentials, bank_code, iban, save_pin,
+                 error="Wrong PIN",
+                 error_description="You've entered a wrong PIN, please provide a new one.",
+                 code=None,
+                 ):
         """Initialiase an Exception for a wrong PIN which contains information about the task."""
-        self.error = "Wrong PIN"
-        self.error_description = "You've entered a wrong PIN, please provide a new one."
+        super(FigoPinException, self).__init__(error, error_description, code)
 
         self.country = country
         self.credentials = credentials
@@ -186,7 +196,7 @@ class FigoPinException(FigoException):
 
     def __str__(self):
         """String representation of the FigoPinException."""
-        return "FigoPinException: %s(%s)" % (repr(self.error_description), repr(self.error))
+        return "FigoPinException: {}({})".format(self.error_description, self.error)
 
 
 class FigoConnection(FigoObject):
@@ -503,20 +513,23 @@ class FigoSession(FigoObject):
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         for _ in range(self.sync_poll_retry):
             task_state = self.get_task_state(task_token)
-            logger.info("Adding account {0}/{1}: {2}".format(bank_code,iban,task_state.message))
+            logger.info("Adding account {0}/{1}: {2}".format(bank_code, iban, task_state.message))
             logger.debug(str(task_state))
             if task_state.is_ended or task_state.is_erroneous:
                 break
-            sleep(0.5)
+            sleep(2)
         else:
             raise FigoException(
-                'could not sync',
-                'task was not finished after {0} tries'.format(self.sync_poll_retry)
+                "could not sync",
+                "task was not finished after {0} tries".format(self.sync_poll_retry)
             )
 
         if task_state.is_erroneous:
-            if any([msg in task_state.message for msg in ["Zugangsdaten", "credentials"]]):
-                raise FigoPinException(country, credentials, bank_code, iban, save_pin)
+            if task_state.error and task_state.error['code'] == 10000:
+                raise FigoPinException(country, credentials, bank_code, iban, save_pin,
+                                       error=task_state.error['name'],
+                                       error_description=task_state.error['description'],
+                                       code=task_state.error['code'])
             raise FigoException("", task_state.message)
         return task_state
 

@@ -227,12 +227,4 @@ def test_create_process(demo_session):
 
 
 def test_sync_account(demo_session):
-    state = "qweqwe"
-    redirect_uri = ""
-    account_ids = ["A1.1",]
-    if_not_synced_since = 1
-    task_token = demo_session.sync_account(state=state, redirect_uri=redirect_uri,
-                                           account_ids=account_ids,
-                                           if_not_synced_since=if_not_synced_since)
-
-    assert task_token
+    assert demo_session.sync_account(state="qweqwe")

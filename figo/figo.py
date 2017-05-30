@@ -575,16 +575,29 @@ class FigoSession(FigoObject):
 
         return None
 
-    def sync_account(self, state, redirect_uri, account_ids, if_not_synced_since, sync_tasks=['transactions'],
-                     disable_notifications=False, auto_continue=False):
+    def sync_account(self, state, redirect_uri=None, account_ids=None, if_not_synced_since=None,
+                     sync_tasks=['transactions'], disable_notifications=False, auto_continue=False):
         """
-        Trigger bank account sync
-        
-        :Parameters:
-         - `account` - account ID to be synced
-          
-        :Returns:
-         - `task_token` - task token
+        Args:
+        state (str): Arbitrary string to maintain state between this request and the callback,
+                     e.g. it might contain a session ID from your application.
+                     The value should also contain a random component, which your
+                     application checks to prevent cross-site request forgery.
+        redirect_uri (str): At the end of the synchronization process a response will be sent to
+                               this callback URL. The value defaults to the first redirect URI
+                               configured for the client.
+        disable_notifications (bool): This flag indicates whether notifications should be sent to
+                                      your application. Since your application will be notified by
+                                      the callback URL anyway, you might want to disable any
+                                      additional notifications.
+        if_not_synced_since (int): If this parameter is set, only those accounts will be
+                                   synchronized, which have not been synchronized within the
+                                   specified number of minutes.
+        auto_continue (bool): Automatically acknowledge and ignore any errors.
+        account_ids ([str]): Only sync the accounts with these IDs.
+
+        Returns:
+            TaskToken: A task token for the synchronization task
         """
         data = {'state': state,
                 'redirect_uri': redirect_uri,
@@ -594,9 +607,10 @@ class FigoSession(FigoObject):
                 'account_ids': account_ids,
                 'sync_tasks': sync_tasks}
 
-        task_token = self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+        data = dict((k, v) for k, v in data.items() if v is not None)
 
-        return task_token
+        return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+
 
     def get_account_balance(self, account_or_account_id):
         """
@@ -990,10 +1004,10 @@ class FigoSession(FigoObject):
             since (str): This parameter can either be a transaction ID or a date.
             count (int): Limit the number of returned transactions.
             offset (int): Which offset into the result set should be used to determine the
-         first transaction to return (useful in combination with count)
-            include_pending (bool): - This flag indicates whether pending transactions should
-         be included in the response. Pending transactions are always included as a
-         complete set, regardless of the `since` parameter.
+                          first transaction to return (useful in combination with count)
+            include_pending (bool): This flag indicates whether pending transactions should
+                                    be included in the response. Pending transactions are always
+                                    included as a complete set, regardless of the `since` parameter.
 
         Returns:
             [Transaction]: List of `Transaction` objects

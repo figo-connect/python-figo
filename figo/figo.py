@@ -46,7 +46,9 @@ logger = logging.getLogger(__name__)
 VALID_FINGERPRINTS = os.getenv(
     'FIGO_SSL_FINGERPRINT',
     "07:0F:14:AE:B9:4A:FB:3D:F8:00:E8:2B:69:A8:51:5C:"
-    "EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33"
+    "EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33",
+    "79:B2:A2:93:00:85:3B:06:92:B1:B5:F2:24:79:48:58:"
+    "3A:A5:22:0F:C5:CD:E9:49:9A:C8:45:1E:DB:E0:DA:50"
 ).split(',')
 
 ERROR_MESSAGES = {

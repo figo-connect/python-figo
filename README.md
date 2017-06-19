@@ -6,7 +6,7 @@ Python bindings for the figo Connect API: http://docs.figo.io
 
 First, you have to install the package:
 
-```bash
+```shell
 pip install python-figo
 ```
 
@@ -62,6 +62,12 @@ You can find more documentation at http://python-figo.readthedocs.org
 # Demos
 
 In this repository you can also have a look at a simple console (`console_demo.py`) and web demo (`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
+
+To install dependencies for the web demo, use
+
+```shell
+pip install python-figo[webdemo]
+```
 
 # Environment variables
 

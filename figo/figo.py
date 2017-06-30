@@ -58,7 +58,7 @@ ERROR_MESSAGES = {
     503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
 }
 
-USER_AGENT = "python_figo/1.6.1"
+USER_AGENT = "python_figo/1.6.2"
 API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT', "https://api.figo.me")
 
 

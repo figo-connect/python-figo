@@ -1,13 +1,12 @@
 # python-figo [![Build Status](https://img.shields.io/travis/figo-connect/python-figo.svg?style=flat-square)](https://travis-ci.org/figo-connect/python-figo) [![PyPi Version](http://img.shields.io/pypi/v/python-figo.svg?style=flat-square)](https://pypi.python.org/pypi/python-figo) [![Code Coverage](https://img.shields.io/codecov/c/github/figo-connect/python-figo.svg?style=flat-square)](https://codecov.io/github/figo-connect/python-figo)
 
-
 Python bindings for the figo Connect API: http://docs.figo.io
 
 # Usage
 
 First, you have to install the package:
 
-```bash
+```shell
 pip install python-figo
 ```
 
@@ -63,6 +62,12 @@ You can find more documentation at http://python-figo.readthedocs.org
 # Demos
 
 In this repository you can also have a look at a simple console (`console_demo.py`) and web demo (`web_demo`). While the console demo simply accesses the figo API, the web demo implements the full OAuth flow.
+
+To install dependencies for the web demo, use
+
+```shell
+pip install python-figo[webdemo]
+```
 
 # Environment variables
 

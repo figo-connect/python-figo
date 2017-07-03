@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+from figo.credentials import DEMO_TOKEN
 from figo import FigoSession
 
+
 def main():
-    session = FigoSession("ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ")
+    session = FigoSession(DEMO_TOKEN)
 
     # print out a list of accounts including its balance
     for account in session.accounts:

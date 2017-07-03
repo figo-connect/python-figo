@@ -17,23 +17,23 @@ from requests import Session
 from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from time import sleep
 
-from credentials import CREDENTIALS
-from models import Account
-from models import AccountBalance
-from models import BankContact
-from models import LoginSettings
-from models import Notification
-from models import Payment
-from models import PaymentProposal
-from models import ProcessToken
-from models import Security
-from models import Service
-from models import TaskState
-from models import TaskToken
-from models import Transaction
-from models import User
-from models import WebhookNotification
-from version import __version__
+from figo.credentials import CREDENTIALS
+from figo.models import Account
+from figo.models import AccountBalance
+from figo.models import BankContact
+from figo.models import LoginSettings
+from figo.models import Notification
+from figo.models import Payment
+from figo.models import PaymentProposal
+from figo.models import ProcessToken
+from figo.models import Security
+from figo.models import Service
+from figo.models import TaskState
+from figo.models import TaskToken
+from figo.models import Transaction
+from figo.models import User
+from figo.models import WebhookNotification
+from figo.version import __version__
 
 
 if sys.version_info[0] > 2:

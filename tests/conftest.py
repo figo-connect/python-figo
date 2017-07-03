@@ -3,17 +3,15 @@ import uuid
 
 from logging import basicConfig
 
-from figo.figo import CREDENTIALS
-from figo.figo import DEMO_CREDENTIALS
-from figo.figo import FigoConnection
-from figo.figo import FigoSession
+from figo.credentials import CREDENTIALS
+from figo.credentials import DEMO_CREDENTIALS
+from figo.credentials import DEMO_TOKEN
+from figo import FigoConnection
+from figo import FigoSession
 
 basicConfig(level='DEBUG')
 
 PASSWORD = 'some_words'
-
-DEMO_TOKEN = ('ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo'
-              '22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ')
 
 
 @pytest.fixture(scope='session')

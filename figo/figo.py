@@ -17,6 +17,7 @@ from requests import Session
 from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from time import sleep
 
+from credentials import CREDENTIALS
 from models import Account
 from models import AccountBalance
 from models import BankContact
@@ -46,11 +47,6 @@ else:
 
 logger = logging.getLogger(__name__)
 
-VALID_FINGERPRINTS = os.getenv(
-    'FIGO_SSL_FINGERPRINT',
-    "07:0F:14:AE:B9:4A:FB:3D:F8:00:E8:2B:69:A8:51:5C:EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33,"
-    "79:B2:A2:93:00:85:3B:06:92:B1:B5:F2:24:79:48:58:3A:A5:22:0F:C5:CD:E9:49:9A:C8:45:1E:DB:E0:DA:50"
-).split(',')
 
 ERROR_MESSAGES = {
     400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
@@ -61,14 +57,14 @@ ERROR_MESSAGES = {
     503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
 }
 
-USER_AGENT = "python_figo/1.6.2"
-API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT', "https://api.figo.me")
-
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    def __init__(self, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+    def __init__(self,
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 ):
         """
         Create a FigoObject instance.
 
@@ -82,7 +78,7 @@ class FigoObject(object):
             'User-Agent': "python_figo/{0}".format(__version__),
         }
         self.api_endpoint = api_endpoint
-        self.fingerprints = fingerprints
+        self.fingerprints = fingerprints.split(',')
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -211,7 +207,9 @@ class FigoConnection(FigoObject):
     """
 
     def __init__(self, client_id, client_secret, redirect_uri,
-                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints']
+                 ):
         """
         Create a FigoConnection instance.
 
@@ -230,7 +228,7 @@ class FigoConnection(FigoObject):
         self.redirect_uri = redirect_uri
         basic_auth = "{0}:{1}".format(self.client_id, self.client_secret).encode("ascii")
         basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
-        self.headers = {'Authorization': "Basic {0}".format(basic_auth_encoded)}
+        self.headers.update({'Authorization': "Basic {0}".format(basic_auth_encoded)})
 
     def _query_api(self, path, data=None):
         """
@@ -431,7 +429,9 @@ class FigoSession(FigoObject):
     the users data."""
 
     def __init__(self, access_token, sync_poll_retry=20,
-                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 ):
         """Create a FigoSession instance.
 
         :Parameters:
@@ -443,7 +443,7 @@ class FigoSession(FigoObject):
         super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
         self.access_token = access_token
-        self.headers = {'Authorization': "Bearer {0}".format(self.access_token)}
+        self.headers.update({'Authorization': "Bearer {0}".format(self.access_token)})
         self.sync_poll_retry = sync_poll_retry
 
     @property

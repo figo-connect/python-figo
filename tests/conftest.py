@@ -1,37 +1,19 @@
-import os
 import pytest
 import uuid
 
 from logging import basicConfig
 
+from figo.figo import CREDENTIALS
+from figo.figo import DEMO_CREDENTIALS
 from figo.figo import FigoConnection
 from figo.figo import FigoSession
 
 basicConfig(level='DEBUG')
 
-DEMO_CREDENTIALS = {
-    'client_id': 'C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI',
-    'client_secret': 'Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28',
-    'api_endpoint': 'https://api.figo.me',
-    'ssl_fingerprint': ('79:B2:A2:93:00:85:3B:06:92:B1:B5:F2:24:79:48:58:'
-                        '3A:A5:22:0F:C5:CD:E9:49:9A:C8:45:1E:DB:E0:DA:50'),
-}
-
-CREDENTIALS = {
-    'client_id': os.getenv('FIGO_CLIENT_ID', DEMO_CREDENTIALS['client_id']),
-    'client_secret': os.getenv('FIGO_CLIENT_SECRET', DEMO_CREDENTIALS['client_secret']),
-    'api_endpoint': os.getenv('FIGO_API_ENDPOINT', DEMO_CREDENTIALS['api_endpoint']),
-    'ssl_fingerprint': os.getenv('FIGO_SSL_FINGERPRINT', DEMO_CREDENTIALS['ssl_fingerprint']),
-}
-
 PASSWORD = 'some_words'
 
 DEMO_TOKEN = ('ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo'
               '22ujRIP_cjLiRiSyQXyt2kM1eXU2XLFZQ0Hro15HikJQT_eNeT_9XQ')
-
-
-def is_demo(credentials):
-    return credentials['client_id'] == DEMO_CREDENTIALS['client_id']
 
 
 @pytest.fixture(scope='session')
@@ -40,7 +22,7 @@ def figo_connection():
                           CREDENTIALS['client_secret'],
                           "https://127.0.0.1/",
                           api_endpoint=CREDENTIALS['api_endpoint'],
-                          fingerprints=[CREDENTIALS['ssl_fingerprint']])
+                          fingerprints=CREDENTIALS['ssl_fingerprints'])
 
 
 @pytest.fixture
@@ -83,4 +65,4 @@ def demo_session():
     #                 - create a non-expiring demo session on `staging`
     return FigoSession(DEMO_TOKEN,
                        api_endpoint=DEMO_CREDENTIALS['api_endpoint'],
-                       fingerprints=[DEMO_CREDENTIALS['ssl_fingerprint']])
+                       fingerprints=DEMO_CREDENTIALS['ssl_fingerprints'])

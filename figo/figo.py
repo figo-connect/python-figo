@@ -49,12 +49,30 @@ logger = logging.getLogger(__name__)
 
 
 ERROR_MESSAGES = {
-    400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
-    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token.", 'code': 90000},
-    403: {'message': "forbidden", 'description': "Insufficient permission.", 'code': 90000},
-    404: {'message': "not_found", 'description': "Not found.", 'code': 90000},
-    405: {'message': "method_not_allowed", 'description': "Unexpected request method.", 'code': 90000},
-    503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
+    400: {'message': "bad request",
+          'description': "Bad request",
+          'code': 90000,
+          },
+    401: {'message': "unauthorized",
+          'description': "Missing, invalid or expired access token.",
+          'code': 90000,
+          },
+    403: {'message': "forbidden",
+          'description': "Insufficient permission.",
+          'code': 90000,
+          },
+    404: {'message': "not_found",
+          'description': "Not found.",
+          'code': 90000,
+          },
+    405: {'message': "method_not_allowed",
+          'description': "Unexpected request method.",
+          'code': 90000,
+          },
+    503: {'message': "service_unavailable",
+          'description': "Exceeded rate limit.",
+          'code': 90000,
+          },
 }
 
 
@@ -137,8 +155,9 @@ class FigoObject(object):
             return response
 
     def _query_api_object(self, model, path, data=None, method="GET", collection_name=None):
-        """Helper method using _request_with_exception but encapsulating the result
-        as an object."""
+        """
+        Helper method using _request_with_exception but encapsulating the result as an object.
+        """
         response = self._request_with_exception(path, data, method)
         if response is None:
             return None
@@ -170,16 +189,19 @@ class FigoException(Exception):
 
     @classmethod
     def from_dict(cls, dictionary):
-        """Helper function creating an exception instance from the dictionary returned
-        by the server."""
+        """
+        Helper function creating an exception instance from the dictionary returned by the server.
+        """
         return cls(dictionary['error']['message'],
                    dictionary['error']['description'],
                    dictionary['error'].get('code'))
 
 
 class FigoPinException(FigoException):
-    """This exception is thrown if the wrong pin was submitted to a task. It contains
-    information about current state of the task."""
+    """
+    This exception is thrown if the wrong pin was submitted to a task. It contains information about
+    current state of the task.
+    """
 
     def __init__(self, country, credentials, bank_code, iban, save_pin,
                  error="Wrong PIN",
@@ -425,9 +447,9 @@ class FigoConnection(FigoObject):
 
 
 class FigoSession(FigoObject):
-    """Represents a user-bound connection to the figo connect API and allows access to
-    the users data."""
-
+    """
+    Represents a user-bound connection to the figo connect API and allows access to the users data.
+    """
     def __init__(self, access_token, sync_poll_retry=20,
                  api_endpoint=CREDENTIALS['api_endpoint'],
                  fingerprints=CREDENTIALS['ssl_fingerprints'],
@@ -448,8 +470,9 @@ class FigoSession(FigoObject):
 
     @property
     def accounts(self):
-        """An array of `Account` objects, one for each account the user has granted
-        the app access."""
+        """
+        An array of `Account` objects, one for each account the user has granted the app access.
+        """
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
     def get_account(self, account_id):
@@ -611,10 +634,9 @@ class FigoSession(FigoObject):
                 'account_ids': account_ids,
                 'sync_tasks': sync_tasks}
 
-        data = dict((k, v) for k, v in data.items() if v is not None)
+        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
-
 
     def get_account_balance(self, account_or_account_id):
         """
@@ -958,7 +980,7 @@ class FigoSession(FigoObject):
             "response": response
         }
 
-        data = dict((k, v) for k, v in data.items() if v is not None)
+        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(TaskState,
                                       "/task/progress?id=%s" % task_token.task_token,

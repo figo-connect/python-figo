@@ -1,1 +1,1 @@
-from .figo import *
+from figo import *

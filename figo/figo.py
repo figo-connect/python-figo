@@ -2,35 +2,38 @@
 # -*- coding:utf-8 -*-
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
 
 import base64
 import json
 import logging
-import os
 import re
 import sys
-from datetime import datetime, timedelta
+
+from datetime import datetime
+from datetime import timedelta
+from requests.exceptions import SSLError
+from requests import Session
+from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from time import sleep
 
-import requests
-from requests.exceptions import SSLError
-from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
+from models import Account
+from models import AccountBalance
+from models import BankContact
+from models import LoginSettings
+from models import Notification
+from models import Payment
+from models import PaymentProposal
+from models import ProcessToken
+from models import Security
+from models import Service
+from models import TaskState
+from models import TaskToken
+from models import Transaction
+from models import User
+from models import WebhookNotification
+from version import __version__
 
-from .models import Account
-from .models import AccountBalance
-from .models import BankContact
-from .models import LoginSettings
-from .models import Notification
-from .models import Payment
-from .models import PaymentProposal
-from .models import ProcessToken
-from .models import Security
-from .models import Service
-from .models import TaskState
-from .models import TaskToken
-from .models import Transaction
-from .models import User
-from .models import WebhookNotification
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
@@ -73,7 +76,11 @@ class FigoObject(object):
         - `api_endpoint` - base URI of the server to call
         - `fingerprints` - list of the server's SSL fingerprints
         """
-        self.headers = {}
+        self.headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': "python_figo/{0}".format(__version__),
+        }
         self.api_endpoint = api_endpoint
         self.fingerprints = fingerprints
 
@@ -90,7 +97,7 @@ class FigoObject(object):
 
         complete_path = self.api_endpoint + path
 
-        session = requests.Session()
+        session = Session()
         session.headers.update(self.headers)
 
         for fingerprint in self.fingerprints:
@@ -223,11 +230,7 @@ class FigoConnection(FigoObject):
         self.redirect_uri = redirect_uri
         basic_auth = "{0}:{1}".format(self.client_id, self.client_secret).encode("ascii")
         basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
-        self.headers = {
-            'Authorization': "Basic {0}".format(basic_auth_encoded),
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': USER_AGENT}
+        self.headers = {'Authorization': "Basic {0}".format(basic_auth_encoded)}
 
     def _query_api(self, path, data=None):
         """
@@ -440,11 +443,7 @@ class FigoSession(FigoObject):
         super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
         self.access_token = access_token
-        self.headers = {
-            'Authorization': "Bearer %s" % self.access_token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': USER_AGENT}
+        self.headers = {'Authorization': "Bearer {0}".format(self.access_token)}
         self.sync_poll_retry = sync_poll_retry
 
     @property

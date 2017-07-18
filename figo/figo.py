@@ -2,35 +2,39 @@
 # -*- coding:utf-8 -*-
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
 
 import base64
 import json
 import logging
-import os
 import re
 import sys
-from datetime import datetime, timedelta
+
+from datetime import datetime
+from datetime import timedelta
+from requests.exceptions import SSLError
+from requests import Session
+from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from time import sleep
 
-import requests
-from requests.exceptions import SSLError
-from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
+from figo.credentials import CREDENTIALS
+from figo.models import Account
+from figo.models import AccountBalance
+from figo.models import BankContact
+from figo.models import LoginSettings
+from figo.models import Notification
+from figo.models import Payment
+from figo.models import PaymentProposal
+from figo.models import ProcessToken
+from figo.models import Security
+from figo.models import Service
+from figo.models import TaskState
+from figo.models import TaskToken
+from figo.models import Transaction
+from figo.models import User
+from figo.models import WebhookNotification
+from figo.version import __version__
 
-from .models import Account
-from .models import AccountBalance
-from .models import BankContact
-from .models import LoginSettings
-from .models import Notification
-from .models import Payment
-from .models import PaymentProposal
-from .models import ProcessToken
-from .models import Security
-from .models import Service
-from .models import TaskState
-from .models import TaskToken
-from .models import Transaction
-from .models import User
-from .models import WebhookNotification
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
@@ -43,29 +47,42 @@ else:
 
 logger = logging.getLogger(__name__)
 
-VALID_FINGERPRINTS = os.getenv(
-    'FIGO_SSL_FINGERPRINT',
-    "07:0F:14:AE:B9:4A:FB:3D:F8:00:E8:2B:69:A8:51:5C:EE:D2:F5:B1:BA:89:7B:EF:64:32:45:8F:61:CF:9E:33,"
-    "79:B2:A2:93:00:85:3B:06:92:B1:B5:F2:24:79:48:58:3A:A5:22:0F:C5:CD:E9:49:9A:C8:45:1E:DB:E0:DA:50"
-).split(',')
 
 ERROR_MESSAGES = {
-    400: {'message': "bad request", 'description': "Bad request", 'code': 90000},
-    401: {'message': "unauthorized", 'description': "Missing, invalid or expired access token.", 'code': 90000},
-    403: {'message': "forbidden", 'description': "Insufficient permission.", 'code': 90000},
-    404: {'message': "not_found", 'description': "Not found.", 'code': 90000},
-    405: {'message': "method_not_allowed", 'description': "Unexpected request method.", 'code': 90000},
-    503: {'message': "service_unavailable", 'description': "Exceeded rate limit.", 'code': 90000},
+    400: {'message': "bad request",
+          'description': "Bad request",
+          'code': 90000,
+          },
+    401: {'message': "unauthorized",
+          'description': "Missing, invalid or expired access token.",
+          'code': 90000,
+          },
+    403: {'message': "forbidden",
+          'description': "Insufficient permission.",
+          'code': 90000,
+          },
+    404: {'message': "not_found",
+          'description': "Not found.",
+          'code': 90000,
+          },
+    405: {'message': "method_not_allowed",
+          'description': "Unexpected request method.",
+          'code': 90000,
+          },
+    503: {'message': "service_unavailable",
+          'description': "Exceeded rate limit.",
+          'code': 90000,
+          },
 }
-
-USER_AGENT = "python_figo/1.6.2"
-API_ENDPOINT = os.getenv('FIGO_API_ENDPOINT', "https://api.figo.me")
 
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    def __init__(self, api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+    def __init__(self,
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 ):
         """
         Create a FigoObject instance.
 
@@ -73,9 +90,13 @@ class FigoObject(object):
         - `api_endpoint` - base URI of the server to call
         - `fingerprints` - list of the server's SSL fingerprints
         """
-        self.headers = {}
+        self.headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'User-Agent': "python_figo/{0}".format(__version__),
+        }
         self.api_endpoint = api_endpoint
-        self.fingerprints = fingerprints
+        self.fingerprints = fingerprints.split(',')
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -90,7 +111,7 @@ class FigoObject(object):
 
         complete_path = self.api_endpoint + path
 
-        session = requests.Session()
+        session = Session()
         session.headers.update(self.headers)
 
         for fingerprint in self.fingerprints:
@@ -134,8 +155,9 @@ class FigoObject(object):
             return response
 
     def _query_api_object(self, model, path, data=None, method="GET", collection_name=None):
-        """Helper method using _request_with_exception but encapsulating the result
-        as an object."""
+        """
+        Helper method using _request_with_exception but encapsulating the result as an object.
+        """
         response = self._request_with_exception(path, data, method)
         if response is None:
             return None
@@ -167,16 +189,19 @@ class FigoException(Exception):
 
     @classmethod
     def from_dict(cls, dictionary):
-        """Helper function creating an exception instance from the dictionary returned
-        by the server."""
+        """
+        Helper function creating an exception instance from the dictionary returned by the server.
+        """
         return cls(dictionary['error']['message'],
                    dictionary['error']['description'],
                    dictionary['error'].get('code'))
 
 
 class FigoPinException(FigoException):
-    """This exception is thrown if the wrong pin was submitted to a task. It contains
-    information about current state of the task."""
+    """
+    This exception is thrown if the wrong pin was submitted to a task. It contains information about
+    current state of the task.
+    """
 
     def __init__(self, country, credentials, bank_code, iban, save_pin,
                  error="Wrong PIN",
@@ -204,7 +229,9 @@ class FigoConnection(FigoObject):
     """
 
     def __init__(self, client_id, client_secret, redirect_uri,
-                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints']
+                 ):
         """
         Create a FigoConnection instance.
 
@@ -223,11 +250,7 @@ class FigoConnection(FigoObject):
         self.redirect_uri = redirect_uri
         basic_auth = "{0}:{1}".format(self.client_id, self.client_secret).encode("ascii")
         basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
-        self.headers = {
-            'Authorization': "Basic {0}".format(basic_auth_encoded),
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': USER_AGENT}
+        self.headers.update({'Authorization': "Basic {0}".format(basic_auth_encoded)})
 
     def _query_api(self, path, data=None):
         """
@@ -424,11 +447,13 @@ class FigoConnection(FigoObject):
 
 
 class FigoSession(FigoObject):
-    """Represents a user-bound connection to the figo connect API and allows access to
-    the users data."""
-
+    """
+    Represents a user-bound connection to the figo connect API and allows access to the users data.
+    """
     def __init__(self, access_token, sync_poll_retry=20,
-                 api_endpoint=API_ENDPOINT, fingerprints=VALID_FINGERPRINTS):
+                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 ):
         """Create a FigoSession instance.
 
         :Parameters:
@@ -440,17 +465,14 @@ class FigoSession(FigoObject):
         super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
 
         self.access_token = access_token
-        self.headers = {
-            'Authorization': "Bearer %s" % self.access_token,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': USER_AGENT}
+        self.headers.update({'Authorization': "Bearer {0}".format(self.access_token)})
         self.sync_poll_retry = sync_poll_retry
 
     @property
     def accounts(self):
-        """An array of `Account` objects, one for each account the user has granted
-        the app access."""
+        """
+        An array of `Account` objects, one for each account the user has granted the app access.
+        """
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
     def get_account(self, account_id):
@@ -612,10 +634,9 @@ class FigoSession(FigoObject):
                 'account_ids': account_ids,
                 'sync_tasks': sync_tasks}
 
-        data = dict((k, v) for k, v in data.items() if v is not None)
+        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
-
 
     def get_account_balance(self, account_or_account_id):
         """
@@ -959,7 +980,7 @@ class FigoSession(FigoObject):
             "response": response
         }
 
-        data = dict((k, v) for k, v in data.items() if v is not None)
+        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(TaskState,
                                       "/task/progress?id=%s" % task_token.task_token,

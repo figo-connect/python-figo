@@ -4,9 +4,12 @@ import platform
 
 import pytest
 
-from figo import Payment
 from figo.figo import FigoException
-from figo.models import ProcessToken, TaskToken, Process, Notification
+from figo.models import Notification
+from figo.models import Payment
+from figo.models import Process
+from figo.models import ProcessToken
+from figo.models import TaskToken
 
 
 def test_get_account(demo_session):

@@ -12,7 +12,8 @@ class ModelBase(object):
     def from_dict(cls, session, data_dict):
         """
         Creating an instance of the specific type from the data passed
-        in the dictionary `data_dict`."""
+        in the dictionary `data_dict`.
+        """
         return cls(session, **data_dict)
 
     def __init__(self, session, **kwargs):
@@ -360,11 +361,38 @@ class Transaction(ModelBase):
 
     """Object representing one bank transaction on a certain bank account of the user."""
 
-    __dump_attributes__ = ["transaction_id", "account_id", "name",
-                           "account_number", "bank_code", "bank_name", "amount",
-                           "currency", "booking_date", "value_date", "purpose",
-                           "type", "booking_text", "booked", "categories", "creation_timestamp",
-                           "modification_timestamp", "visited", "additional_info"]
+    __dump_attributes__ = [
+        "transaction_id",
+        "account_id",
+        "name",
+        "account_number",
+        "bank_code",
+        "bank_name",
+        "amount",
+        "currency",
+        "booking_date",
+        "value_date",
+        "purpose",
+        "type",
+        "booking_text",
+        "booked",
+        "categories",
+        "creation_timestamp",
+        "modification_timestamp",
+        "visited",
+        "additional_info",
+        "bic",
+        "iban",
+        "booking_key",
+        "creditor_id",
+        "mandate_reference",
+        "sepa_purpose_code",
+        "sepa_remittance_info",
+        "text_key_addition",
+        "end_to_end_reference",
+        "customer_reference",
+        "prima_nota_number",
+    ]
 
     transaction_id = None
     """Internal figo Connect transaction ID"""
@@ -427,6 +455,28 @@ class Transaction(ModelBase):
 
     visited = None
     """This flag indicates whether the transaction has already been marked as visited by the user"""
+
+    bic = None
+
+    iban = None
+
+    booking_key = None
+
+    creditor_id = None
+
+    mandate_reference = None
+
+    sepa_purpose_code = None
+
+    sepa_remittance_info = None
+
+    text_key_addition = None
+
+    end_to_end_reference = None
+
+    customer_reference = None
+
+    prima_nota_number = None
 
     additional_info = None
     """Provides more info about the transaction if available, depends on the account type"""

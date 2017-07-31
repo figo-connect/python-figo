@@ -6,8 +6,8 @@ from logging import basicConfig
 from figo.credentials import CREDENTIALS
 from figo.credentials import DEMO_CREDENTIALS
 from figo.credentials import DEMO_TOKEN
-from figo.figo import FigoConnection
-from figo.figo import FigoSession
+from figo import FigoConnection
+from figo import FigoSession
 
 basicConfig(level='DEBUG')
 

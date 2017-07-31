@@ -1,2 +1,1 @@
-from __future__ import absolute_import
-from figo import *
+from .figo import *

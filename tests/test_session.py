@@ -4,7 +4,7 @@ import platform
 
 import pytest
 
-from figo.figo import FigoException
+from figo import FigoException
 from figo.models import Notification
 from figo.models import Payment
 from figo.models import Process

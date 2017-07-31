@@ -5,8 +5,8 @@ import time
 
 from mock import patch
 
-from figo.figo import FigoException
-from figo.figo import FigoPinException
+from figo import FigoException
+from figo import FigoPinException
 from figo.models import LoginSettings
 from figo.models import Service
 from figo.models import TaskState

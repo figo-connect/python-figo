@@ -28,7 +28,7 @@ def new_user_id():
     return "{0}testuser@example.com".format(uuid.uuid4())
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def figo_session(figo_connection, new_user_id):
     figo_connection.add_user("Test", new_user_id, PASSWORD)
     response = figo_connection.credential_login(new_user_id, PASSWORD)
@@ -53,7 +53,7 @@ def figo_session(figo_connection, new_user_id):
     session.remove_user()
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def demo_session():
     # TODO(Valentin): we need to run `test_session` (both read-only) against production API
     #                 using demo credentials, since there is no adequate client or data available

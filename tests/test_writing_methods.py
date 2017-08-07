@@ -17,18 +17,18 @@ CREDENTIALS = ["figo", "figo"]
 BANK_CODE = "90090042"
 
 
-def test_03_get_supported_payment_services(figo_session):
+def test_get_supported_payment_services(figo_session):
     services = figo_session.get_supported_payment_services("de")
     assert len(services) > 10  # this a changing value, this tests that at least some are returned
     assert isinstance(services[0], Service)
 
 
-def test_04_get_login_settings(figo_session):
+def test_get_login_settings(figo_session):
     login_settings = figo_session.get_login_settings("de", BANK_CODE)
     assert isinstance(login_settings, LoginSettings)
 
 
-def t_05_add_account(figo_session):
+def test_add_account(figo_session):
     token = figo_session.add_account("de", CREDENTIALS, BANK_CODE)
     assert isinstance(token, TaskToken)
     task_state = figo_session.get_task_state(token)
@@ -37,7 +37,7 @@ def t_05_add_account(figo_session):
     assert len(figo_session.accounts) == 1
 
 
-def test_050_add_account_and_sync_wrong_pin(figo_session):
+def test_add_account_and_sync_wrong_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
     try:
         with pytest.raises(FigoException):
@@ -93,7 +93,7 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
             assert len(figo_session.accounts) == 0
 
 
-def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
+def test_add_account_and_sync_wrong_and_correct_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
     figo_session.sync_poll_retry = 100
     try:
@@ -109,7 +109,7 @@ def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
 
 
 @pytest.mark.skip(reason="test expects state of account, that are not prepared at the moment")
-def test_06_modify_transaction(figo_session):
+def test_modify_transaction(figo_session):
     account = figo_session.accounts[0]
     transaction = account.transactions[0]
     response = figo_session.modify_transaction(
@@ -127,7 +127,7 @@ def test_06_modify_transaction(figo_session):
 
 
 @pytest.mark.skip(reason="test expects state of account, that are not prepared at the moment")
-def test_07_modify_account_transactions(figo_session):
+def test_modify_account_transactions(figo_session):
     account = figo_session.accounts[0]
     figo_session.modify_account_transactions(account.account_id, False)
 
@@ -137,7 +137,7 @@ def test_07_modify_account_transactions(figo_session):
 
 
 @pytest.mark.skip(reason="test expects state of account, that are not prepared at the moment")
-def test_08_modify_user_transactions(figo_session):
+def test_modify_user_transactions(figo_session):
     figo_session.modify_user_transactions(False)
     assert not any([transaction.visited for transaction in figo_session.transactions])
 
@@ -146,7 +146,7 @@ def test_08_modify_user_transactions(figo_session):
 
 
 @pytest.mark.skip(reason="test expects state of account, that are not prepared at the moment")
-def test_09_delete_transaction(figo_session):
+def test_delete_transaction(figo_session):
     account = figo_session.accounts[0]
     transaction = account.transactions[0]
     transaction_count = len(account.transactions)

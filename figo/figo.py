@@ -130,7 +130,7 @@ class FigoObject(object):
         else:
             raise fingerprint_error
 
-        if 200 <= response.status_code < 300:
+        if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
                 return {}
             return response.json()
@@ -151,11 +151,13 @@ class FigoObject(object):
         response = self._request_api(path, data, method)
         # the check for is_erroneous in response is here to not confuse a task/progress
         # response with an error object
-        # FIXME(dennis.lutter): refactor error handling
-        if 'error' in response and response["error"] and 'is_erroneous' not in response:
+        if self._has_error(response) and 'is_erroneous' not in response:
             raise FigoException.from_dict(response)
         else:
             return response
+
+    def _has_error(self, response):
+        return 'error' in response and response["error"]
 
     def _query_api_object(self, model, path, data=None, method="GET", collection_name=None):
         """

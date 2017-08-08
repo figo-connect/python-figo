@@ -647,7 +647,7 @@ class Service(ModelBase):
 
     """Object representing a payment service."""
 
-    __dump_attributes__ = ["name", "bank_code", "icon", "additional_icons"]
+    __dump_attributes__ = ["name", "bank_code", "icon", "additional_icons", "language"]
 
     name = None
     """Human readable name of the service"""
@@ -661,6 +661,18 @@ class Service(ModelBase):
     additional_icons = None
     """Dictionary mapping from resolution to URL for additional resolutions of
     the banks icon."""
+
+    language = None
+    """Language the Service description is in"""
+
+    available_languages = []
+    """Description languages available"""
+
+    def __init__(self, session, **kwargs):
+        super(Service, self).__init__(session, **kwargs)
+        if self.language:
+            self.available_languages = [l for l in self.language['available_languages']]
+            self.language = self.language['current_language']
 
     def __str__(self, *args, **kwargs):
         """Short String representation of a Service."""

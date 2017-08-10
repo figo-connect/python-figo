@@ -57,7 +57,7 @@ def test_add_account(figo_session):
     task_state = figo_session.get_task_state(token)
     time.sleep(5)
     assert isinstance(task_state, TaskState)
-    assert len(figo_session.accounts) == 1
+    assert len(figo_session.accounts) >= 1
 
 
 def test_add_account_and_sync_wrong_pin(figo_session):

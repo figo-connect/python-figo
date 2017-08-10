@@ -201,7 +201,7 @@ class FigoException(Exception):
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: {}({})".format(self.error_description, self.error)
+        return "FigoException: {} ({})".format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -700,7 +700,7 @@ class FigoSession(FigoObject):
             dict {'banks': [Service], 'services': [Service]}:
                 dict with lists of supported banks and payment services
         """
-        catalog = self._request_with_exception("/rest/catalog/")
+        catalog = self._request_with_exception("/rest/catalog")
         for k, v in catalog.items():
             catalog[k] = [Service.from_dict(self, service) for service in v]
 

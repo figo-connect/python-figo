@@ -194,7 +194,6 @@ class FigoException(Exception):
         super(FigoException, self).__init__()
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
-        self.code = code
         self.error = error
         self.error_description = error_description
         self.code = code

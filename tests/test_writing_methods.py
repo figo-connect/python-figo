@@ -29,7 +29,15 @@ def test_get_catalog(figo_session):
 def test_get_catalog_en(figo_session, language):
     figo_session.language = language
     catalog = figo_session.get_catalog()
-    assert catalog['banks'][0].language == language
+    for bank in catalog['banks']:
+        assert bank.language == language
+
+
+def test_get_catalog_invalid_language(figo_session):
+    figo_session.language = 'xy'
+    with pytest.raises(FigoException) as e:
+        figo_session.get_catalog()
+    assert e.value.code is None
 
 
 def test_get_supported_payment_services(figo_session):

@@ -116,7 +116,8 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
             assert len(figo_session.accounts) == 0
 
 
-def test_add_account_and_sync_wrong_and_correct_pin(figo_session):
+@pytest.mark.skip(reason="test is flaky as hell and should be rewritten completely")
+def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
     figo_session.sync_poll_retry = 100
     try:

@@ -12,6 +12,14 @@ from figo.models import ProcessToken
 from figo.models import TaskToken
 
 
+def test_set_unset_language(demo_session):
+    assert demo_session.language is None
+    demo_session.language = 'de'
+    assert demo_session.language == 'de'
+    demo_session.language = ''
+    assert demo_session.language is None
+
+
 def test_get_account(demo_session):
     account = demo_session.get_account("A1.2")
     assert account.account_id == "A1.2"

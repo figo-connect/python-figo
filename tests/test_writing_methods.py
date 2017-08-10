@@ -17,6 +17,21 @@ CREDENTIALS = ["figo", "figo"]
 BANK_CODE = "90090042"
 
 
+# XXX(Valentin): Catalog needs `accounts=rw`, so it doesn't work with the demo session.
+#                Sounds silly at first, but actually there is no point to view the catalog if
+#                you can't add accounts.
+def test_get_catalog(figo_session):
+    catalog = figo_session.get_catalog()
+    assert len(catalog) == 2
+
+
+@pytest.mark.parametrize('language', ['de', 'en'])
+def test_get_catalog_en(figo_session, language):
+    figo_session.language = language
+    catalog = figo_session.get_catalog()
+    assert catalog['banks'][0].language == language
+
+
 def test_get_supported_payment_services(figo_session):
     services = figo_session.get_supported_payment_services("de")
     assert len(services) > 10  # this a changing value, this tests that at least some are returned

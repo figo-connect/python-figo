@@ -82,19 +82,22 @@ class FigoObject(object):
     def __init__(self,
                  api_endpoint=CREDENTIALS['api_endpoint'],
                  fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 language=None,
                  ):
         """
         Create a FigoObject instance.
 
-        :Parameters:
-        - `api_endpoint` - base URI of the server to call
-        - `fingerprints` - list of the server's SSL fingerprints
+        Args:
+            api_endpoint (str) - base URI of the server to call
+            fingerprints ([str]) - list of the server's SSL fingerprints
+            language (str) - language for HTTP request header
         """
         self.headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': "python_figo/{0}".format(__version__),
         }
+        self.language = language
         self.api_endpoint = api_endpoint
         self.fingerprints = fingerprints.split(',')
 
@@ -127,7 +130,7 @@ class FigoObject(object):
         else:
             raise fingerprint_error
 
-        if 200 <= response.status_code < 300:
+        if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
                 return {}
             return response.json()
@@ -148,11 +151,13 @@ class FigoObject(object):
         response = self._request_api(path, data, method)
         # the check for is_erroneous in response is here to not confuse a task/progress
         # response with an error object
-        # FIXME(dennis.lutter): refactor error handling
-        if 'error' in response and response["error"] and 'is_erroneous' not in response:
+        if self._has_error(response) and 'is_erroneous' not in response:
             raise FigoException.from_dict(response)
         else:
             return response
+
+    def _has_error(self, response):
+        return 'error' in response and response["error"]
 
     def _query_api_object(self, model, path, data=None, method="GET", collection_name=None):
         """
@@ -166,6 +171,17 @@ class FigoObject(object):
         else:
             return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
+    @property
+    def language(self):
+        return self.headers.get('Accept-Language')
+
+    @language.setter
+    def language(self, lang):
+        if lang:
+            self.headers['Accept-Language'] = lang
+        elif self.headers.get('Accept-Language'):
+            del self.headers['Accept-Language']
+
 
 class FigoException(Exception):
     """Base class for all exceptions transported via the figo connect API.
@@ -178,14 +194,13 @@ class FigoException(Exception):
         super(FigoException, self).__init__()
 
         # XXX(dennis.lutter): not needed internally but left here for backwards compatibility
-        self.code = code
         self.error = error
         self.error_description = error_description
         self.code = code
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: {}({})".format(self.error_description, self.error)
+        return "FigoException: {} ({})".format(self.error_description, self.error)
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -230,20 +245,23 @@ class FigoConnection(FigoObject):
 
     def __init__(self, client_id, client_secret, redirect_uri,
                  api_endpoint=CREDENTIALS['api_endpoint'],
-                 fingerprints=CREDENTIALS['ssl_fingerprints']
+                 fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 language=None,
                  ):
         """
         Create a FigoConnection instance.
 
-        :Parameters:
-         - `client_id` - the OAuth Client ID as provided by your figo developer contact
-         - `client_secret` - the OAuth Client Secret as provided by your figo developer contact
-         - `redirect_uri` - the URI the users gets redirected to after the login is finished
-         or if he presses cancels
-         - `api_endpoint` - base URI of the server to call
-         - `fingerprints` - list of the server's SSL fingerprints
+        Args:
+            client_id (str) - the OAuth Client ID as provided by your figo developer contact
+            client_secret (str) - the OAuth Client Secret as provided by your figo developer contact
+            redirect_uri (str) - the URI the users gets redirected to after the login is finished
+                            or if they press `cancel`
+            api_endpoint (str) - base URI of the server to call
+            fingerprints ([str]) - list of the server's SSL fingerprints
+            language (str) - language for HTTP request header
         """
-        super(FigoConnection, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+        super(FigoConnection, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints,
+                                             language=language)
 
         self.client_id = client_id
         self.client_secret = client_secret
@@ -453,16 +471,19 @@ class FigoSession(FigoObject):
     def __init__(self, access_token, sync_poll_retry=20,
                  api_endpoint=CREDENTIALS['api_endpoint'],
                  fingerprints=CREDENTIALS['ssl_fingerprints'],
+                 language=None,
                  ):
         """Create a FigoSession instance.
 
-        :Parameters:
-         - `access_token` - the access token to bind this session to a user
-         - `api_endpoint` - base URI of the server to call
-         - `fingerprints` - list of the server's SSL fingerprints
-         - `sync_poll_retry` - maximum number of synchronization poll retries
+        Args:
+            access_token (str) - the access token to bind this session to a user
+            sync_poll_retry (int) - maximum number of synchronization poll retries
+            api_endpoint (str) - base URI of the server to call
+            fingerprints ([str]) - list of the server's SSL fingerprints
+            language (str) - language for HTTP request header
         """
-        super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints)
+        super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints,
+                                          language=language)
 
         self.access_token = access_token
         self.headers.update({'Authorization': "Bearer {0}".format(self.access_token)})
@@ -678,7 +699,7 @@ class FigoSession(FigoObject):
             dict {'banks': [Service], 'services': [Service]}:
                 dict with lists of supported banks and payment services
         """
-        catalog = self._request_with_exception("/rest/catalog/")
+        catalog = self._request_with_exception("/rest/catalog")
         for k, v in catalog.items():
             catalog[k] = [Service.from_dict(self, service) for service in v]
 

@@ -216,7 +216,14 @@ def test_create_service_from_dict(demo_session):
         },
         "bank_code": "90090042",
         "icon": "https://api.figo.me/assets/images/accounts/demokonto.png",
-        "name": "Demokonto"
+        "name": "Demokonto",
+        "language": {
+            "available_languages": [
+                "de",
+                "en",
+            ],
+            "current_language": "de",
+        },
     }
     service = Service.from_dict(demo_session, data)
     assert isinstance(service, Service)

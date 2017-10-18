@@ -1,3 +1,8 @@
+import httplib
+
+import pytest
+
+from figo import FigoException
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
@@ -399,3 +404,34 @@ def test_create_security_from_dict(demo_session):
     }
     security = Security.from_dict(demo_session, data)
     assert isinstance(security, Security)
+
+OLD_ERROR_FORMAT = {
+    'error': {
+        'code': None,
+        'data': {},
+        'description': None,
+        'group': 'unknown',
+        'message': 'Unsupported language',
+        'name': 'Not Acceptable'
+    },
+    'status': httplib.NOT_ACCEPTABLE
+}
+NEW_ERROR_FORMAT = {
+    'error': {
+        'code': 1000,
+        'data': {},
+        'description': 'Unsupported language',
+        'group': 'client'
+    },
+    'status': httplib.NOT_ACCEPTABLE
+}
+
+
+@pytest.mark.parametrize('payload', [
+    OLD_ERROR_FORMAT,
+    NEW_ERROR_FORMAT,
+])
+def test_create_figo_exception_from_dict(payload):
+    exc = FigoException.from_dict(payload)
+    assert isinstance(exc, FigoException)
+

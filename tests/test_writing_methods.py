@@ -38,7 +38,7 @@ def test_get_catalog_invalid_language(figo_session):
     figo_session.language = 'xy'
     with pytest.raises(FigoException) as e:
         figo_session.get_catalog()
-    assert e.value.code is CLIENT_ERROR
+    assert e.value.code == CLIENT_ERROR
 
 
 def test_get_supported_payment_services(figo_session):

@@ -24,6 +24,8 @@ from figo.models import TaskToken
 from figo.models import Transaction
 from figo.models import User
 
+from tests.test_writing_methods import CLIENT_ERROR
+
 
 def test_create_account_from_dict(demo_session):
     data = {"account_id": "A1.1",
@@ -418,7 +420,7 @@ OLD_ERROR_FORMAT = {
 }
 NEW_ERROR_FORMAT = {
     'error': {
-        'code': 1000,
+        'code': CLIENT_ERROR,
         'data': {},
         'description': 'Unsupported language',
         'group': 'client'

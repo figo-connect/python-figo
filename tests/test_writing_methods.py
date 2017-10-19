@@ -15,6 +15,7 @@ from figo.models import TaskToken
 
 CREDENTIALS = ["figo", "figo"]
 BANK_CODE = "90090042"
+CLIENT_ERROR = 1000
 
 
 # XXX(Valentin): Catalog needs `accounts=rw`, so it doesn't work with the demo session.
@@ -37,7 +38,7 @@ def test_get_catalog_invalid_language(figo_session):
     figo_session.language = 'xy'
     with pytest.raises(FigoException) as e:
         figo_session.get_catalog()
-    assert e.value.code is None
+    assert e.value.code is CLIENT_ERROR
 
 
 def test_get_supported_payment_services(figo_session):

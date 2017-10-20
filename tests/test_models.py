@@ -1,3 +1,8 @@
+try:
+    import httplib
+except ModuleNotFoundError:
+    from http import HTTPStatus as httplib
+
 import pytest
 
 from figo import FigoException
@@ -23,8 +28,6 @@ from figo.models import Transaction
 from figo.models import User
 
 from tests.test_writing_methods import CLIENT_ERROR
-
-HTTP_NOT_ACCEPTABLE = 406
 
 
 def test_create_account_from_dict(demo_session):
@@ -407,6 +410,7 @@ def test_create_security_from_dict(demo_session):
     security = Security.from_dict(demo_session, data)
     assert isinstance(security, Security)
 
+
 OLD_ERROR_FORMAT = {
     'error': {
         'code': None,
@@ -416,7 +420,7 @@ OLD_ERROR_FORMAT = {
         'message': 'Unsupported language',
         'name': 'Not Acceptable'
     },
-    'status': HTTP_NOT_ACCEPTABLE
+    'status': httplib.NOT_ACCEPTABLE
 }
 NEW_ERROR_FORMAT = {
     'error': {
@@ -425,7 +429,7 @@ NEW_ERROR_FORMAT = {
         'description': 'Unsupported language',
         'group': 'client'
     },
-    'status': HTTP_NOT_ACCEPTABLE
+    'status': httplib.NOT_ACCEPTABLE
 }
 
 
@@ -436,4 +440,3 @@ NEW_ERROR_FORMAT = {
 def test_create_figo_exception_from_dict(payload):
     exc = FigoException.from_dict(payload)
     assert isinstance(exc, FigoException)
-

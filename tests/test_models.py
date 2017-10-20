@@ -1,6 +1,6 @@
 try:
     import httplib
-except ModuleNotFoundError:
+except:
     from http import HTTPStatus as httplib
 
 import pytest

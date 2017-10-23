@@ -207,8 +207,8 @@ class FigoException(Exception):
         """
         Helper function creating an exception instance from the dictionary returned by the server.
         """
-        return cls(dictionary['error']['message'],
-                   dictionary['error']['description'],
+        return cls(dictionary['error'].get('message'),
+                   dictionary['error'].get('description'),
                    dictionary['error'].get('code'))
 
 

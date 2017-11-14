@@ -1132,7 +1132,7 @@ class FigoSession(FigoObject):
             account_or_account_id = account_or_account_id.account_id
 
         query = "/rest/accounts/{0}/securities/{1}".format(account_or_account_id, security_id)
-        return self._query_api_object(Security,query)
+        return self._query_api_object(Security, query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
         """

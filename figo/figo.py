@@ -606,7 +606,6 @@ class FigoSession(FigoObject):
 
         query = "/rest/accounts/{0}".format(account_or_account_id)
         self._request_with_exception(query, method="DELETE")
-        return None
 
     def sync_account(self, state, redirect_uri=None, account_ids=None, if_not_synced_since=None,
                      sync_tasks=['transactions'], disable_notifications=False, auto_continue=False):
@@ -808,8 +807,6 @@ class FigoSession(FigoObject):
         query = "/rest/notifications/{0}".format(notification_or_notification_id)
         self._request_with_exception(query, method="DELETE")
 
-        return None
-
     @property
     def payments(self):
         """Get an array of `Payment` objects, one for each payment of the user over all accounts.
@@ -885,7 +882,6 @@ class FigoSession(FigoObject):
         self._request_with_exception(
             "/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id),
             method="DELETE")
-        return None
 
     def submit_payment(self, payment, tan_scheme_id, state, redirect_uri=None):
         """Submit payment to bank server.
@@ -1248,8 +1244,6 @@ class FigoSession(FigoObject):
         query = "/rest/banks/{0}/remove_pin".format(bank_or_bank_id)
         self._request_with_exception(query, method="POST")
 
-        return None
-
     @property
     def user(self):
         """Get the current figo Account.
@@ -1273,7 +1267,6 @@ class FigoSession(FigoObject):
     def remove_user(self):
         """Delete figo Account."""
         self._request_with_exception("/rest/user", method="DELETE")
-        return None
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronization.

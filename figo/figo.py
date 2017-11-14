@@ -100,11 +100,12 @@ class FigoObject(object):
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
 
-        :Parameters:
-         - `path` - path on the server to call
-         - `data` - Dictionary of data to send to the server in message body
-         - `method` - HTTP verb to use for the request
-        :Returns:
+        Args:
+            path: path on the server to call
+            data: dictionary of data to send to the server in message body
+            method: - HTTP verb to use for the request
+
+        Returns:
             the JSON-parsed result body
         """
 
@@ -267,14 +268,13 @@ class FigoConnection(FigoObject):
         self.headers.update({'Authorization': "Basic {0}".format(basic_auth_encoded)})
 
     def _query_api(self, path, data=None):
-        """
-        Helper method for making a OAuth2-compliant API call.
+        """Helper method for making a OAuth2-compliant API call.
 
-        :Parameters:
-         - `path` - path on the server to call
-         - `data` - Dictionary of data to send to the server in message body
+        Args:
+            path: path on the server to call
+            data: dictionary of data to send to the server in message body
 
-        :Returns:
+        Returns:
             the JSON-parsed result body
         """
 
@@ -287,13 +287,13 @@ class FigoConnection(FigoObject):
         the constructor and passes on an authentication code. This code can be converted into
         an access token for data access.
 
-        :Parameters:
-         - `scope` - Scope of data access to ask the user for, e.g. `accounts=ro`
-         - `state` - String passed on through the complete login process and to the redirect
-         target at the end. It should be used to validate the authenticity of the
-         call to the redirect URL
+        Args:
+            scope: Scope of data access to ask the user for, e.g. `accounts=ro`
+            state: String passed on through the complete login process and to the redirect
+                target at the end. It should be used to validate the authenticity of the
+                call to the redirect URL
 
-        :Returns:
+        Returns:
             the URL of the first page of the login process
         """
         return (self.api_endpoint +
@@ -310,11 +310,11 @@ class FigoConnection(FigoObject):
         Convert the authentication code received as result of the login process into an
         access token usable for data access.
 
-        :parameters:
-         - `authentication_code` - the code received as part of the call to the redirect
-         URL at the end of the logon process
+        Args:
+            authentication_code: the code received as part of the call to the redirect
+                URL at the end of the logon process
 
-        :returns:
+        Returns:
             Dictionary with the following keys:
              - `access_token` - the access token for data access. You can pass it into
              `FigoConnection.open_session` to get a FigoSession and access the user's data
@@ -376,10 +376,10 @@ class FigoConnection(FigoObject):
         """Convert a refresh token (granted for offline access and returned by
         `convert_authentication_code`) into an access token usable for data access.
 
-        :Parameters:
-         - `refresh_token` - refresh token returned by `convert_authentication_code`
+        Args:
+            refresh_token: refresh token returned by `convert_authentication_code`
 
-        :Returns:
+        Returns:
             Dictionary with the following keys:
              - `access_token` - the access token for data access. You can pass it into
              `FigoConnection.open_session` to get a FigoSession and access the users data
@@ -398,30 +398,28 @@ class FigoConnection(FigoObject):
                 'expires': datetime.now() + timedelta(seconds=response['expires_in'])}
 
     def revoke_token(self, token):
-        """
-        Revoke a granted access or refresh token and thereby invalidate it.
+        """Revoke a granted access or refresh token and thereby invalidate it.
 
         Note: this action has immediate effect, i.e. you will not be able use that
         token anymore after this call.
 
-        :Parameters:
-         - `token` - access or refresh token to be revoked
+        Args:
+            token: access or refresh token to be revoked
         """
         response = self._request_api("/auth/revoke?" + urllib.urlencode({'token': token}))
         if 'error' in response:
             raise FigoException.from_dict(response)
 
     def add_user(self, name, email, password, language='de'):
-        """
-        Create a new figo Account.
+        """Create a new figo Account.
 
-        :Parameters:
-        - `name` - First and last name
-        - `email` - Email address; It must obey the figo username & password policy
-        - `password` - New figo Account password; It must obey the figo username & password policy
-        - `language` - Two-letter code of preferred language
+        Args:
+            name: First and last name
+            email: Email address; It must obey the figo username & password policy
+            password: New figo Account password; It must obey the figo username & password policy
+            language: Two-letter code of preferred language
 
-        :Returns:
+        Returns:
             Auto-generated recovery password.
         """
         response = self._request_api(
@@ -444,16 +442,15 @@ class FigoConnection(FigoObject):
         """
         Create a new figo account and get a session token for the new account.
 
-        :Parameters:
-        - `name` - First and last name
-        - `email` - Email address; It must obey the figo username & password policy
-        - `password` - New figo Account password; It must obey the figo
-        username & password policy
-        - `language` - Two-letter code of preferred language
-        - `send_newsletter` - This flag indicates whether the user has agreed to be
-        contacted by email
+        Args:
+            name: First and last name
+            email: Email address; It must obey the figo username & password policy
+            password: New figo Account password; It must obey the figo username & password policy
+            language: Two-letter code of preferred language
+            send_newsletter: This flag indicates whether the user has agreed to be contacted by
+                email
 
-        :Returns:
+        Returns:
             Token dictionary for further API access
         """
         self.add_user(name, email, password, language)
@@ -493,23 +490,18 @@ class FigoSession(FigoObject):
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
     def get_account(self, account_id):
-        """
-        Retrieve a specific account.
+        """Retrieve a specific account.
 
-        :Parameters:
-         - `account_id` - ID of the account to be retrieved
+        Args:
+            account_id: id of the account to be retrieved
 
-        :Returns:
-            `Account` object for the respective account
+        Returns:
+            Account object for the respective account
         """
         return self._query_api_object(Account, "/rest/accounts/%s" % account_id)
 
     def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """
-        Add a bank account to the figo user.
-
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
+        """Add a bank account to the figo user.
 
         Args:
             country (str): country code of the bank to add
@@ -519,7 +511,10 @@ class FigoSession(FigoObject):
             save_pin (bool): save credentials on the figo Connect server
 
         Returns:
-         TaskToken: A task token for the account creation task
+            TaskToken: A task token for the account creation task
+
+        Note:
+            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
         """
         data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
         if iban:
@@ -530,12 +525,7 @@ class FigoSession(FigoObject):
         return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
     def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """
-        Add a bank account and start syncing it.
-
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
-            The number of sync retries is determined by `FigoSession.sync_poll_retry`.
+        """Add a bank account and start syncing it.
 
         Args:
             country (str): country code of the bank to add
@@ -545,7 +535,11 @@ class FigoSession(FigoObject):
             save_pin (bool): save credentials on the figo Connect server
 
         Returns:
-         TaskToken: A task token for the account creation task
+            TaskToken: A task token for the account creation task
+
+        Note:
+            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
+            The number of sync retries is determined by `FigoSession.sync_poll_retry`.
         """
         task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
         for _ in range(self.sync_poll_retry):
@@ -572,14 +566,13 @@ class FigoSession(FigoObject):
         return task_state
 
     def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):
-        """
-        Provide a new pin if the sync task was erroneous because of a wrong pin.
+        """Provide a new pin if the sync task was erroneous because of a wrong pin.
 
-        :Parameters:
-            - 'pin_exception'   -   Exception of the sync task for which a new pin will be provided
-            - 'new_pin'         -   New pin for the sync task
+        Args:
+            pin_exception: Exception of the sync task for which a new pin will be provided
+            new_pin: New pin for the sync task
 
-        :Returns:
+        Returns:
             The state of the sync task. If the pin was wrong a FigoPinException is thrown
         """
         pin_exception.credentials[1] = new_pin
@@ -591,24 +584,22 @@ class FigoSession(FigoObject):
                                          )
 
     def modify_account(self, account):
-        """
-        Modify an account.
+        """Modify an account.
 
-        :Parameters:
-         - `account` - the modified account to be saved
+        Args:
+            account: the modified account to be saved
 
-        :Returns:
-           'Account' object for the updated account returned by server
+        Returns:
+            Account object for the updated account returned by server
         """
         return self._query_api_object(Account, "/rest/accounts/%s" % account.account_id,
                                       account.dump(), "PUT")
 
     def remove_account(self, account_or_account_id):
-        """
-        Remove an account.
+        """Remove an account.
 
-        :Parameters:
-         - `account_or_account_id` - account to be removed or its ID
+        Args:
+            account_or_account_id: account to be removed or its ID
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -621,22 +612,22 @@ class FigoSession(FigoObject):
                      sync_tasks=['transactions'], disable_notifications=False, auto_continue=False):
         """
         Args:
-        state (str): Arbitrary string to maintain state between this request and the callback,
-                     e.g. it might contain a session ID from your application.
-                     The value should also contain a random component, which your
-                     application checks to prevent cross-site request forgery.
-        redirect_uri (str): At the end of the synchronization process a response will be sent to
-                               this callback URL. The value defaults to the first redirect URI
-                               configured for the client.
-        disable_notifications (bool): This flag indicates whether notifications should be sent to
-                                      your application. Since your application will be notified by
-                                      the callback URL anyway, you might want to disable any
-                                      additional notifications.
-        if_not_synced_since (int): If this parameter is set, only those accounts will be
-                                   synchronized, which have not been synchronized within the
-                                   specified number of minutes.
-        auto_continue (bool): Automatically acknowledge and ignore any errors.
-        account_ids ([str]): Only sync the accounts with these IDs.
+            state (str): Arbitrary string to maintain state between this request and the callback,
+                e.g. it might contain a session ID from your application.
+                The value should also contain a random component, which your
+                application checks to prevent cross-site request forgery.
+            redirect_uri (str): At the end of the synchronization process a response will be sent to
+                this callback URL. The value defaults to the first redirect URI
+                configured for the client.
+            disable_notifications (bool): This flag indicates whether notifications should be sent
+                to your application. Since your application will be notified by
+                the callback URL anyway, you might want to disable any
+                additional notifications.
+            if_not_synced_since (int): If this parameter is set, only those accounts will be
+                synchronized, which have not been synchronized within the
+                specified number of minutes.
+            auto_continue (bool): Automatically acknowledge and ignore any errors.
+            account_ids ([str]): Only sync the accounts with these IDs.
 
         Returns:
             TaskToken: A task token for the synchronization task
@@ -654,14 +645,13 @@ class FigoSession(FigoObject):
         return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
 
     def get_account_balance(self, account_or_account_id):
-        """
-        Get balance and account limits.
+        """Get balance and account limits.
 
-        :Parameters:
-         - `account_or_account_id` - account to be queried or its ID
+        Args:
+            account_or_account_id: account to be queried or its ID
 
-        :Returns:
-            `AccountBalance` object for the respective account
+        Returns:
+            AccountBalance object for the respective account
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -670,26 +660,23 @@ class FigoSession(FigoObject):
         return self._query_api_object(AccountBalance, query)
 
     def modify_account_balance(self, account_or_account_id, account_balance):
-        """
-        Modify balance or account limits.
+        """Modify balance or account limits.
 
-        :Parameters:
-         - `account_or_account_id` - account to be modified or its ID
-         - `account_balance` - modified AccountBalance object to be saved
+        Args:
+            account_or_account_id: account to be modified or its ID
+            account_balance: modified AccountBalance object to be saved
 
-         :Returns:
-           'AccountBalance' object for the updated account as returned by the server
+         Returns:
+           AccountBalance object for the updated account as returned by the server
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
         query = "/rest/accounts/{0}/balance".format(account_or_account_id)
-
         return self._query_api_object(AccountBalance, query, account_balance.dump(), "PUT")
 
     def get_catalog(self):
-        """
-        Return a dict with lists of supported banks and payment services.
+        """Return a dict with lists of supported banks and payment services.
 
         Returns:
             dict {'banks': [Service], 'services': [Service]}:
@@ -702,8 +689,7 @@ class FigoSession(FigoObject):
         return catalog
 
     def get_supported_payment_services(self, country_code):
-        """
-        Return a list of supported credit cards and other payment services.
+        """Return a list of supported credit cards and other payment services.
 
         Args:
             country_code (str): country code of the requested payment services
@@ -716,8 +702,7 @@ class FigoSession(FigoObject):
         return [Service.from_dict(self, service) for service in services]
 
     def get_supported_banks(self, country_code):
-        """
-        Return a list of supported banks.
+        """Return a list of supported banks.
 
         Args:
             country_code (str): country code of the requested banks
@@ -730,8 +715,7 @@ class FigoSession(FigoObject):
         return [Service.from_dict(self, bank) for bank in banks]
 
     def get_login_settings(self, country_code, item_id):
-        """
-        Return the login settings of a bank.
+        """Return the login settings of a bank.
 
         Args:
             country_code (str): country code of the requested bank
@@ -745,8 +729,7 @@ class FigoSession(FigoObject):
                                       "/rest/catalog/banks/%s/%s" % (country_code, item_id))
 
     def get_service_login_settings(self, country_code, item_id):
-        """
-        Return the login settings of a payment service.
+        """Return the login settings of a payment service.
 
         Args:
             country_code (str): country code of the requested payment service
@@ -760,12 +743,12 @@ class FigoSession(FigoObject):
                                       "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
     def set_account_sort_order(self, accounts):
-        """
-        Set the sort order of the user's accounts.
+        """Set the sort order of the user's accounts.
 
-        :Parameters:
-            - accounts - List of Accounts
-        :Returns:
+        Args:
+            accounts: List of Accounts
+
+        Returns:
             empty response if successful
         """
         data = {"accounts": [{"account_id": account.account_id} for account in accounts]}
@@ -778,39 +761,36 @@ class FigoSession(FigoObject):
                                       collection_name="notifications")
 
     def get_notification(self, notification_id):
-        """
-        Retrieve a specific notification.
+        """Retrieve a specific notification.
 
-        :Parameters:
-         - `notification_id` - ID of the notification to be retrieved
+        Args:
+            notification_id: ID of the notification to be retrieved
 
-        :Returns:
-            'Notification' object for the respective notification
+        Returns:
+            Notification object for the respective notification
         """
         return self._query_api_object(Notification, "/rest/notifications/" + str(notification_id))
 
     def add_notification(self, notification):
-        """
-        Create a new notification.
+        """Create a new notification.
 
-        :Parameters:
-        - `notification` - new notification to be created. It should have no notification_id set
+        Args:
+            notification: new notification to be created. It should have no notification_id set
 
-        :Returns:
-            'Notification' object for the newly created notification
+        Returns:
+            Notification object for the newly created notification
         """
         return self._query_api_object(Notification, "/rest/notifications", notification.dump(),
                                       "POST")
 
     def modify_notification(self, notification):
-        """
-        Modify a notification.
+        """Modify a notification.
 
-        :Parameters:
-         - `notification` - modified notification object to be saved
+        Args:
+            notification: modified notification object to be saved
 
-        :Returns:
-            'Notification' object for the modified notification
+        Returns:
+            Notification object for the modified notification
         """
         return self._query_api_object(Notification,
                                       "/rest/notifications/" + notification.notification_id,
@@ -819,8 +799,8 @@ class FigoSession(FigoObject):
     def remove_notification(self, notification_or_notification_id):
         """Remove a notification.
 
-        :Parameters:
-         - `notification_or_notification_id` - notification to be removed or its ID
+        Args:
+            notification_or_notification_id: notification to be removed or its ID
         """
         if isinstance(notification_or_notification_id, Notification):
             notification_or_notification_id = notification_or_notification_id.notification_id
@@ -832,11 +812,10 @@ class FigoSession(FigoObject):
 
     @property
     def payments(self):
-        """
-        Get an array of `Payment` objects, one for each payment of the user over all accounts.
+        """Get an array of `Payment` objects, one for each payment of the user over all accounts.
 
-        :Returns:
-          `List` of Payment objects
+        Returns:
+            List of Payment objects
         """
         return self._query_api_object(Payment, "/rest/payments", collection_name="payments")
 
@@ -844,11 +823,11 @@ class FigoSession(FigoObject):
         """Get an array of `Payment` objects, one for each payment of the user on
         the specified account.
 
-        :Parameters:
-         - `account_or_account_id` - account to be queried or its ID
+        Args:
+            account_or_account_id: account to be queried or its ID
 
-        :Returns:
-            `List` of Payment objects
+        Returns:
+            List of Payment objects
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -857,15 +836,14 @@ class FigoSession(FigoObject):
         return self._query_api_object(Payment, query, collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id):
-        """
-        Get a single `Payment` object.
+        """Get a single `Payment` object.
 
-        :Parameters:
-         - `account_or_account_id` - account to be queried or its ID
-         - `payment_id` - ID of the payment to be retrieved
+        Args:
+            account_or_account_id: account to be queried or its ID
+            payment_id: ID of the payment to be retrieved
 
-        :Returns:
-            `Payment` object
+        Returns:
+            Payment object
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -874,14 +852,13 @@ class FigoSession(FigoObject):
         return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
-        """
-        Create a new payment.
+        """Create a new payment.
 
-        :Parameters:
-         - `payment` - payment to be created. It should not have its payment_id set.
+        Args:
+            payment: payment to be created. It should not have its payment_id set.
 
-        :Returns:
-            `Payment` object of the newly created payment as returned by the server
+        Returns:
+            Payment object of the newly created payment as returned by the server
         """
         return self._query_api_object(Payment,
                                       "/rest/accounts/{0}/payments".format(payment.account_id),
@@ -890,11 +867,11 @@ class FigoSession(FigoObject):
     def modify_payment(self, payment):
         """Modify a payment.
 
-        :Parameters:
-         - `payment` - modified payment object to be modified
+        Args:
+            payment: modified payment object to be modified
 
-        :Returns:
-          'Payment' object for the updated payment
+        Returns:
+            Payment object for the updated payment
         """
         return self._query_api_object(Payment, "/rest/accounts/%s/payments/%s" % (
             payment.account_id, payment.payment_id), payment.dump(), "PUT")
@@ -902,8 +879,8 @@ class FigoSession(FigoObject):
     def remove_payment(self, payment):
         """Remove a payment.
 
-        :Parameters:
-         - `payment` -  payment to be removed
+        Args:
+            payment:  payment to be removed
         """
         self._request_with_exception(
             "/rest/accounts/%s/payments/%s" % (payment.account_id, payment.payment_id),
@@ -911,17 +888,16 @@ class FigoSession(FigoObject):
         return None
 
     def submit_payment(self, payment, tan_scheme_id, state, redirect_uri=None):
-        """
-        Submit payment to bank server.
+        """Submit payment to bank server.
 
-        :Parameters:
-         - `payment` - payment to be submitted
-         - `tan_scheme_id` - TAN scheme ID of user-selected TAN scheme
-         - `state` - Any kind of string that will be forwarded in the callback response message
-         - `redirect_uri` - At the end of the submission process a response will
-         be sent to this callback URL
+        Args:
+            payment: payment to be submitted
+            tan_scheme_id: TAN scheme ID of user-selected TAN scheme
+            state: Any kind of string that will be forwarded in the callback response message
+            redirect_uri: At the end of the submission process a response will
+                be sent to this callback URL
 
-        :Returns:
+        Returns:
             the URL to be opened by the user for the TAN process
         """
         params = {'tan_scheme_id': tan_scheme_id, 'state': state}
@@ -949,17 +925,15 @@ class FigoSession(FigoObject):
         return [PaymentProposal.from_dict(self, payment_proposal) for payment_proposal in response]
 
     def start_task(self, task_token_obj):
-        """
-        Start the given task.
+        """Start the given task.
 
-        :Parameters:
-            - task_token_obj    -   TaskToken object of the task to start
+        Args:
+            task_token_obj: TaskToken object of the task to start
         """
         return self._request_with_exception("/task/start?id=%s" % task_token_obj.task_token)
 
     def get_task_state(self, task_token, pin=None, continue_=None, save_pin=None, response=None):
-        """
-        Return the progress of the given task. The kwargs are used to submit additional
+        """Return the progress of the given task. The kwargs are used to submit additional
         content for the task.
 
         Args:
@@ -994,8 +968,8 @@ class FigoSession(FigoObject):
     def cancel_task(self, task_token_obj):
         """Cancel a task if possible.
 
-        :Parameters:
-            - task_token_obj    -   TaskToken object of the task to cancel
+        Args:
+            task_token_obj: TaskToken object of the task to cancel
         """
         return self._request_with_exception(
             path="/task/cancel?id=%s" % task_token_obj.task_token,
@@ -1003,20 +977,18 @@ class FigoSession(FigoObject):
             method="POST")
 
     def start_process(self, process_token):
-        """
-        Start the given process.
+        """Start the given process.
 
-        :Parameters:
-            - process_token -   ProcessToken object for the process to start
+        Args:
+            process_token: ProcessToken object for the process to start
         """
         return self._request_with_exception("/process/start?id=%s" % process_token.process_token)
 
     def create_process(self, process):
-        """
-        Create a new process to be executed by the user. Returns a process token.
+        """Create a new process to be executed by the user. Returns a process token.
 
-        :Parameters:
-            - process   -   Process object which will be sent to the API
+        Args:
+            process: Process object which will be sent to the API
         """
         return self._query_api_object(ProcessToken, "/client/process", process.dump(), "POST")
 
@@ -1030,7 +1002,7 @@ class FigoSession(FigoObject):
                          include_pending=False, sort='desc'):
         """Get an array of `Transaction` objects, one for each transaction of the user.
 
-        Args
+        Args:
             account_id (str): ID of the account for which to list the transactions
             since (str): This parameter can either be a transaction ID or a date.
             count (int): Limit the number of returned transactions.
@@ -1058,15 +1030,14 @@ class FigoSession(FigoObject):
         return self._query_api_object(Transaction, query, collection_name="transactions")
 
     def get_transaction(self, account_or_account_id, transaction_id):
-        """
-        Retrieve a specific transaction.
+        """Retrieve a specific transaction.
 
-        :Parameters:
-         - `account_or_account_id` - account to be queried or its ID
-         - `transaction_id` - ID of the transaction to be retrieved
+        Args:
+            account_or_account_id: account to be queried or its ID
+            transaction_id: ID of the transaction to be retrieved
 
-        :Returns:
-            a `Transaction` object representing the transaction to be retrieved
+        Returns:
+            a Transaction object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -1074,27 +1045,25 @@ class FigoSession(FigoObject):
         query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id, transaction_id)
         return self._query_api_object(Transaction, query)
 
-    # Method added by Fincite (http://fincite.de) on 06/03/2015
     @property
     def securities(self):
         """An array of `Security` objects, one for each transaction of the user."""
         return self._query_api_object(Security, "/rest/securities", collection_name="securities")
 
-    # Method added by Fincite (http://fincite.de) on 06/03/2015
     def get_securities(self, account_id=None, since=None, count=1000, offset=0, accounts=None):
         """Get an array of `Security` objects, one for each security of the user.
 
-        :Parameters:
-         - `account_id` - ID of the account for which to list the securities
-         - `since` - this parameter can either be a transaction ID or a date
-         - `count` - limit the number of returned transactions
-         - `offset` - which offset into the result set should be used to determine the first
-         transaction to return (useful in combination with count)
-         - `accounts` - if retrieving the securities for all accounts, filter the
-         securities to be only from these accounts
+        Args:
+            account_id: ID of the account for which to list the securities
+            since: this parameter can either be a transaction ID or a date
+            count: limit the number of returned transactions
+            offset: which offset into the result set should be used to determine the first
+                transaction to return (useful in combination with count)
+            accounts: if retrieving the securities for all accounts, filter the
+                securities to be only from these accounts
 
-        :Returns:
-            `List` of Security objects
+        Returns:
+            List of Security objects
         """
         params = {'count': count, 'offset': offset}
         if accounts is not None and type(accounts) == list:
@@ -1112,17 +1081,15 @@ class FigoSession(FigoObject):
 
         return self._query_api_object(Security, query, collection_name="securities")
 
-    # Method added by Fincite (http://fincite.de) on 06/03/2015
     def get_security(self, account_or_account_id, security_id):
-        """
-        Retrieve a specific security.
+        """Retrieve a specific security.
 
-        :Parameters:
-         - `account_or_account_id` - account to be queried or its ID
-         - `security_id` - ID of the security to be retrieved
+        Args:
+            account_or_account_id: account to be queried or its ID
+            security_id: ID of the security to be retrieved
 
-        :Returns:
-            a `Security` object representing the transaction to be retrieved
+        Returns:
+            a Security object representing the transaction to be retrieved
         """
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
@@ -1131,15 +1098,14 @@ class FigoSession(FigoObject):
         return self._query_api_object(Security, query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):
-        """
-        Modify a specific security.
+        """Modify a specific security.
 
-        :Parameters:
-         - `account_or_account_id` - account to be modified or its ID
-         - `securities_or_security_id` - Security or its ID to be modified
-         - `visited` - new value of the visited field for the security
+        Args:
+            account_or_account_id: account to be modified or its ID
+            securities_or_security_id: Security or its ID to be modified
+            visited: new value of the visited field for the security
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
@@ -1169,28 +1135,26 @@ class FigoSession(FigoObject):
         return self._request_with_exception(query, {"visited": visited}, "PUT")
 
     def modify_user_securities(self, visited=None):
-        """
-        Modify all securities from the current user.
+        """Modify all securities from the current user.
 
-        :Parameters:
-        - `visited` - new value of the visited field for the security
+        Args:
+            visited: new value of the visited field for the security
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         return self._request_with_exception("/rest/securities", {"visited": visited}, "PUT")
 
     def modify_transaction(self, account_or_account_id, transaction_or_transaction_id,
                            visited=None):
-        """
-        Modify a specific transaction.
+        """Modify a specific transaction.
 
-        :Parameters:
-         - `account_or_account_id` - account to be modified or its ID
-         - `transaction_or_transaction_id` - Transactions or its ID to be modified
-         - `visited` - new value of the visited field for the transaction
+        Args:
+            account_or_account_id: account to be modified or its ID
+            transaction_or_transaction_id: Transactions or its ID to be modified
+            visited: new value of the visited field for the transaction
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
@@ -1203,14 +1167,13 @@ class FigoSession(FigoObject):
         return self._query_api_object(Transaction, query, {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
-        """
-        Modify all transactions of a specific account.
+        """Modify all transactions of a specific account.
 
-        :Parameters:
-         - `account_or_account_id` - account to be modified or its ID
-         - `visited` - new value of the visited field for the transactions
+        Args:
+            account_or_account_id: account to be modified or its ID
+            visited: new value of the visited field for the transactions
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
@@ -1222,23 +1185,22 @@ class FigoSession(FigoObject):
     def modify_user_transactions(self, visited=None):
         """Modify all transactions of the current user.
 
-        :Parameters:
-         - `visited` - new value of the visited field for the transactions
+        Args:
+            visited: new value of the visited field for the transactions
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         return self._request_with_exception("/rest/transactions", {"visited": visited}, "PUT")
 
     def delete_transaction(self, account_or_account_id, transaction_or_transaction_id):
-        """
-        Delete a specific transaction.
+        """Delete a specific transaction.
 
-        :Parameters:
-         - `account_or_account_id` - account to be modified or its ID
-         - `transaction_or_transaction_id` - Transaction or its ID to be deleted
+        Args:
+            account_or_account_id: account to be modified or its ID
+            transaction_or_transaction_id: Transaction or its ID to be deleted
 
-        :Returns:
+        Returns:
             Nothing if the request was successful
         """
         if isinstance(account_or_account_id, Account):
@@ -1251,13 +1213,12 @@ class FigoSession(FigoObject):
         return self._request_with_exception(query, method="DELETE")
 
     def get_bank(self, bank_id):
-        """
-        Get bank.
+        """Get bank.
 
-        :Parameters:
-         - `bank_id` - ID of the bank to be retrieved.
+        Args:
+            bank_id: ID of the bank to be retrieved.
 
-        :Returns:
+        Returns:
             a `BankContact` object representing the bank to be retrieved
         """
         return self._query_api_object(BankContact, "/rest/banks/%s" % bank_id)
@@ -1265,22 +1226,21 @@ class FigoSession(FigoObject):
     def modify_bank(self, bank):
         """Modify a bank.
 
-        :Parameters:
-         - `bank` - modified bank object to be saved
+        Args:
+            bank: modified bank object to be saved
 
-         :Returns:
-           'BankContact' object for the updated bank
+        Returns:
+            BankContact object for the updated bank
         """
         return self._query_api_object(BankContact, "/rest/banks/{0}".format(bank.bank_id),
                                       bank.dump(),
                                       "PUT")
 
     def remove_bank_pin(self, bank_or_bank_id):
-        """
-        Remove the stored PIN for a bank (if there was one).
+        """Remove the stored PIN for a bank (if there was one).
 
-        :Parameters:
-        - `bank_or_bank_id` - bank whose pin should be removed or its ID
+        Returns:
+            bank_or_bank_id: bank whose pin should be removed or its ID
         """
         if isinstance(bank_or_bank_id, BankContact):
             bank_or_bank_id = bank_or_bank_id.bank_id
@@ -1294,19 +1254,19 @@ class FigoSession(FigoObject):
     def user(self):
         """Get the current figo Account.
 
-        :Returns:
-          'User' object for the current figo Account
+        Returns:
+            User object for the current figo Account
         """
         return self._query_api_object(User, "/rest/user")
 
     def modify_user(self, user):
         """Modify figo Account.
 
-        :Parameters:
-         - `user` - modified user object to be saved
+        Args:
+            user: modified user object to be saved
 
-        :Returns:
-          'User' object for the updated figo Account
+        Return:
+            User object for the updated figo Account
         """
         return self._query_api_object(User, "/rest/user", user.dump(), "PUT")
 
@@ -1316,20 +1276,19 @@ class FigoSession(FigoObject):
         return None
 
     def get_sync_url(self, state, redirect_uri):
-        """
-        URL to trigger a synchronization.
+        """URL to trigger a synchronization.
 
         The user should open this URL in a web browser to synchronize his/her accounts with
         the respective bank servers. When the process is finished, the user is
         redirected to the provided URL.
 
-        :Parameters:
-         - `state` - String passed on through the complete synchronization process and to
-         the redirect target at the end. It should be used to validate the authenticity
-         of the call to the redirect URL
-         - `redirect_uri` - URI the user is redirected to after the process completes
+        Args:
+            state: String passed on through the complete synchronization process and to
+                the redirect target at the end. It should be used to validate the authenticity
+                of the call to the redirect URL
+            redirect_uri: URI the user is redirected to after the process completes
 
-        :Returns:
+        Returns:
             the URL to be opened by the user.
         """
         response = self._request_with_exception("/rest/sync",
@@ -1342,14 +1301,13 @@ class FigoSession(FigoObject):
                     response['task_token'])
 
     def parse_webhook_notification(self, message_body):
-        """
-        Parse a webhook notification and get a WebhookNotification object.
+        """Parse a webhook notification and get a WebhookNotification object.
 
-            :Parameters:
-            - `message_body` - message body of the webhook message (as string or dict)
+        Args:
+            message_body: message body of the webhook message (as string or dict)
 
-            :Returns:
-                a WebhookNotification object
+        Returns:
+            a WebhookNotification object
         """
         if type(message_body) is not dict:
             message_body = json.loads(message_body)

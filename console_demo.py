@@ -7,14 +7,14 @@ from figo import FigoSession
 def main():
     session = FigoSession(DEMO_TOKEN)
 
-    # print out a list of accounts including its balance
     for account in session.accounts:
         print(account)
-        print(account.balance)
+        print(u'  {}'.format(account.balance))
+        print(u'  Transactions:')
 
-    # print out the list of all transactions on a specific account
-    for transaction in session.get_account("A1.2").transactions:
-        print(transaction)
+        for transaction in session.get_account(account.account_id).transactions:
+            print(u'    {}'.format(transaction))
+
 
 if __name__ == "__main__":
     main()

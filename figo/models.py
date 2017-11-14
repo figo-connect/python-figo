@@ -163,7 +163,6 @@ class Account(ModelBase):
         return self.session.get_security(self.account_id, security_id)
 
     def __str__(self):
-        """Short String representation of an Account object."""
         return "Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
     def __init__(self, session, **kwargs):
@@ -190,7 +189,6 @@ class BankContact(ModelBase):
     save_pin = None
 
     def __str__(self):
-        """Short String representation of the bank contact."""
         return "BankContact: %s " % self.bank_id
 
 
@@ -214,7 +212,6 @@ class AccountBalance(ModelBase):
     status = None
 
     def __str__(self):
-        """Short String representation of the account balance."""
         return "Balance: %d at %s" % (self.balance, str(self.balance_date))
 
     def __init__(self, session, **kwargs):
@@ -286,7 +283,6 @@ class Payment(ModelBase):
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
     def __str__(self):
-        """Short String representation of a Payment."""
         return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
@@ -412,7 +408,6 @@ class Transaction(ModelBase):
             self.categories = [Category.from_dict(session, c) for c in self.categories]
 
     def __str__(self):
-        """Short String representation of a Transaction."""
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency,
                                                    self.name, str(self.value_date))
 
@@ -455,7 +450,6 @@ class Notification(ModelBase):
     state = None
 
     def __str__(self):
-        """Short String representation of a Notification."""
         return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
 
 
@@ -478,7 +472,6 @@ class SynchronizationStatus(ModelBase):
     success_timestamp = None
 
     def __str__(self):
-        """Short String representation of a synchronizationStatus."""
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
 
 
@@ -520,7 +513,6 @@ class User(ModelBase):
             self.join_date = dateutil.parser.parse(self.join_date)
 
     def __str__(self):
-        """Short String representation of a User."""
         return "User: %s (%s, %s)" % (self.name, self.user_id, self.email)
 
 
@@ -542,7 +534,6 @@ class WebhookNotification(ModelBase):
     data = None
 
     def __str__(self):
-        """Short String representation of a WebhookNotification."""
         return "WebhookNotification: %s" % (self.notification_id)
 
 
@@ -574,7 +565,6 @@ class Service(ModelBase):
             self.language = self.language['current_language']
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a Service."""
         return "Service: %s" % (self.bank_code)
 
 
@@ -603,7 +593,6 @@ class LoginSettings(ModelBase):
     advice = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a LoginSettings object."""
         return "LoginSettings: %s" % (self.bank_name)
 
 
@@ -624,7 +613,6 @@ class Credential(ModelBase):
     optional = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a Credential."""
         return "Credential: %s" % (self.label)
 
 
@@ -640,7 +628,6 @@ class TaskToken(ModelBase):
     task_token = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a TaskToken."""
         return "TaskToken: %s" % (self.task_token)
 
 
@@ -674,7 +661,6 @@ class TaskState(ModelBase):
     error = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a TaskState."""
         string = (u"TaskState: '{self.message}' "
                   u"(is_erroneous: {self.is_erroneous}, "
                   u"is_ended: {self.is_ended})")
@@ -705,7 +691,6 @@ class Challenge(ModelBase):
     data = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a Challenge."""
         return "Challenge: %s" % (self.title)
 
 
@@ -725,7 +710,6 @@ class PaymentProposal(ModelBase):
     name = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a PaymentProposal."""
         return "Payment Proposal: %s" % (self.name)
 
 
@@ -772,7 +756,6 @@ class ProcessStep(ModelBase):
     options = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a ProcessStep."""
         return "ProcessStep Type: %s" % (self.type)
 
 
@@ -813,7 +796,6 @@ class ProcessToken(ModelBase):
     process_token = None
 
     def __str__(self, *args, **kwargs):
-        """Short String representation of a ProcessToken."""
         return "Process Token: %s" % (self.process_token)
 
 
@@ -876,6 +858,5 @@ class Security(ModelBase):
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
     def __str__(self):
-        """Short String representation of a Security."""
         return "Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
-                                                str(self.trade_timestamp))
+                                                self.trade_timestamp)

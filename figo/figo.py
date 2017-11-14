@@ -38,12 +38,8 @@ from figo.version import __version__
 
 if sys.version_info[0] > 2:
     import urllib.parse as urllib
-
-    STRING_TYPES = (str)
 else:
     import urllib
-
-    STRING_TYPES = (str, unicode)
 
 logger = logging.getLogger(__name__)
 

@@ -1305,7 +1305,7 @@ class FigoSession(FigoObject):
         Returns:
             a WebhookNotification object
         """
-        if type(message_body) is not dict:
+        if not isinstance(message_body, dict):
             message_body = json.loads(message_body)
 
         notification = WebhookNotification.from_dict(self, message_body)

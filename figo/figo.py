@@ -45,30 +45,36 @@ logger = logging.getLogger(__name__)
 
 
 ERROR_MESSAGES = {
-    400: {'message': "bad request",
-          'description': "Bad request",
-          'code': 90000,
-          },
-    401: {'message': "unauthorized",
-          'description': "Missing, invalid or expired access token.",
-          'code': 90000,
-          },
-    403: {'message': "forbidden",
-          'description': "Insufficient permission.",
-          'code': 90000,
-          },
-    404: {'message': "not_found",
-          'description': "Not found.",
-          'code': 90000,
-          },
-    405: {'message': "method_not_allowed",
-          'description': "Unexpected request method.",
-          'code': 90000,
-          },
-    503: {'message': "service_unavailable",
-          'description': "Exceeded rate limit.",
-          'code': 90000,
-          },
+    400: {
+        'message': "bad request",
+        'description': "Bad request",
+        'code': 90000,
+    },
+    401: {
+        'message': "unauthorized",
+        'description': "Missing, invalid or expired access token.",
+        'code': 90000,
+    },
+    403: {
+        'message': "forbidden",
+        'description': "Insufficient permission.",
+        'code': 90000,
+    },
+    404: {
+        'message': "not_found",
+        'description': "Not found.",
+        'code': 90000,
+    },
+    405: {
+        'message': "method_not_allowed",
+        'description': "Unexpected request method.",
+        'code': 90000,
+    },
+    503: {
+        'message': "service_unavailable",
+        'description': "Exceeded rate limit.",
+        'code': 90000,
+    },
 }
 
 
@@ -78,10 +84,8 @@ class FigoObject(object):
     def __init__(self,
                  api_endpoint=CREDENTIALS['api_endpoint'],
                  fingerprints=CREDENTIALS['ssl_fingerprints'],
-                 language=None,
-                 ):
-        """
-        Create a FigoObject instance.
+                 language=None):
+        """Create a FigoObject instance.
 
         Args:
             api_endpoint (str) - base URI of the server to call
@@ -144,7 +148,6 @@ class FigoObject(object):
             'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
-
         response = self._request_api(path, data, method)
         # the check for is_erroneous in response is here to not confuse a task/progress
         # response with an error object
@@ -218,8 +221,7 @@ class FigoPinException(FigoException):
     def __init__(self, country, credentials, bank_code, iban, save_pin,
                  error="Wrong PIN",
                  error_description="You've entered a wrong PIN, please provide a new one.",
-                 code=None,
-                 ):
+                 code=None):
         """Initialiase an Exception for a wrong PIN which contains information about the task."""
         super(FigoPinException, self).__init__(error, error_description, code)
 
@@ -243,8 +245,7 @@ class FigoConnection(FigoObject):
     def __init__(self, client_id, client_secret, redirect_uri,
                  api_endpoint=CREDENTIALS['api_endpoint'],
                  fingerprints=CREDENTIALS['ssl_fingerprints'],
-                 language=None,
-                 ):
+                 language=None):
         """
         Create a FigoConnection instance.
 
@@ -576,12 +577,13 @@ class FigoSession(FigoObject):
             The state of the sync task. If the pin was wrong a FigoPinException is thrown
         """
         pin_exception.credentials[1] = new_pin
-        return self.add_account_and_sync(pin_exception.country,
-                                         pin_exception.credentials,
-                                         pin_exception.bank_code,
-                                         pin_exception.iban,
-                                         pin_exception.save_pin,
-                                         )
+        return self.add_account_and_sync(
+            pin_exception.country,
+            pin_exception.credentials,
+            pin_exception.bank_code,
+            pin_exception.iban,
+            pin_exception.save_pin,
+        )
 
     def modify_account(self, account):
         """Modify an account.
@@ -631,16 +633,17 @@ class FigoSession(FigoObject):
         Returns:
             TaskToken: A task token for the synchronization task
         """
-        data = {'state': state,
-                'redirect_uri': redirect_uri,
-                'disable_notifications': disable_notifications,
-                'if_not_synced_since': if_not_synced_since,
-                'auto_continue': auto_continue,
-                'account_ids': account_ids,
-                'sync_tasks': sync_tasks}
+        data = {
+            'state': state,
+            'redirect_uri': redirect_uri,
+            'disable_notifications': disable_notifications,
+            'if_not_synced_since': if_not_synced_since,
+            'auto_continue': auto_continue,
+            'account_ids': account_ids,
+            'sync_tasks': sync_tasks,
+        }
 
         data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
-
         return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
 
     def get_account_balance(self, account_or_account_id):

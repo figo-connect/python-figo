@@ -73,7 +73,7 @@ def test_error_handling(demo_session):
 
 
 def test_sync_uri(demo_session):
-    demo_session.get_sync_url('some_state', 'http://foo.bar')
+    demo_session.get_sync_url('some_state', 'http://example.com')
 
 
 def test_get_mail_from_user(demo_session):

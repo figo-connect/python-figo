@@ -69,11 +69,11 @@ def test_get_missing_account(demo_session):
 
 def test_error_handling(demo_session):
     with pytest.raises(FigoException):
-        demo_session.get_sync_url("", "http://localhost:3003/")
+        demo_session.get_sync_url('qwe', 'qew')
 
 
 def test_sync_uri(demo_session):
-    demo_session.get_sync_url("qwe", "qew")
+    demo_session.get_sync_url('some_state', 'http://example.com')
 
 
 def test_get_mail_from_user(demo_session):

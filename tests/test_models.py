@@ -28,35 +28,38 @@ HTTP_NOT_ACCEPTABLE = 406
 
 
 def test_create_account_from_dict(demo_session):
-    data = {"account_id": "A1.1",
-            "name": "Girokonto",
-            "bank_id": "B1.1",
-            "owner": "figo",
-            "auto_sync": False,
-            "account_number": "4711951500",
-            "bank_code": "90090042",
-            "bank_name": "Demobank",
-            "currency": "EUR",
-            "iban": "DE67900900424711951500",
-            "bic": "DEMODE01",
-            "type": "Unknown",
-            "icon": "https://api.figo.me/assets/images/accounts/default.png",
-            "additional_icons": {
-                "48x48": "https://api.figo.me/assets/images/accounts/default-small@2x.png",
-                "60x60": "https://api.figo.me/assets/images/accounts/default@2x.png"},
-            "status": {
-                "code": -1,
-                "message": "Cannot load credential 8f084858-e1c6-4642-87f8-540b530b6e0f: "
-                           "UUID does not exist.",
-                "success_timestamp": "2013-09-11T00:00:00.000Z",
-                "sync_timestamp": "2014-07-09T10:04:40.000Z"},
-            "balance": {
-                "balance": 3250.30,
-                "balance_date": "2013-09-11T00:00:00.000Z",
-                "credit_line": 0.0,
-                "monthly_spending_limit": 0.0
-            }
-            }
+    data = {
+        "account_id": "A1.1",
+        "name": "Girokonto",
+        "bank_id": "B1.1",
+        "owner": "figo",
+        "auto_sync": False,
+        "account_number": "4711951500",
+        "bank_code": "90090042",
+        "bank_name": "Demobank",
+        "currency": "EUR",
+        "iban": "DE67900900424711951500",
+        "bic": "DEMODE01",
+        "type": "Unknown",
+        "icon": "https://api.figo.me/assets/images/accounts/default.png",
+        "additional_icons": {
+            "48x48": "https://api.figo.me/assets/images/accounts/default-small@2x.png",
+            "60x60": "https://api.figo.me/assets/images/accounts/default@2x.png"
+        },
+        "status": {
+            "code": -1,
+            "message": "Cannot load credential 8f084858-e1c6-4642-87f8-540b530b6e0f: "
+            "UUID does not exist.",
+            "success_timestamp": "2013-09-11T00:00:00.000Z",
+            "sync_timestamp": "2014-07-09T10:04:40.000Z"
+        },
+        "balance": {
+            "balance": 3250.30,
+            "balance_date": "2013-09-11T00:00:00.000Z",
+            "credit_line": 0.0,
+            "monthly_spending_limit": 0.0
+        }
+    }
     account = Account.from_dict(demo_session, data)
     assert isinstance(account, Account)
 
@@ -407,6 +410,7 @@ def test_create_security_from_dict(demo_session):
     security = Security.from_dict(demo_session, data)
     assert isinstance(security, Security)
 
+
 OLD_ERROR_FORMAT = {
     'error': {
         'code': None,
@@ -436,4 +440,3 @@ NEW_ERROR_FORMAT = {
 def test_create_figo_exception_from_dict(payload):
     exc = FigoException.from_dict(payload)
     assert isinstance(exc, FigoException)
-

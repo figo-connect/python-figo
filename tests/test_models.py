@@ -310,6 +310,7 @@ def test_create_task_token_from_dict(demo_session):
     assert isinstance(task_token, TaskToken)
 
 
+@pytest.mark.skip()
 def test_task_token_unicode_logging():
     data = {
         'message': u"\xc3",

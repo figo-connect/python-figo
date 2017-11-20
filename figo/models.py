@@ -17,6 +17,8 @@ class ModelBase(object):
     def __init__(self, session, **kwargs):
         self.session = session
         for key, value in kwargs.items():
+            if isinstance(value, unicode):
+                value = value.encode('utf-8')
             setattr(self, key, value)
 
     def dump(self):

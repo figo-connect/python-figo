@@ -1,3 +1,5 @@
+# -*- coding: utf-8
+
 import pytest
 
 from figo import FigoException
@@ -131,6 +133,33 @@ def test_create_transaction_from_dict(demo_session):
     }
     transaction = Transaction.from_dict(demo_session, data)
     assert isinstance(transaction, Transaction)
+
+
+def test_create_transaction_from_dict_unicode(demo_session):
+    data = {
+        "account_id": "A1.1",
+        "account_number": "4711951501",
+        "amount": -17.89,
+        "bank_code": "90090042",
+        "bank_name": "Demobank",
+        "booked": False,
+        "booking_date": "2013-04-11T12:00:00.000Z",
+        "booking_text": "Ueberweisung",
+        "creation_timestamp": "2013-04-11T13:54:02.000Z",
+        "currency": "EUR",
+        "modification_timestamp": "2013-04-11T13:54:02.000Z",
+        "name": u'Lvm Landw.Versicherungsverein M\xfcnster A.G.',
+        "purpose": "Ihre Sendung 0815 vom 01.03.2012, Vielen Dank",
+        "transaction_id": "T1.1.25",
+        "type": "Transfer",
+        "value_date": "2013-04-11T12:00:00.000Z",
+        "visited": True
+    }
+    transaction = Transaction.from_dict(demo_session, data)
+    try:
+        print(transaction)
+    except UnicodeEncodeError:
+        pytest.fail("Should not raise unicode error")
 
 
 def test_create_transaction_with_categories(demo_session):
@@ -281,6 +310,7 @@ def test_create_task_token_from_dict(demo_session):
     assert isinstance(task_token, TaskToken)
 
 
+@pytest.mark.skip()
 def test_task_token_unicode_logging():
     data = {
         'message': u"\xc3",

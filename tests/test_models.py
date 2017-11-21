@@ -281,15 +281,6 @@ def test_create_task_token_from_dict(demo_session):
     assert isinstance(task_token, TaskToken)
 
 
-def test_task_token_unicode_logging():
-    data = {
-        'message': u"\xc3",
-        'is_erroneous': False,
-        'is_ended': False,
-    }
-    assert '?' in str(TaskState.from_dict(TaskState, data))
-
-
 def test_create_task_state_from_dict(demo_session):
     data = {
         "account_id": "A1.2",

@@ -10,9 +10,9 @@ class ModelBase(object):
 
     # Borrowed from Armin Ronacher
     if sys.version_info > (3, 0):
-        __str__ = lambda x: x.__unicode__()
+        __str__ = lambda x: x.__unicode__()  # noqa
     else:
-        __str__ = lambda x: unicode(x).encode('utf-8')
+        __str__ = lambda x: unicode(x).encode('utf-8')  # noqa
 
     @classmethod
     def from_dict(cls, session, data_dict):
@@ -35,7 +35,6 @@ class ModelBase(object):
             if value is not None:
                 result[attribute] = value
         return result
-
 
 
 class Account(ModelBase):
@@ -198,7 +197,7 @@ class BankContact(ModelBase):
     save_pin = None
 
     def __unicode__(self):
-        return "BankContact: %s " % self.bank_id
+        return u"BankContact: %s " % self.bank_id
 
 
 class AccountBalance(ModelBase):
@@ -221,7 +220,7 @@ class AccountBalance(ModelBase):
     status = None
 
     def __unicode__(self):
-        return "Balance: %d at %s" % (self.balance, str(self.balance_date))
+        return u"Balance: %d at %s" % (self.balance, str(self.balance_date))
 
     def __init__(self, session, **kwargs):
         super(AccountBalance, self).__init__(session, **kwargs)
@@ -292,7 +291,7 @@ class Payment(ModelBase):
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
     def __unicode__(self):
-        return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+        return u"Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
 class Transaction(ModelBase):
@@ -417,8 +416,8 @@ class Transaction(ModelBase):
             self.categories = [Category.from_dict(session, c) for c in self.categories]
 
     def __unicode__(self):
-        return "Transaction: %d %s to %s at %s" % (self.amount, self.currency,
-                                                   self.name, str(self.value_date))
+        return u"Transaction: %d %s to %s at %s" % (self.amount, self.currency,
+                                                    self.name, str(self.value_date))
 
 
 class Category(ModelBase):
@@ -459,7 +458,7 @@ class Notification(ModelBase):
     state = None
 
     def __unicode__(self):
-        return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
+        return u"Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
 
 
 class SynchronizationStatus(ModelBase):
@@ -481,7 +480,7 @@ class SynchronizationStatus(ModelBase):
     success_timestamp = None
 
     def __unicode__(self):
-        return "Synchronization Status: %s (%s)" % (self.code, self.message)
+        return u"Synchronization Status: %s (%s)" % (self.code, self.message)
 
 
 class User(ModelBase):
@@ -671,7 +670,7 @@ class TaskState(ModelBase):
 
     def __unicode__(self, *args, **kwargs):
         return (u"TaskState: '{self.message}' (is_erroneous: {self.is_erroneous}, "
-                 "is_ended: {self.is_ended})".format(self=self))
+                "is_ended: {self.is_ended})".format(self=self))
 
 
 class Challenge(ModelBase):
@@ -860,4 +859,4 @@ class Security(ModelBase):
 
     def __unicode__(self):
         return u"Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
-                                                self.trade_timestamp)
+                                                 self.trade_timestamp)

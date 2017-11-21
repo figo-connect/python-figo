@@ -28,6 +28,9 @@ class ModelBase(object):
                 result[attribute] = value
         return result
 
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
 
 class Account(ModelBase):
     """Object representing one bank account of the user, independent of the exact account type.
@@ -162,8 +165,8 @@ class Account(ModelBase):
         """
         return self.session.get_security(self.account_id, security_id)
 
-    def __str__(self):
-        return "Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+    def __unicode__(self):
+        return u"Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
     def __init__(self, session, **kwargs):
         super(Account, self).__init__(session, **kwargs)
@@ -188,7 +191,7 @@ class BankContact(ModelBase):
     sepa_creditor_id = None
     save_pin = None
 
-    def __str__(self):
+    def __unicode__(self):
         return "BankContact: %s " % self.bank_id
 
 
@@ -211,7 +214,7 @@ class AccountBalance(ModelBase):
     monthly_spending_limit = None
     status = None
 
-    def __str__(self):
+    def __unicode__(self):
         return "Balance: %d at %s" % (self.balance, str(self.balance_date))
 
     def __init__(self, session, **kwargs):
@@ -282,7 +285,7 @@ class Payment(ModelBase):
         if self.modification_timestamp:
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
-    def __str__(self):
+    def __unicode__(self):
         return "Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
@@ -407,7 +410,7 @@ class Transaction(ModelBase):
         if self.categories:
             self.categories = [Category.from_dict(session, c) for c in self.categories]
 
-    def __str__(self):
+    def __unicode__(self):
         return "Transaction: %d %s to %s at %s" % (self.amount, self.currency,
                                                    self.name, str(self.value_date))
 
@@ -428,7 +431,7 @@ class Category(ModelBase):
     parent_id = None
     name = None
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 
@@ -449,7 +452,7 @@ class Notification(ModelBase):
     notify_uri = None
     state = None
 
-    def __str__(self):
+    def __unicode__(self):
         return "Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
 
 
@@ -471,7 +474,7 @@ class SynchronizationStatus(ModelBase):
     sync_timestamp = None
     success_timestamp = None
 
-    def __str__(self):
+    def __unicode__(self):
         return "Synchronization Status: %s (%s)" % (self.code, self.message)
 
 
@@ -512,8 +515,8 @@ class User(ModelBase):
         if self.join_date:
             self.join_date = dateutil.parser.parse(self.join_date)
 
-    def __str__(self):
-        return "User: %s (%s, %s)" % (self.name, self.user_id, self.email)
+    def __unicode__(self):
+        return u"User: %s (%s, %s)" % (self.name, self.user_id, self.email)
 
 
 class WebhookNotification(ModelBase):
@@ -533,8 +536,8 @@ class WebhookNotification(ModelBase):
     state = None
     data = None
 
-    def __str__(self):
-        return "WebhookNotification: %s" % (self.notification_id)
+    def __unicode__(self):
+        return u"WebhookNotification: %s" % (self.notification_id)
 
 
 class Service(ModelBase):
@@ -564,8 +567,8 @@ class Service(ModelBase):
             self.available_languages = [l for l in self.language['available_languages']]
             self.language = self.language['current_language']
 
-    def __str__(self, *args, **kwargs):
-        return "Service: %s" % (self.bank_code)
+    def __unicode__(self, *args, **kwargs):
+        return u"Service: %s" % (self.bank_code)
 
 
 class LoginSettings(ModelBase):
@@ -592,8 +595,8 @@ class LoginSettings(ModelBase):
     auth_type = None
     advice = None
 
-    def __str__(self, *args, **kwargs):
-        return "LoginSettings: %s" % (self.bank_name)
+    def __unicode__(self, *args, **kwargs):
+        return u"LoginSettings: %s" % (self.bank_name)
 
 
 class Credential(ModelBase):
@@ -612,8 +615,8 @@ class Credential(ModelBase):
     masked = None
     optional = None
 
-    def __str__(self, *args, **kwargs):
-        return "Credential: %s" % (self.label)
+    def __unicode__(self, *args, **kwargs):
+        return u"Credential: %s" % (self.label)
 
 
 class TaskToken(ModelBase):
@@ -627,8 +630,8 @@ class TaskToken(ModelBase):
 
     task_token = None
 
-    def __str__(self, *args, **kwargs):
-        return "TaskToken: %s" % (self.task_token)
+    def __unicode__(self, *args, **kwargs):
+        return u"TaskToken: %s" % (self.task_token)
 
 
 class TaskState(ModelBase):
@@ -660,17 +663,19 @@ class TaskState(ModelBase):
     challenge = None
     error = None
 
-    def __str__(self, *args, **kwargs):
+    def __unicode__(self, *args, **kwargs):
         string = (u"TaskState: '{self.message}' "
                   u"(is_erroneous: {self.is_erroneous}, "
                   u"is_ended: {self.is_ended})")
 
         # BBB(Valentin): All strings come in UTF-8 from JSON. But:
         #   - python2.6: encode knows no kwargs
-        #   - python2.7: `u"{0}".format(x)` returns `unicode`, `__str__()` excpects `str` (ASCII)
-        #   - python3.x: encode returns `bytes`,`__str__` expects `str` (UTF-8)
+        #   - python2.7: `u"{0}".format(x)` returns `unicode`, `__unicode__()` excpects `str` (ASCII)
+        #   - python3.x: encode returns `bytes`,`__unicode__` expects `str` (UTF-8)
         #   This is really ugly, but works in all pythons.
-        return str(string.format(self=self).encode('ascii', 'replace'))
+#        return str(string.format(self=self).encode('ascii', 'replace'))
+
+        return string.format(self=self)
 
 
 class Challenge(ModelBase):
@@ -690,8 +695,8 @@ class Challenge(ModelBase):
     format = None
     data = None
 
-    def __str__(self, *args, **kwargs):
-        return "Challenge: %s" % (self.title)
+    def __unicode__(self, *args, **kwargs):
+        return u"Challenge: %s" % (self.title)
 
 
 class PaymentProposal(ModelBase):
@@ -709,8 +714,8 @@ class PaymentProposal(ModelBase):
     bank_code = None
     name = None
 
-    def __str__(self, *args, **kwargs):
-        return "Payment Proposal: %s" % (self.name)
+    def __unicode__(self, *args, **kwargs):
+        return u"Payment Proposal: %s" % (self.name)
 
 
 class Process(ModelBase):
@@ -755,8 +760,8 @@ class ProcessStep(ModelBase):
     type = None
     options = None
 
-    def __str__(self, *args, **kwargs):
-        return "ProcessStep Type: %s" % (self.type)
+    def __unicode__(self, *args, **kwargs):
+        return u"ProcessStep Type: %s" % (self.type)
 
 
 class ProcessOptions(ModelBase):
@@ -795,8 +800,8 @@ class ProcessToken(ModelBase):
 
     process_token = None
 
-    def __str__(self, *args, **kwargs):
-        return "Process Token: %s" % (self.process_token)
+    def __unicode__(self, *args, **kwargs):
+        return u"Process Token: %s" % (self.process_token)
 
 
 class Security(ModelBase):
@@ -857,6 +862,6 @@ class Security(ModelBase):
         if self.modification_timestamp:
             self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
 
-    def __str__(self):
-        return "Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
+    def __unicode__(self):
+        return u"Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
                                                 self.trade_timestamp)

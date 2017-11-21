@@ -1,3 +1,5 @@
+import sys
+
 import dateutil.parser
 
 
@@ -5,6 +7,12 @@ class ModelBase(object):
     """Super class for all models. Provides basic serialization."""
 
     __dump_attributes__ = []
+
+	# Borrowed from Armin Ronacher
+    if sys.version_info > (3, 0):
+        __str__ = lambda x: x.__unicode__()
+    else:
+        __str__ = lambda x: unicode(x).encode('utf-8')
 
     @classmethod
     def from_dict(cls, session, data_dict):
@@ -28,8 +36,6 @@ class ModelBase(object):
                 result[attribute] = value
         return result
 
-    def __str__(self):
-        return unicode(self).encode('utf-8')
 
 
 class Account(ModelBase):

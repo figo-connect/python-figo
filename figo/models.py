@@ -8,7 +8,7 @@ class ModelBase(object):
 
     __dump_attributes__ = []
 
-	# Borrowed from Armin Ronacher
+    # Borrowed from Armin Ronacher
     if sys.version_info > (3, 0):
         __str__ = lambda x: x.__unicode__()
     else:

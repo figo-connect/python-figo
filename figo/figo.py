@@ -95,7 +95,7 @@ class FigoObject(object):
         self.headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'User-Agent': "python_figo/{0}".format(__version__),
+            'User-Agent': "python_figo_bankathon/{0}".format(__version__),
         }
         self.language = language
         self.api_endpoint = api_endpoint

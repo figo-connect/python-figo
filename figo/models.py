@@ -427,7 +427,6 @@ class Category(ModelBase):
         id:
         parent_id:
         name:
-
     """
 
     __dump_attributes__ = ["id", "parent_id", "name"]
@@ -494,10 +493,6 @@ class User(ModelBase):
         verified_email: boolean, indicates whether the email address has been verified
         send_newsletter: boolean, incicates whether the user has signed up for the newsletter
         language: two letter code for preferred language
-        premium: --
-        premium_expires_on: --
-        join_date: --
-
     """
 
     __dump_attributes__ = ["name", "address", "send_newsletter", "language"]
@@ -509,9 +504,6 @@ class User(ModelBase):
     verified_email = None
     send_newsletter = None
     language = None
-    premium = None
-    premium_expires_on = None
-    premium_subscription = None
     join_date = None
 
     def __init__(self, session, **kwargs):

@@ -27,7 +27,7 @@ from tests.test_writing_methods import CLIENT_ERROR
 HTTP_NOT_ACCEPTABLE = 406
 
 
-def test_create_account_from_dict(demo_session):
+def test_create_account_from_dict(figo_session):
     data = {
         "account_id": "A1.1",
         "name": "Girokonto",
@@ -60,30 +60,30 @@ def test_create_account_from_dict(demo_session):
             "monthly_spending_limit": 0.0
         }
     }
-    account = Account.from_dict(demo_session, data)
+    account = Account.from_dict(figo_session, data)
     assert isinstance(account, Account)
 
 
-def test_create_bank_contact_from_dict(demo_session):
+def test_create_bank_contact_from_dict(figo_session):
     data = {"bank_id": "B1.1",
             "sepa_creditor_id": "DE67900900424711951500",
             "save_pin": True}
-    bank_contact = BankContact.from_dict(demo_session, data)
+    bank_contact = BankContact.from_dict(figo_session, data)
     assert isinstance(bank_contact, BankContact)
 
 
-def test_create_account_balance_from_dict(demo_session):
+def test_create_account_balance_from_dict(figo_session):
     data = {
         "balance": 3250.30,
         "balance_date": "2013-09-11T00:00:00.000Z",
         "credit_line": 0.0,
         "monthly_spending_limit": 0.0
     }
-    account_balance = AccountBalance.from_dict(demo_session, data)
+    account_balance = AccountBalance.from_dict(figo_session, data)
     assert isinstance(account_balance, AccountBalance)
 
 
-def test_create_payment_from_dict(demo_session):
+def test_create_payment_from_dict(figo_session):
     data = {
         "account_id": "A1.1",
         "account_number": "4711951501",
@@ -105,11 +105,11 @@ def test_create_payment_from_dict(demo_session):
         "text_key_extension": 0,
         "type": "Transfer"
     }
-    payment = Payment.from_dict(demo_session, data)
+    payment = Payment.from_dict(figo_session, data)
     assert isinstance(payment, Payment)
 
 
-def test_create_transaction_from_dict(demo_session):
+def test_create_transaction_from_dict(figo_session):
     data = {
         "account_id": "A1.1",
         "account_number": "4711951501",
@@ -129,11 +129,11 @@ def test_create_transaction_from_dict(demo_session):
         "value_date": "2013-04-11T12:00:00.000Z",
         "visited": True
     }
-    transaction = Transaction.from_dict(demo_session, data)
+    transaction = Transaction.from_dict(figo_session, data)
     assert isinstance(transaction, Transaction)
 
 
-def test_create_transaction_with_categories(demo_session):
+def test_create_transaction_with_categories(figo_session):
     data = {
         "account_id": "A1.1",
         "account_number": "4711951501",
@@ -165,25 +165,25 @@ def test_create_transaction_with_categories(demo_session):
         "value_date": "2013-04-11T12:00:00.000Z",
         "visited": True
     }
-    transaction = Transaction.from_dict(demo_session, data)
+    transaction = Transaction.from_dict(figo_session, data)
     assert hasattr(transaction, 'categories')
     for category in transaction.categories:
         assert isinstance(category, Category)
         assert hasattr(category, 'id')
 
 
-def test_create_notification_from_dict(demo_session):
+def test_create_notification_from_dict(figo_session):
     data = {
         "notification_id": "N1.7",
         "notify_uri": "https://api.figo.me/callback",
         "observe_key": "/rest/transactions?include_pending=0",
         "state": "cjLaN3lONdeLJQH3"
     }
-    notification = Notification.from_dict(demo_session, data)
+    notification = Notification.from_dict(figo_session, data)
     assert isinstance(notification, Notification)
 
 
-def test_create_sync_status_from_dict(demo_session):
+def test_create_sync_status_from_dict(figo_session):
     data = {
         "code": -1,
         "message": "Cannot load credential 8f084858-e1c6-4642-87f8-540b530b6e0f: "
@@ -191,11 +191,11 @@ def test_create_sync_status_from_dict(demo_session):
         "success_timestamp": "2013-09-11T00:00:00.000Z",
         "sync_timestamp": "2014-07-09T10:04:40.000Z"
     }
-    sync_status = SynchronizationStatus.from_dict(demo_session, data)
+    sync_status = SynchronizationStatus.from_dict(figo_session, data)
     assert isinstance(sync_status, SynchronizationStatus)
 
 
-def test_create_user_from_dict(demo_session):
+def test_create_user_from_dict(figo_session):
     data = {
         "address": {
             "city": "Berlin",
@@ -214,11 +214,11 @@ def test_create_user_from_dict(demo_session):
         "user_id": "U12345",
         "verified_email": True
     }
-    user = User.from_dict(demo_session, data)
+    user = User.from_dict(figo_session, data)
     assert isinstance(user, User)
 
 
-def test_create_service_from_dict(demo_session):
+def test_create_service_from_dict(figo_session):
     data = {
         "additional_icons": {
             "48x48": "https://api.figo.me/assets/images/accounts/default-small@2x.png",
@@ -235,11 +235,11 @@ def test_create_service_from_dict(demo_session):
             "current_language": "de",
         },
     }
-    service = Service.from_dict(demo_session, data)
+    service = Service.from_dict(figo_session, data)
     assert isinstance(service, Service)
 
 
-def test_create_login_settings_from_dict(demo_session):
+def test_create_login_settings_from_dict(figo_session):
     data = {
         "additional_icons": {
             "48x48": "https://api.figo.me/assets/images/accounts/default-small@2x.png",
@@ -260,28 +260,28 @@ def test_create_login_settings_from_dict(demo_session):
         "icon": "https://api.figo.me/assets/images/accounts/demokonto.png",
         "supported": True
     }
-    login_settings = LoginSettings.from_dict(demo_session, data)
+    login_settings = LoginSettings.from_dict(figo_session, data)
     assert isinstance(login_settings, LoginSettings)
 
 
-def test_create_credential_from_dict(demo_session):
+def test_create_credential_from_dict(figo_session):
     data = {
         "label": "Benutzername"
     }
-    credential = Credential.from_dict(demo_session, data)
+    credential = Credential.from_dict(figo_session, data)
     assert isinstance(credential, Credential)
 
 
-def test_create_task_token_from_dict(demo_session):
+def test_create_task_token_from_dict(figo_session):
     data = {
         "task_token": "YmB-BtvbWufLnbwgAVfP7XfLatwhrtu0sATfnZNR7LGP-aLXiZ7BKzLdZI--EqEPnwh_"
                       "h6mCxToLEBhtA7LVd4uM4gTcZG8F6UJs47g6kWJ0"
     }
-    task_token = TaskToken.from_dict(demo_session, data)
+    task_token = TaskToken.from_dict(figo_session, data)
     assert isinstance(task_token, TaskToken)
 
 
-def test_create_task_state_from_dict(demo_session):
+def test_create_task_state_from_dict(figo_session):
     data = {
         "account_id": "A1.2",
         "is_ended": False,
@@ -290,32 +290,32 @@ def test_create_task_state_from_dict(demo_session):
         "is_waiting_for_response": False,
         "message": "Getting balance..."
     }
-    task_state = TaskState.from_dict(demo_session, data)
+    task_state = TaskState.from_dict(figo_session, data)
     assert isinstance(task_state, TaskState)
 
 
-def test_create_challenge_from_dict(demo_session):
+def test_create_challenge_from_dict(figo_session):
     data = {
         "title": "Pin Eingabe",
         "label": "pin",
         "format": "Text",
         "data": "dummy"
     }
-    challenge = Challenge.from_dict(demo_session, data)
+    challenge = Challenge.from_dict(figo_session, data)
     assert isinstance(challenge, Challenge)
 
 
-def test_create_payment_proposal_from_dict(demo_session):
+def test_create_payment_proposal_from_dict(figo_session):
     data = {
         "account_number": "DE67900900424711951500",
         "bank_code": "DEMODE01",
         "name": "Girokonto"
     }
-    payment_proposal = PaymentProposal.from_dict(demo_session, data)
+    payment_proposal = PaymentProposal.from_dict(figo_session, data)
     assert isinstance(payment_proposal, PaymentProposal)
 
 
-def test_create_process_from_dict(demo_session):
+def test_create_process_from_dict(figo_session):
     data = {
         "email": "process.1@demo.figo.io",
         "password": "figofigo",
@@ -339,11 +339,11 @@ def test_create_process_from_dict(demo_session):
             }
         ]
     }
-    process = Process.from_dict(demo_session, data)
+    process = Process.from_dict(figo_session, data)
     assert isinstance(process, Process)
 
 
-def test_create_process_step_from_dict(demo_session):
+def test_create_process_step_from_dict(figo_session):
     data = {
         "options": {
             "account_number": "100100100",
@@ -356,11 +356,11 @@ def test_create_process_step_from_dict(demo_session):
         },
         "type": "figo.steps.payment.submit"
     }
-    process_step = ProcessStep.from_dict(demo_session, data)
+    process_step = ProcessStep.from_dict(figo_session, data)
     assert isinstance(process_step, ProcessStep)
 
 
-def test_create_process_options_from_dict(demo_session):
+def test_create_process_options_from_dict(figo_session):
     data = {
         "account_number": "100100100",
         "amount": 99,
@@ -370,20 +370,20 @@ def test_create_process_options_from_dict(demo_session):
         "purpose": "Yearly contribution",
         "type": "Transfer"
     }
-    process_options = ProcessOptions.from_dict(demo_session, data)
+    process_options = ProcessOptions.from_dict(figo_session, data)
     assert isinstance(process_options, ProcessOptions)
 
 
-def test_create_process_token_from_dict(demo_session):
+def test_create_process_token_from_dict(figo_session):
     data = {
         "task_token": "YmB-BtvbWufLnbwgAVfP7XfLatwhrtu0sATfnZNR7LGP-aLXiZ7BKzLdZI--EqEPnwh_"
                       "h6mCxToLEBhtA7LVd4uM4gTcZG8F6UJs47g6kWJ0"
     }
-    task_token = TaskToken.from_dict(demo_session, data)
+    task_token = TaskToken.from_dict(figo_session, data)
     assert isinstance(task_token, TaskToken)
 
 
-def test_create_security_from_dict(demo_session):
+def test_create_security_from_dict(figo_session):
     data = {
         "account_id": "A1.4",
         "amount": 32.78,
@@ -398,7 +398,7 @@ def test_create_security_from_dict(demo_session):
         "security_id": "S1.1",
         "trade_timestamp": "2014-07-29 15:00:00"
     }
-    security = Security.from_dict(demo_session, data)
+    security = Security.from_dict(figo_session, data)
     assert isinstance(security, Security)
 
 

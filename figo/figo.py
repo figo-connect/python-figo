@@ -744,18 +744,6 @@ class FigoSession(FigoObject):
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
-    def set_account_sort_order(self, accounts):
-        """Set the sort order of the user's accounts.
-
-        Args:
-            accounts: List of Accounts
-
-        Returns:
-            empty response if successful
-        """
-        data = {"accounts": [{"account_id": account.account_id} for account in accounts]}
-        return self._request_with_exception("/rest/accounts", data, "POST")
-
     @property
     def notifications(self):
         """An array of `Notification` objects, one for each registered notification."""
@@ -975,22 +963,6 @@ class FigoSession(FigoObject):
             data={"id": task_token_obj.task_token},
             method="POST")
 
-    def start_process(self, process_token):
-        """Start the given process.
-
-        Args:
-            process_token: ProcessToken object for the process to start
-        """
-        return self._request_with_exception("/process/start?id=%s" % process_token.process_token)
-
-    def create_process(self, process):
-        """Create a new process to be executed by the user. Returns a process token.
-
-        Args:
-            process: Process object which will be sent to the API
-        """
-        return self._query_api_object(ProcessToken, "/client/process", process.dump(), "POST")
-
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction of the user."""
@@ -1143,27 +1115,6 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         return self._request_with_exception("/rest/securities", {"visited": visited}, "PUT")
-
-    def modify_transaction(self, account_or_account_id, transaction_or_transaction_id,
-                           visited=None):
-        """Modify a specific transaction.
-
-        Args:
-            account_or_account_id: account to be modified or its ID
-            transaction_or_transaction_id: Transactions or its ID to be modified
-            visited: new value of the visited field for the transaction
-
-        Returns:
-            Nothing if the request was successful
-        """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-        if isinstance(transaction_or_transaction_id, Transaction):
-            transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
-
-        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id,
-                                                             transaction_or_transaction_id)
-        return self._query_api_object(Transaction, query, {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
         """Modify all transactions of a specific account.

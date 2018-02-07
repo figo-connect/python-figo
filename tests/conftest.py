@@ -1,5 +1,6 @@
 import pytest
 import uuid
+import time
 
 from logging import basicConfig
 
@@ -14,7 +15,7 @@ basicConfig(level='DEBUG')
 PASSWORD = 'some_words'
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def figo_connection():
     return FigoConnection(CREDENTIALS['client_id'],
                           CREDENTIALS['client_secret'],
@@ -23,12 +24,12 @@ def figo_connection():
                           fingerprints=CREDENTIALS['ssl_fingerprints'])
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def new_user_id():
     return "{0}testuser@example.com".format(uuid.uuid4())
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def figo_session(figo_connection, new_user_id):
     figo_connection.add_user("Test", new_user_id, PASSWORD)
     response = figo_connection.credential_login(new_user_id, PASSWORD)
@@ -48,19 +49,34 @@ def figo_session(figo_connection, new_user_id):
 
     session = FigoSession(response['access_token'])
 
+    task_token = session.add_account("de", ("figo", "figo"), "90090042" )
+    state = session.get_task_state(task_token)
+
+    while not state.is_ended:
+        state = session.get_task_state(task_token)
+        time.sleep(2)
+    assert not state.is_erroneous
+
     yield session
 
     session.remove_user()
 
 
 @pytest.fixture(scope='module')
-def demo_session():
-    # TODO(Valentin): we need to run `test_session` (both read-only) against production API
-    #                 using demo credentials, since there is no adequate client or data available
-    #                 on `staging`. we could:
-    #                 - drop these tests entirely and lose quite some code coverage
-    #                 - replace by write-then-read tests which cannot be run on external PRs
-    #                 - create a non-expiring demo session on `staging`
-    return FigoSession(DEMO_TOKEN,
-                       api_endpoint=DEMO_CREDENTIALS['api_endpoint'],
-                       fingerprints=DEMO_CREDENTIALS['ssl_fingerprints'])
+def account_ids(figo_session):
+
+    accs = figo_session.accounts
+
+    yield [a.account_id for a in accs]
+
+
+@pytest.fixture(scope='module')
+def giro_account(figo_session):
+    # returns the first account from the demo bank that is of type "Girokonto" and asserts there is at least one
+    accs = figo_session.accounts
+
+    giro_accs = [a for a in accs if a.type=="Giro account"]
+
+    assert len(giro_accs) >= 1
+
+    yield giro_accs[0]

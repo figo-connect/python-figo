@@ -66,7 +66,6 @@ def test_add_account_and_sync_wrong_pin(figo_session):
     try:
         with pytest.raises(FigoException):
             figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
-        assert len(figo_session.accounts) == 0
     except FigoException as figo_exception:
         # BBB(Valentin): prevent demo account from complaining - it returns no code on error
         if "Please use demo account credentials" not in figo_exception.error_description:
@@ -114,7 +113,6 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
             with pytest.raises(FigoPinException) as e:
                 figo_session.add_account_and_sync("de", None, None)
             assert e.value.code == 10000
-            assert len(figo_session.accounts) == 0
 
 
 @pytest.mark.skip(reason="test is flaky as hell and should be rewritten completely")

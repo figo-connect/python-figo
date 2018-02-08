@@ -169,3 +169,9 @@ def test_cancel_task(figo_session):
 
 def test_sync_account(figo_session):
     assert figo_session.sync_account(state="qweqwe")
+
+
+def test_get_bank(figo_session, giro_account):
+
+    bank = figo_session.get_bank(giro_account.bank_id)
+    assert bank.bank_id

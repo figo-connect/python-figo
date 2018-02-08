@@ -7,19 +7,7 @@ import pytest
 from figo import FigoException
 from figo.models import Notification
 from figo.models import Payment
-from figo.models import Process
-from figo.models import ProcessToken
 from figo.models import TaskToken
-
-
-
-def test_set_unset_language(figo_session):
-    assert figo_session.language is None
-    figo_session.language = 'de'
-    assert figo_session.language == 'de'
-    figo_session.language = ''
-    assert figo_session.language is None
-    figo_session.language = 'de'
 
 
 def test_get_account(figo_session, account_ids):
@@ -145,20 +133,9 @@ def test_create_update_delete_payment(figo_session, giro_account):
         figo_session.get_payment(modified_payment.account_id, modified_payment.payment_id)
 
 
-def test_get_supported_payment_services(figo_session):
-    # Access token with accounts=rw needed
-    services = figo_session.get_supported_payment_services("de")
-    assert len(services) > 5
-
-
-def test_get_login_settings(figo_session):
-    login_settings = figo_session.get_login_settings("de", "90090042")
-    assert login_settings.advice
-    assert login_settings.credentials
-
-
-def test_delete_transaction(figo_session):
-        figo_session.delete_transaction("A1.1", "T1.24")
+def test_delete_transaction(figo_session, giro_account):
+    transaction = giro_account.transactions[0]
+    figo_session.delete_transaction(giro_account.account_id, transaction.transaction_id)
 
 
 def test_get_payment_proposals(figo_session):

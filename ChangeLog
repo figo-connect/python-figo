@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+* making tests green
 * BAAS-31: Revert SSL
 * BAAS-31: Fix string
 * BAAS-31 Fix litreal

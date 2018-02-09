@@ -5,14 +5,13 @@ import time
 from logging import basicConfig
 
 from figo.credentials import CREDENTIALS
-from figo.credentials import DEMO_CREDENTIALS
-from figo.credentials import DEMO_TOKEN
 from figo import FigoConnection
 from figo import FigoSession
 
 basicConfig(level='DEBUG')
 
 PASSWORD = 'some_words'
+
 
 @pytest.fixture(scope='module')
 def new_user_id():
@@ -49,7 +48,7 @@ def figo_session(figo_connection, new_user_id):
 
     session = FigoSession(response['access_token'])
 
-    task_token = session.add_account("de", ("figo", "figo"), "90090042" )
+    task_token = session.add_account("de", ("figo", "figo"), "90090042")
     state = session.get_task_state(task_token)
 
     while not (state.is_ended or state.is_erroneous):
@@ -71,14 +70,14 @@ def account_ids(figo_session):
 
 @pytest.fixture(scope='module')
 def giro_account(figo_session):
-    # returns the first account from the demo bank that is of type "Girokonto" and asserts there is at least one
+    # returns the first account from the demo bank that is of type "Girokonto"
+    #  and asserts there is at least one
     accs = figo_session.accounts
-
-    giro_accs = [a for a in accs if a.type=="Giro account"]
-
+    giro_accs = [a for a in accs if a.type == "Giro account"]
     assert len(giro_accs) >= 1
 
     yield giro_accs[0]
+
 
 @pytest.fixture(scope='module')
 def access_token(figo_connection, new_user_id):

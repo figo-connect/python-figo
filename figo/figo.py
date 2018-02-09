@@ -25,7 +25,6 @@ from figo.models import LoginSettings
 from figo.models import Notification
 from figo.models import Payment
 from figo.models import PaymentProposal
-from figo.models import ProcessToken
 from figo.models import Security
 from figo.models import Service
 from figo.models import TaskState

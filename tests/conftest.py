@@ -14,13 +14,13 @@ basicConfig(level='DEBUG')
 
 PASSWORD = 'some_words'
 
-
+@pytest.fixture(scope='module')
 def new_user_id():
     return "{0}testuser@example.com".format(uuid.uuid4())
 
 
-
-def get_figo_connection():
+@pytest.fixture(scope='module')
+def figo_connection():
     return FigoConnection(CREDENTIALS['client_id'],
                           CREDENTIALS['client_secret'],
                           "https://127.0.0.1/",
@@ -29,11 +29,10 @@ def get_figo_connection():
 
 
 @pytest.fixture(scope='module')
-def figo_session():
-    user_id = new_user_id()
-    figo_connection = get_figo_connection()
-    figo_connection.add_user("Test", user_id, PASSWORD)
-    response = figo_connection.credential_login(user_id, PASSWORD)
+def figo_session(figo_connection, new_user_id):
+    new_user_id
+    figo_connection.add_user("Test", new_user_id, PASSWORD)
+    response = figo_connection.credential_login(new_user_id, PASSWORD)
 
     scope = response['scope']
 
@@ -53,7 +52,7 @@ def figo_session():
     task_token = session.add_account("de", ("figo", "figo"), "90090042" )
     state = session.get_task_state(task_token)
 
-    while not state.is_ended:
+    while not (state.is_ended or state.is_erroneous):
         state = session.get_task_state(task_token)
         time.sleep(2)
     assert not state.is_erroneous
@@ -65,7 +64,6 @@ def figo_session():
 
 @pytest.fixture(scope='module')
 def account_ids(figo_session):
-
     accs = figo_session.accounts
 
     yield [a.account_id for a in accs]
@@ -83,11 +81,9 @@ def giro_account(figo_session):
     yield giro_accs[0]
 
 @pytest.fixture(scope='module')
-def access_token():
-    user_id = new_user_id()
-    figo_connection = get_figo_connection()
-    figo_connection.add_user("Test", user_id, PASSWORD)
-    response = figo_connection.credential_login(user_id, PASSWORD)
+def access_token(figo_connection, new_user_id):
+    figo_connection.add_user("Test", new_user_id, PASSWORD)
+    response = figo_connection.credential_login(new_user_id, PASSWORD)
     access_token = response['access_token']
 
     yield access_token

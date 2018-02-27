@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* most of pep8
+* clean up of conftest
 * added a test for get\_bank
 * clean conftest, moved all catalog and header tests to own file
 * making tests green

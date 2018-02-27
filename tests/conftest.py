@@ -29,7 +29,6 @@ def figo_connection():
 
 @pytest.fixture(scope='module')
 def figo_session(figo_connection, new_user_id):
-    new_user_id
     figo_connection.add_user("Test", new_user_id, PASSWORD)
     response = figo_connection.credential_login(new_user_id, PASSWORD)
 
@@ -39,7 +38,6 @@ def figo_session(figo_connection, new_user_id):
         'accounts=rw',
         'transactions=rw',
         'user=rw',
-        'categorization=rw',
         'create_user',
     ]
 

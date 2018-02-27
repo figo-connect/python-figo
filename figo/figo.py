@@ -118,17 +118,18 @@ class FigoObject(object):
         session.headers.update(self.headers)
 
         for fingerprint in self.fingerprints:
-            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint))
+            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint.lower()))
             try:
                 response = session.request(method, complete_path, json=data)
-            except SSLError as fingerprint_error:
+            except SSLError:
                 logging.warn('Fingerprint "%s" was invalid', fingerprint)
             else:
                 break
             finally:
                 session.close()
         else:
-            raise fingerprint_error
+            raise SSLError
+
 
         if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
@@ -388,9 +389,12 @@ class FigoConnection(FigoObject):
         if refresh_token[0] != "R":
             raise Exception("Invalid refresh token")
 
-        response = self._request_api("/auth/token", data={
+
+        data = {
             'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri,
-            'grant_type': 'refresh_token'}, method="POST")
+            'grant_type': 'refresh_token'}
+        response = self._request_api("/auth/token", data=data, method="POST")
+
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -913,12 +917,18 @@ class FigoSession(FigoObject):
     def start_task(self, task_token_obj):
         """Start the given task.
 
+        note:: Deprecated in 3.0.0
+          `start_task` will be removed in 3.1.0, it is no longer necessary. Task will start
+          immediately on creation if creation is not deferred. For 3.0.0 start_task will call
+          task progress once to simulate old behavior for older API versions.
+
         Args:
             task_token_obj: TaskToken object of the task to start
         """
-        return self._request_with_exception("/task/start?id=%s" % task_token_obj.task_token)
+        self.get_task_state(task_token_obj)
 
-    def get_task_state(self, task_token, pin=None, continue_=None, save_pin=None, response=None):
+    def get_task_state(self, task_token_obj, pin=None, continue_=None, save_pin=None,
+                       response=None):
         """Return the progress of the given task. The kwargs are used to submit additional
         content for the task.
 
@@ -935,10 +945,10 @@ class FigoSession(FigoObject):
         Returns:
             TaskState: Object that indicates the current status of the queried task
         """
-        logger.debug('Geting task state for: %s', task_token)
+        logger.debug('Getting task state for: %s', task_token_obj)
 
         data = {
-            "id": task_token.task_token,
+            "id": task_token_obj.task_token,
             "pin": pin,
             "continue": continue_,
             "save_pin": save_pin,
@@ -948,7 +958,7 @@ class FigoSession(FigoObject):
         data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(TaskState,
-                                      "/task/progress?id=%s" % task_token.task_token,
+                                      "/task/progress?id=%s" % task_token_obj.task_token,
                                       data, "POST")
 
     def cancel_task(self, task_token_obj):

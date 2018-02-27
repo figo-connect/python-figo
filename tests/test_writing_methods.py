@@ -7,8 +7,7 @@ from mock import patch
 
 from figo import FigoException
 from figo import FigoPinException
-from figo.models import LoginSettings
-from figo.models import Service
+
 from figo.models import TaskState
 from figo.models import TaskToken
 
@@ -16,40 +15,6 @@ from figo.models import TaskToken
 CREDENTIALS = ["figo", "figo"]
 BANK_CODE = "90090042"
 CLIENT_ERROR = 1000
-
-
-# XXX(Valentin): Catalog needs `accounts=rw`, so it doesn't work with the demo session.
-#                Sounds silly at first, but actually there is no point to view the catalog if
-#                you can't add accounts.
-def test_get_catalog(figo_session):
-    catalog = figo_session.get_catalog()
-    assert len(catalog) == 2
-
-
-@pytest.mark.parametrize('language', ['de', 'en'])
-def test_get_catalog_en(figo_session, language):
-    figo_session.language = language
-    catalog = figo_session.get_catalog()
-    for bank in catalog['banks']:
-        assert bank.language == language
-
-
-def test_get_catalog_invalid_language(figo_session):
-    figo_session.language = 'xy'
-    with pytest.raises(FigoException) as e:
-        figo_session.get_catalog()
-    assert e.value.code == CLIENT_ERROR
-
-
-def test_get_supported_payment_services(figo_session):
-    services = figo_session.get_supported_payment_services("de")
-    assert len(services) > 10  # this a changing value, this tests that at least some are returned
-    assert isinstance(services[0], Service)
-
-
-def test_get_login_settings(figo_session):
-    login_settings = figo_session.get_login_settings("de", BANK_CODE)
-    assert isinstance(login_settings, LoginSettings)
 
 
 def test_add_account(figo_session):
@@ -66,7 +31,6 @@ def test_add_account_and_sync_wrong_pin(figo_session):
     try:
         with pytest.raises(FigoException):
             figo_session.add_account_and_sync("de", wrong_credentials, BANK_CODE)
-        assert len(figo_session.accounts) == 0
     except FigoException as figo_exception:
         # BBB(Valentin): prevent demo account from complaining - it returns no code on error
         if "Please use demo account credentials" not in figo_exception.error_description:
@@ -114,11 +78,10 @@ def test_add_account_and_sync_wrong_pin_postbank(figo_session):
             with pytest.raises(FigoPinException) as e:
                 figo_session.add_account_and_sync("de", None, None)
             assert e.value.code == 10000
-            assert len(figo_session.accounts) == 0
 
 
 @pytest.mark.skip(reason="test is flaky as hell and should be rewritten completely")
-def test_051_add_account_and_sync_wrong_and_correct_pin(figo_session):
+def test_add_account_and_sync_wrong_and_correct_pin(figo_session):
     wrong_credentials = [CREDENTIALS[0], "123456"]
     figo_session.sync_poll_retry = 100
     try:

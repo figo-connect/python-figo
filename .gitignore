@@ -35,3 +35,5 @@ htmlcov/*
 .mr.developer.cfg
 .project
 .pydevproject
+.eggs/
+.pytest_cache/

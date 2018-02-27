@@ -1,0 +1,305 @@
+CHANGES
+=======
+
+* most of pep8
+* clean up of conftest
+* added a test for get\_bank
+* clean conftest, moved all catalog and header tests to own file
+* making tests green
+* BAAS-31: Revert SSL
+* BAAS-31: Fix string
+* BAAS-31 Fix litreal
+* BAAS-31: Add new API fingerprint
+* BAAS-31: Move env vars to travis directly
+* fix \_\_unicode\_\_ that didn't return unicode strings
+* fix indentation
+* Remove weird legacy unicode stuff
+* fix unicode issue also for python3
+* fix unicode error
+* use example.com as test URL
+* drop support for old pythons
+* fix broken tests
+* add v3 to api\_endpoint
+* improve console\_demo.py output and remove hard coded account id
+* fix instance check
+* re-format
+* remove unnecessary docstrings
+* Remove unnecessary returns
+* shape up docstrings
+* remove in-code comments, shape up the docstrings, re-format
+* unify formatting, flake8
+* remove STRING\_TYPES
+* flake8
+
+1.7.4
+-----
+
+* Revert "use python3 compatible http status\_code const"
+* Revert "comply to all the py3 versions"
+* comply to all the py3 versions
+* use python3 compatible http status\_code const
+* remove httplib requirement in docs to make it compatible to python 3.x
+* this shouldn't be an instance eq check
+* include error code in tests
+* get error keys with get()
+* add test case for new and old error format
+* remove redundant error code
+* demobank has more than one account
+* add test for invalid language
+* fix catalog endpoint and exception formatting
+* add tests
+* add language to service model
+* remove numbers from test names
+* handle errors more flexibly
+
+1.7.3
+-----
+
+* remove 2.6 from travis, skip flaky test for now
+
+1.7.2
+-----
+
+* remove python 2.6, added python 3.6 to setup.cfg
+* add language parameter
+
+1.7.1
+-----
+
+* remove yield\_fixture
+* use relative import and also test py36
+
+1.7.0
+-----
+
+* fix import
+* fix import
+* fix import
+* add new transaction fields
+* DRY \`x\_or\_x\_id\` pattern
+* factor out demo token
+* flake8
+* fix description string for pypi
+* factor out credentials
+* get version string from installed package
+* flake8
+
+1.6.3
+-----
+
+* changed fingerprint in test config
+
+1.6.2
+-----
+
+* version bump to 1.6.2
+* update readme
+* use pbr
+* align user agent version with sdk version
+* fix fingerprint listing in one string
+* Update setup.py
+* Update figo.py
+
+1.6.1
+-----
+
+* reword readme: environment variables
+
+1.6.0
+-----
+
+* bump version
+* fix raising generic exception on task
+* implement change requests
+* remove debug output plus tiny code fixes
+* add sync\_account function and tests
+* improve comment
+* not asserting a fixed value for number of services. More than 10 seems ok
+* expect the right error code in test
+* add generic error data to FigoPinException
+* use complete unicode strings
+* Implemented changes on #37 requested by @fricklerhandwerk
+* #37 - Fixed Integration tests: Added \`90000\` as attribute for http related errors and changed \`assert len(services) == 28\` to \`assert len(services) == 27\` as this was apperently altered
+* Removed pragma no cover
+* Added \`code\` in init function and extended \`from\_dict\` class method
+* Added error code to FigoException
+* flake8: ignore docstring warnings
+* return scope in user login response
+* enable flake8 on tests and reformat
+* skip tests based on client scope instead of credentials
+* add categories to transactions
+* implement lad1337's comments
+* use SHA256 fingerprint for certificate pinning
+* fix return type for banks catalog
+* remove star import, fix most linter errors
+* fix \`account\_id\` check and comments to sphinx
+* fix indentation
+* add test for wrong pin on postbank
+* use error code instead of string when raising pin exception
+* hotfix unicode error in logging
+* add methods to get banks catalog and service login settings
+* use generator instead dict comprehension, docstring to sphinx
+* split test fixtures in \`api\` and \`staging\` (#29)
+* fix typos in comments
+* pass CLIENT\_ID and CLIENT\_SECRET env to tox
+* remove reassignment of \`sync\_poll\_retry\`
+* fix typos in readme
+* add \`scope\` option to \`credential\_login()\`
+* pass CLIENT\_ID and CLIENT\_SECRET env to tox
+* get client credentials from env
+* added current staging.figo.me fingerprint into FIGO\_SSL\_FINGERPRINT env variable
+* Remove IDE spam from file-header
+* Create CONTRIB.md
+* added CLIENT\_ID, CLIENT\_SECRET and FIGO\_API\_ENDPOINT to travis.yml
+* fix typos in readme
+* make query generation even more readable
+* don't use \`eval\`
+* make query generation more readable
+* use explicit kwargs in \`get\_task\_state()\`
+* remove stray comment line
+* added sort argument to \`get\_transactions\` method
+* fix typo in error message
+* remove \`HTTP\_SECURE\` option, use https always
+* add API endpoint and SSL fingerprints to constructors
+
+1.5.8
+-----
+
+* update package metadata
+
+1.5.7
+-----
+
+* adjust test case values
+
+1.5.6
+-----
+
+* update pypi password
+* minor typos in ready
+
+1.5.5
+-----
+
+* fixed sync\_poll\_retry behaviour, added description of alternative fingerprint and endpoint handling in ready
+* support for multi ssl fingerprints and other endpoint
+* added newest fingerprint
+* removed empty line in .md
+* added coverage badge, all badges now have the same styling
+* working on codecoverage integration
+* added codecov to travis config
+
+1.5.4
+-----
+
+* added travis secure password, some setup info, version bump for travis
+
+1.5.3
+-----
+
+* version push
+* python3 bytes vs. string issue fixed,
+* trying to to get rid of race conditions during travis parallel version runs
+* migrated tests for models and session to pytest, reformatting and PEP8
+* switched to requests and pytest,  removed some state in unit tests. There are some stageful tests remaining
+* added python 3.5 to travis
+* why does it always rain on me ..
+* travis, again
+* some travis ci changes and code formatting, typos and PEP8
+* error code formatting
+* fixed tests for 2.6 and 2.7
+* print statements now python3 style, create user now uses a uuid as name to avoid race conditions during parallel testing
+* more pep8 stuff, switched to nose style skip for python 2.6 compatibility
+
+1.5.2
+-----
+
+* fixed pep8
+
+1.5.1
+-----
+
+* fixed all other errors, nose tests are now passing
+* adjusted Exception raising to new error message format
+* Add "visited" and "additional\_info" to Transaction object
+
+1.4.1
+-----
+
+* bump version to 1.4.1
+* added new fingerprint for api.figo.me
+* added detailed description to Payment Class
+* updated more docstrings
+* updated docstrings
+* updated doc strings (reformatting and small fixes)
+* added available tan schemes to account model
+* changed version
+* added add\_user\_and\_login and add\_account\_and\_sync
+* added missing api calls, models and test cases
+* Adding missing bank\_id to bank
+* Remove some typos (non critical) and a debug output
+* remove stray space (flake8)
+* python 3 compat (and v1.3.1)
+* move to new figo.io SDK API level
+* increment to v1.2.1
+* adding tox.ini to filter out flake8 noise
+* flake8 fixes
+* adding flake8 to travis CI
+* increment version
+* adding demo apps
+* python 2.6 compat
+* fix a variety of typos
+* adding pypi badge to readme
+* updating SSL fingerprints, clean up and adding tests
+* Fix a variety of minor issues
+* Fixing missing parsing of value date in transaction. Bump to 1.1.3
+* Incrementing version and updating trove classifiers
+* Fix relative import and usage of iteritems in spirit of Py3k
+* Adding dependency installation to travis ci and adding nose as test dependency
+* Use correct setuptools option
+* Fix issue with Py2.6
+* Python 3 compatibility
+* Updating SSL fingerprints and moving to new API DNS name. Incrementing Version
+* pep8 + to string methods
+* new api endpoints
+* webhook notification parser
+* webhook notification parser
+* webhook notification parser
+* add python-dateutil as dependency
+* fix unittests
+* fix unittests
+* fix unittests
+* refactoring and add new api endpoints
+* revert eda0c2bbce273f1608ef4e9cfc24a0b9c0302e39 and fix it right
+* bump version
+* now balance is delivered inline and the helper method is no longer necessary
+* adding SSL certificate fingerprints
+* Increment version
+* Fix typos
+* Increment version
+* PEP8
+* Adding str representations to models
+* Fix missing import of FigoException in figo/models.py
+* Building on top of PR to include the error code into output as well
+* Add string representation for FigoException
+* Add account type 'Cash book'
+* Fix unit tests for Python 2.6
+* Add OAuth example
+* Handle more HTTP error codes
+* Fix unit tests
+* some more tests and clean up
+* use correct URLs for sync
+* Removing strange property decorator
+* Increment version
+* typo
+* Python 2.6 and below compat
+* Adding certificate validation
+* Adding build status image
+* Adding PyPy to travis
+* Python 3 compat
+* adding travis
+* change doc theme
+* add login example
+* Using code-block instead of code to make rtd happy
+* first version of the python binding
+* Initial commit

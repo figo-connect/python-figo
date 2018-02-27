@@ -25,7 +25,6 @@ from figo.models import LoginSettings
 from figo.models import Notification
 from figo.models import Payment
 from figo.models import PaymentProposal
-from figo.models import ProcessToken
 from figo.models import Security
 from figo.models import Service
 from figo.models import TaskState
@@ -119,17 +118,18 @@ class FigoObject(object):
         session.headers.update(self.headers)
 
         for fingerprint in self.fingerprints:
-            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint))
+            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint.lower()))
             try:
                 response = session.request(method, complete_path, json=data)
-            except SSLError as fingerprint_error:
+            except SSLError:
                 logging.warn('Fingerprint "%s" was invalid', fingerprint)
             else:
                 break
             finally:
                 session.close()
         else:
-            raise fingerprint_error
+            raise SSLError
+
 
         if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
@@ -389,9 +389,12 @@ class FigoConnection(FigoObject):
         if refresh_token[0] != "R":
             raise Exception("Invalid refresh token")
 
-        response = self._request_api("/auth/token", data={
+
+        data = {
             'refresh_token': refresh_token, 'redirect_uri': self.redirect_uri,
-            'grant_type': 'refresh_token'}, method="POST")
+            'grant_type': 'refresh_token'}
+        response = self._request_api("/auth/token", data=data, method="POST")
+
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -744,18 +747,6 @@ class FigoSession(FigoObject):
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
-    def set_account_sort_order(self, accounts):
-        """Set the sort order of the user's accounts.
-
-        Args:
-            accounts: List of Accounts
-
-        Returns:
-            empty response if successful
-        """
-        data = {"accounts": [{"account_id": account.account_id} for account in accounts]}
-        return self._request_with_exception("/rest/accounts", data, "POST")
-
     @property
     def notifications(self):
         """An array of `Notification` objects, one for each registered notification."""
@@ -926,12 +917,18 @@ class FigoSession(FigoObject):
     def start_task(self, task_token_obj):
         """Start the given task.
 
+        note:: Deprecated in 3.0.0
+          `start_task` will be removed in 3.1.0, it is no longer necessary. Task will start
+          immediately on creation if creation is not deferred. For 3.0.0 start_task will call
+          task progress once to simulate old behavior for older API versions.
+
         Args:
             task_token_obj: TaskToken object of the task to start
         """
-        return self._request_with_exception("/task/start?id=%s" % task_token_obj.task_token)
+        self.get_task_state(task_token_obj)
 
-    def get_task_state(self, task_token, pin=None, continue_=None, save_pin=None, response=None):
+    def get_task_state(self, task_token_obj, pin=None, continue_=None, save_pin=None,
+                       response=None):
         """Return the progress of the given task. The kwargs are used to submit additional
         content for the task.
 
@@ -948,10 +945,10 @@ class FigoSession(FigoObject):
         Returns:
             TaskState: Object that indicates the current status of the queried task
         """
-        logger.debug('Geting task state for: %s', task_token)
+        logger.debug('Getting task state for: %s', task_token_obj)
 
         data = {
-            "id": task_token.task_token,
+            "id": task_token_obj.task_token,
             "pin": pin,
             "continue": continue_,
             "save_pin": save_pin,
@@ -961,7 +958,7 @@ class FigoSession(FigoObject):
         data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
 
         return self._query_api_object(TaskState,
-                                      "/task/progress?id=%s" % task_token.task_token,
+                                      "/task/progress?id=%s" % task_token_obj.task_token,
                                       data, "POST")
 
     def cancel_task(self, task_token_obj):
@@ -974,22 +971,6 @@ class FigoSession(FigoObject):
             path="/task/cancel?id=%s" % task_token_obj.task_token,
             data={"id": task_token_obj.task_token},
             method="POST")
-
-    def start_process(self, process_token):
-        """Start the given process.
-
-        Args:
-            process_token: ProcessToken object for the process to start
-        """
-        return self._request_with_exception("/process/start?id=%s" % process_token.process_token)
-
-    def create_process(self, process):
-        """Create a new process to be executed by the user. Returns a process token.
-
-        Args:
-            process: Process object which will be sent to the API
-        """
-        return self._query_api_object(ProcessToken, "/client/process", process.dump(), "POST")
 
     @property
     def transactions(self):
@@ -1143,27 +1124,6 @@ class FigoSession(FigoObject):
             Nothing if the request was successful
         """
         return self._request_with_exception("/rest/securities", {"visited": visited}, "PUT")
-
-    def modify_transaction(self, account_or_account_id, transaction_or_transaction_id,
-                           visited=None):
-        """Modify a specific transaction.
-
-        Args:
-            account_or_account_id: account to be modified or its ID
-            transaction_or_transaction_id: Transactions or its ID to be modified
-            visited: new value of the visited field for the transaction
-
-        Returns:
-            Nothing if the request was successful
-        """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-        if isinstance(transaction_or_transaction_id, Transaction):
-            transaction_or_transaction_id = transaction_or_transaction_id.transaction_id
-
-        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id,
-                                                             transaction_or_transaction_id)
-        return self._query_api_object(Transaction, query, {"visited": visited}, "PUT")
 
     def modify_account_transactions(self, account_or_account_id, visited=None):
         """Modify all transactions of a specific account.

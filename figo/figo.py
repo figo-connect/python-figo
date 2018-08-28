@@ -98,7 +98,7 @@ class FigoObject(object):
         }
         self.language = language
         self.api_endpoint = api_endpoint
-        self.fingerprints = fingerprints.split(',')
+        self.fingerprints = fingerprints
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.

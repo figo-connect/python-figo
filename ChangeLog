@@ -1,6 +1,32 @@
 CHANGES
 =======
 
+3.0.4
+-----
+
+* version bump to 3.0.4 because of faulty pypi upload
+
+3.0.3
+-----
+
+* version bump to 3.0.3
+* Remove old fingerprint since the transition is over to silence warnings
+* Fix hardcoded fingerprints botched in 3998871
+
+3.0.2
+-----
+
+* fix credentials.py
+
+3.0.1
+-----
+
+* Added new fingerprint
+
+3.0.0
+-----
+
+* fix: task\_start is not called with response.json() anymore
 * most of pep8
 * clean up of conftest
 * added a test for get\_bank
@@ -71,6 +97,10 @@ CHANGES
 
 1.7.0
 -----
+
+
+v1.6.4
+------
 
 * fix import
 * fix import
@@ -228,6 +258,10 @@ CHANGES
 
 * bump version to 1.4.1
 * added new fingerprint for api.figo.me
+
+v1.4.0
+------
+
 * added detailed description to Payment Class
 * updated more docstrings
 * updated docstrings
@@ -236,15 +270,35 @@ CHANGES
 * changed version
 * added add\_user\_and\_login and add\_account\_and\_sync
 * added missing api calls, models and test cases
+
+v1.3.2
+------
+
 * Adding missing bank\_id to bank
 * Remove some typos (non critical) and a debug output
 * remove stray space (flake8)
+
+v1.3.1
+------
+
 * python 3 compat (and v1.3.1)
+
+v1.3.0
+------
+
 * move to new figo.io SDK API level
+
+v1.2.1
+------
+
 * increment to v1.2.1
 * adding tox.ini to filter out flake8 noise
 * flake8 fixes
 * adding flake8 to travis CI
+
+v1.2.0
+------
+
 * increment version
 * adding demo apps
 * python 2.6 compat

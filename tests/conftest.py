@@ -23,8 +23,7 @@ def figo_connection():
     return FigoConnection(CREDENTIALS['client_id'],
                           CREDENTIALS['client_secret'],
                           "https://127.0.0.1/",
-                          api_endpoint=CREDENTIALS['api_endpoint'],
-                          fingerprints=CREDENTIALS['ssl_fingerprints'])
+                          api_endpoint=CREDENTIALS['api_endpoint'])
 
 
 @pytest.fixture(scope='module')

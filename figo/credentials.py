@@ -4,9 +4,6 @@ DEMO_CREDENTIALS = {
     'client_id': 'C-9rtYgOP3mjHhw0qu6Tx9fgk9JfZGmbMqn-rnDZnZwI',
     'client_secret': 'Sv9-vNfocFiTe_NoMRkvNLe_jRRFeESHo8A0Uhyp7e28',
     'api_endpoint': 'https://api.figo.me',
-    # string containing comma-separated list of SSL fingerprints
-    'ssl_fingerprints': 'CD:F3:D3:26:27:89:91:B9:CD:AE:4B:10:6C:96:81:B7:'
-                        'EB:B3:38:10:C4:72:37:6A:4D:9C:84:B7:B3:DC:D6:8D',
 }
 
 DEMO_TOKEN = ('ASHWLIkouP2O6_bgA2wWReRhletgWKHYjLqDaqb0LFfamim9RjexTo'
@@ -16,5 +13,4 @@ CREDENTIALS = {
     'client_id': os.getenv('FIGO_CLIENT_ID', DEMO_CREDENTIALS['client_id']),
     'client_secret': os.getenv('FIGO_CLIENT_SECRET', DEMO_CREDENTIALS['client_secret']),
     'api_endpoint': os.getenv('FIGO_API_ENDPOINT', DEMO_CREDENTIALS['api_endpoint']),
-    'ssl_fingerprints': os.getenv('FIGO_SSL_FINGERPRINT', DEMO_CREDENTIALS['ssl_fingerprints']),
 }

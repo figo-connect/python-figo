@@ -14,7 +14,6 @@ from datetime import datetime
 from datetime import timedelta
 from requests.exceptions import SSLError
 from requests import Session
-from requests_toolbelt.adapters.fingerprint import FingerprintAdapter
 from time import sleep
 
 from figo.credentials import CREDENTIALS
@@ -82,13 +81,11 @@ class FigoObject(object):
 
     def __init__(self,
                  api_endpoint=CREDENTIALS['api_endpoint'],
-                 fingerprints=CREDENTIALS['ssl_fingerprints'],
                  language=None):
         """Create a FigoObject instance.
 
         Args:
             api_endpoint (str) - base URI of the server to call
-            fingerprints ([str]) - list of the server's SSL fingerprints
             language (str) - language for HTTP request header
         """
         self.headers = {
@@ -98,7 +95,6 @@ class FigoObject(object):
         }
         self.language = language
         self.api_endpoint = api_endpoint
-        self.fingerprints = fingerprints.split(',')
 
     def _request_api(self, path, data=None, method="GET"):
         """Helper method for making a REST-compliant API call.
@@ -117,19 +113,10 @@ class FigoObject(object):
         session = Session()
         session.headers.update(self.headers)
 
-        for fingerprint in self.fingerprints:
-            session.mount(self.api_endpoint, FingerprintAdapter(fingerprint.lower()))
-            try:
-                response = session.request(method, complete_path, json=data)
-            except SSLError:
-                logging.warn('Fingerprint "%s" was invalid', fingerprint)
-            else:
-                break
-            finally:
-                session.close()
-        else:
-            raise SSLError
-
+        try:
+            response = session.request(method, complete_path, json=data)
+        finally:
+            session.close()
 
         if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
@@ -244,7 +231,6 @@ class FigoConnection(FigoObject):
 
     def __init__(self, client_id, client_secret, redirect_uri,
                  api_endpoint=CREDENTIALS['api_endpoint'],
-                 fingerprints=CREDENTIALS['ssl_fingerprints'],
                  language=None):
         """
         Create a FigoConnection instance.
@@ -255,11 +241,9 @@ class FigoConnection(FigoObject):
             redirect_uri (str) - the URI the users gets redirected to after the login is finished
                             or if they press `cancel`
             api_endpoint (str) - base URI of the server to call
-            fingerprints ([str]) - list of the server's SSL fingerprints
             language (str) - language for HTTP request header
         """
-        super(FigoConnection, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints,
-                                             language=language)
+        super(FigoConnection, self).__init__(api_endpoint=api_endpoint, language=language)
 
         self.client_id = client_id
         self.client_secret = client_secret
@@ -467,7 +451,6 @@ class FigoSession(FigoObject):
     """
     def __init__(self, access_token, sync_poll_retry=20,
                  api_endpoint=CREDENTIALS['api_endpoint'],
-                 fingerprints=CREDENTIALS['ssl_fingerprints'],
                  language=None,
                  ):
         """Create a FigoSession instance.
@@ -476,11 +459,9 @@ class FigoSession(FigoObject):
             access_token (str) - the access token to bind this session to a user
             sync_poll_retry (int) - maximum number of synchronization poll retries
             api_endpoint (str) - base URI of the server to call
-            fingerprints ([str]) - list of the server's SSL fingerprints
             language (str) - language for HTTP request header
         """
-        super(FigoSession, self).__init__(api_endpoint=api_endpoint, fingerprints=fingerprints,
-                                          language=language)
+        super(FigoSession, self).__init__(api_endpoint=api_endpoint,language=language)
 
         self.access_token = access_token
         self.headers.update({'Authorization': "Bearer {0}".format(self.access_token)})

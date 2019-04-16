@@ -71,10 +71,8 @@ pip install python-figo[webdemo]
 
 # Environment variables
 
-- `FIGO_SSL_FINGERPRINT`
-  - Override the default fingerprints with a comma seperated list of fingerprints.
 - `FIGO_API_ENDPOINT`
   - Override the default API endpoint by setting the environment variable.
 - `FIGO_CLIENT_ID`, `FIGO_CLIENT_SECRET`
   - Override to run tests with a client other than the demo client
-  
+

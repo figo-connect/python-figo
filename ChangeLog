@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+3.1.0
+-----
+
+* removed certificate fingerprint check for compatibility with new figo platform
+
 3.0.4
 -----
 

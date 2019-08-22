@@ -11,13 +11,13 @@ CLIENT_ERROR = 1000
 
 
 @pytest.mark.parametrize('language', ['de', 'en'])
-def test_get_catalog_en(access_token, language):
+@pytest.mark.parametrize('country', ['DE', 'FR'])
+def test_get_catalog_en(access_token, language, country):
     figo_session = FigoSession(access_token)
     figo_session.language = language
-    catalog = figo_session.get_catalog()
+    catalog = figo_session.get_catalog(country)
     for bank in catalog['banks']:
-        assert bank.language == language
-
+        assert bank.country == country
 
 def test_get_catalog_invalid_language(access_token):
     figo_session = FigoSession(access_token)

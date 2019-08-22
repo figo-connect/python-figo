@@ -569,8 +569,8 @@ class Service(ModelBase):
     def __init__(self, session, **kwargs):
         super(Service, self).__init__(session, **kwargs)
         if self.language:
-            self.available_languages = [l for l in self.language['available_languages']]
-            self.language = self.language['current_language']
+            self.available_languages = [l for l in self.language['available']]
+            self.language = self.language['current']
 
     def __unicode__(self, *args, **kwargs):
         return u"Service: %s" % (self.bank_code)

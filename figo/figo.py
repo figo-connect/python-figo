@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import sys
+import urllib
 
 from datetime import datetime
 from datetime import timedelta
@@ -107,7 +108,6 @@ class FigoObject(object):
         Returns:
             the JSON-parsed result body
         """
-
         complete_path = self.api_endpoint + path
 
         session = Session()
@@ -412,7 +412,7 @@ class FigoConnection(FigoObject):
         """
         response = self._request_api(
             path="/auth/user",
-            data={'name': name,
+            data={'full_name': name,
                   'email': email,
                   'password': password,
                   'language': language,
@@ -424,7 +424,7 @@ class FigoConnection(FigoObject):
         elif 'error' in response:
             raise FigoException.from_dict(response)
         else:
-            return response['recovery_password']
+            return response
 
     def add_user_and_login(self, name, email, password, language='de'):
         """
@@ -661,14 +661,17 @@ class FigoSession(FigoObject):
         query = "/rest/accounts/{0}/balance".format(account_or_account_id)
         return self._query_api_object(AccountBalance, query, account_balance.dump(), "PUT")
 
-    def get_catalog(self):
+    def get_catalog(self, country_code):
         """Return a dict with lists of supported banks and payment services.
 
         Returns:
             dict {'banks': [Service], 'services': [Service]}:
                 dict with lists of supported banks and payment services
         """
-        catalog = self._request_with_exception("/rest/catalog")
+        options = { "country": country_code }
+        options = { k: v for k, v in options.items() if v is not None }
+
+        catalog = self._request_with_exception("/rest/catalog?" + urllib.urlencode(options))
         for k, v in catalog.items():
             catalog[k] = [Service.from_dict(self, service) for service in v]
 

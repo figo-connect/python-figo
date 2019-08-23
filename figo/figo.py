@@ -10,6 +10,10 @@ import logging
 import re
 import sys
 import urllib
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from datetime import datetime
 from datetime import timedelta
@@ -17,7 +21,7 @@ from requests.exceptions import SSLError
 from requests import Session
 from time import sleep
 
-from figo.credentials import CREDENTIALS
+# from figo.credentials import CREDENTIALS
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
@@ -42,6 +46,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
+API_ENDPOINT = os.getenv("API_ENDPOINT")
 
 ERROR_MESSAGES = {
     400: {
@@ -81,7 +86,7 @@ class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
     def __init__(self,
-                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 api_endpoint=API_ENDPOINT,
                  language=None):
         """Create a FigoObject instance.
 
@@ -230,7 +235,7 @@ class FigoConnection(FigoObject):
     """
 
     def __init__(self, client_id, client_secret, redirect_uri,
-                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 api_endpoint=API_ENDPOINT,
                  language=None):
         """
         Create a FigoConnection instance.
@@ -450,7 +455,7 @@ class FigoSession(FigoObject):
     Represents a user-bound connection to the figo connect API and allows access to the users data.
     """
     def __init__(self, access_token, sync_poll_retry=20,
-                 api_endpoint=CREDENTIALS['api_endpoint'],
+                 api_endpoint=API_ENDPOINT,
                  language=None,
                  ):
         """Create a FigoSession instance.
@@ -661,7 +666,7 @@ class FigoSession(FigoObject):
         query = "/rest/accounts/{0}/balance".format(account_or_account_id)
         return self._query_api_object(AccountBalance, query, account_balance.dump(), "PUT")
 
-    def get_catalog(self, country_code):
+    def get_catalog(self, country_code=None):
         """Return a dict with lists of supported banks and payment services.
 
         Returns:

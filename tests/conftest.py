@@ -1,15 +1,22 @@
 import pytest
 import uuid
 import time
+import os
 
 from logging import basicConfig
 
-from figo.credentials import CREDENTIALS
+# from figo.credentials import CREDENTIALS
 from figo import FigoConnection
 from figo import FigoSession
 
+from dotenv import load_dotenv
+load_dotenv()
+
 basicConfig(level='DEBUG')
 
+API_ENDPOINT = os.getenv("API_ENDPOINT")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 PASSWORD = 'some_words'
 
 
@@ -20,10 +27,10 @@ def new_user_id():
 
 @pytest.fixture(scope='module')
 def figo_connection():
-    return FigoConnection(CREDENTIALS['client_id'],
-                          CREDENTIALS['client_secret'],
+    return FigoConnection(CLIENT_ID,
+                          CLIENT_SECRET,
                           "https://127.0.0.1/",
-                          api_endpoint=CREDENTIALS['api_endpoint'])
+                          api_endpoint=API_ENDPOINT)
 
 
 @pytest.fixture(scope='module')

@@ -37,3 +37,6 @@ htmlcov/*
 .pydevproject
 .eggs/
 .pytest_cache/
+
+# env variables
+.env

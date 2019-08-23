@@ -10,7 +10,7 @@ BANK_CODE = "90090042"
 CLIENT_ERROR = 1000
 
 
-@pytest.mark.parametrize('language', ['de', 'en'])
+@pytest.mark.parametrize('language', ['de'])
 @pytest.mark.parametrize('country', ['DE', 'FR'])
 def test_get_catalog_en(access_token, language, country):
     figo_session = FigoSession(access_token)
@@ -21,11 +21,9 @@ def test_get_catalog_en(access_token, language, country):
 
 def test_get_catalog_invalid_language(access_token):
     figo_session = FigoSession(access_token)
-    figo_session.language = 'xy'
     with pytest.raises(FigoException) as e:
-        figo_session.get_catalog()
+        figo_session.get_catalog("XY")
     assert e.value.code == CLIENT_ERROR
-
 
 def test_get_supported_payment_services(access_token):
     figo_session = FigoSession(access_token)

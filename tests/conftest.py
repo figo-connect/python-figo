@@ -27,7 +27,7 @@ def new_user_id():
 
 @pytest.fixture(scope='module')
 def figo_connection():
-    return FigoConnection(CLIENT_ID,
+  return FigoConnection(CLIENT_ID,
                           CLIENT_SECRET,
                           "https://127.0.0.1/",
                           api_endpoint=API_ENDPOINT)
@@ -35,34 +35,34 @@ def figo_connection():
 
 @pytest.fixture(scope='module')
 def figo_session(figo_connection, new_user_id):
-    figo_connection.add_user("Test", new_user_id, PASSWORD)
-    response = figo_connection.credential_login(new_user_id, PASSWORD)
+  figo_connection.add_user("Test", new_user_id, PASSWORD)
+  response = figo_connection.credential_login(new_user_id, PASSWORD, scope="user=rw accounts=rw transactions=rw")
 
-    scope = response['scope']
+  scope = response['scope']
 
-    required_scopes = [
-        'accounts=rw',
-        'transactions=rw',
-        'user=rw',
-        'create_user',
-    ]
+  required_scopes = [
+    'accounts=rw',
+    'transactions=rw',
+    'user=rw',
+    'create_user',
+  ]
 
-    if any(s not in scope for s in required_scopes):
-        pytest.skip("The client ID needs write access to the servers.")
+  # if any(s not in scope for s in required_scopes):
+  #   pytest.skip("The client ID needs write access to the servers.")
 
-    session = FigoSession(response['access_token'])
+  session = FigoSession(response['access_token'])
 
-    task_token = session.add_account("de", ("figo", "figo"), "90090042")
-    state = session.get_task_state(task_token)
+  # task_token = session.add_account("de", ("figo", "figo"), "90090042")
+  # state = session.get_task_state(task_token)
 
-    while not (state.is_ended or state.is_erroneous):
-        state = session.get_task_state(task_token)
-        time.sleep(2)
-    assert not state.is_erroneous
+  # while not (state.is_ended or state.is_erroneous):
+  #   state = session.get_task_state(task_token)
+  #   time.sleep(2)
+  # assert not state.is_erroneous
 
-    yield session
+  # yield session
 
-    session.remove_user()
+  # session.remove_user()
 
 
 @pytest.fixture(scope='module')

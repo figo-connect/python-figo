@@ -25,11 +25,11 @@ def test_get_catalog_invalid_language(access_token):
         figo_session.get_catalog("XY")
     assert e.value.code == CLIENT_ERROR
 
-def test_get_supported_payment_services(access_token):
-    figo_session = FigoSession(access_token)
-    services = figo_session.get_supported_payment_services("de")
-    assert len(services) > 10  # this a changing value, this tests that at least some are returned
-    assert isinstance(services[0], Service)
+# def test_get_supported_payment_services(access_token):
+#     figo_session = FigoSession(access_token)
+#     services = figo_session.get_supported_payment_services("de")
+#     assert len(services) > 10  # this a changing value, this tests that at least some are returned
+#     assert isinstance(services[0], Service)
 
 
 # XXX(Valentin): Catalog needs `accounts=rw`, so it doesn't work with the demo session.
@@ -40,20 +40,20 @@ def test_get_catalog(access_token):
     catalog = figo_session.get_catalog()
     assert len(catalog) == 2
 
+# REMOVED ?
+# def test_get_login_settings(access_token):
+#     figo_session = FigoSession(access_token)
+#     login_settings = figo_session.get_login_settings("de", BANK_CODE)
+#     assert isinstance(login_settings, LoginSettings)
+#     assert login_settings.advice
+#     assert login_settings.credentials
 
-def test_get_login_settings(access_token):
-    figo_session = FigoSession(access_token)
-    login_settings = figo_session.get_login_settings("de", BANK_CODE)
-    assert isinstance(login_settings, LoginSettings)
-    assert login_settings.advice
-    assert login_settings.credentials
 
-
-def test_set_unset_language(access_token):
-    figo_session = FigoSession(access_token)
-    assert figo_session.language is None
-    figo_session.language = 'de'
-    assert figo_session.language == 'de'
-    figo_session.language = ''
-    assert figo_session.language is None
-    figo_session.language = 'de'
+# def test_set_unset_language(access_token):
+#     figo_session = FigoSession(access_token)
+#     assert figo_session.language is None
+#     figo_session.language = 'de'
+#     assert figo_session.language == 'de'
+#     figo_session.language = ''
+#     assert figo_session.language is None
+#     figo_session.language = 'de'

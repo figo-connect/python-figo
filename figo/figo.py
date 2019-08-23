@@ -420,8 +420,7 @@ class FigoConnection(FigoObject):
             data={'full_name': name,
                   'email': email,
                   'password': password,
-                  'language': language,
-                  'affiliate_client_id': self.client_id},
+                  'language': language},
             method="POST")
 
         if response is None:
@@ -1218,7 +1217,7 @@ class FigoSession(FigoObject):
 
     def remove_user(self):
         """Delete figo Account."""
-        self._request_with_exception("/rest/user", method="DELETE")
+        return self._request_with_exception("/rest/user", data=None, method="DELETE")
 
     def get_sync_url(self, state, redirect_uri):
         """URL to trigger a synchronization.

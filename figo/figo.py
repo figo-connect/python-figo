@@ -90,10 +90,14 @@ def getAccountId(account_or_account_id):
     return account_or_account_id
 
 def filterKeys(object, allowed_keys):
-  if object == None or object == {} or object == {}:
-    return {} if object == None or object == {}
+  if object == None or object == {}:
+    return {}
   else:
-    return dict(zip(allowed_keys, [object[k] for k in allowed_keys]))
+    keys = [key for key in object.keys() if key in allowed_keys ]
+    return dict(zip(keys, [object[key] for key in keys]))
+
+def filterNone(object):
+  return { k: v for k, v in object.items() if v is not None }
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
@@ -685,8 +689,7 @@ class FigoSession(FigoObject):
             dict {'banks': [Service], 'services': [Service]}:
                 dict with lists of supported banks and payment services
         """
-        options = { "country": country_code }
-        options = { k: v for k, v in options.items() if v is not None }
+        options = filterNone({ "country": country_code })
 
         catalog = self._request_with_exception("/rest/catalog?" + urllib.urlencode(options))
         for k, v in catalog.items():
@@ -826,8 +829,7 @@ class FigoSession(FigoObject):
             List of Payment objects
         """
 
-        options = { "accounts": accounts, "count": count, "offset": offset, "cents": cents }
-        options = { k: v for k, v in options.items() if v is not None }
+        options = filterNone({ "accounts": accounts, "count": count, "offset": offset, "cents": cents })
 
         account_id = getAccountId(account_or_account_id)
         if account_id:
@@ -837,7 +839,7 @@ class FigoSession(FigoObject):
 
         return self._query_api_object(Payment, query, collection_name="payments")
 
-    def get_payment(self, account_or_account_id, payment_id):
+    def get_payment(self, account_or_account_id, payment_id, cents):
         """Get a single `Payment` object.
 
         Args:
@@ -1029,9 +1031,7 @@ class FigoSession(FigoObject):
           List of Transaction
         """
         allowed_keys = ["accounts", "filter", "sync_id", "count", "offset", "sort", "since", "until", "since_type", "types", "cents", "include_pending", "include_statistics"]
-        options = filterKeys(options, allowed_keys)
-
-        options = { k: v for k, v in options.items() if v is not None }
+        options = filterNone(filterKeys(options, allowed_keys))
 
         account_id = getAccountId(account_or_account_id)
         if account_id is not None:

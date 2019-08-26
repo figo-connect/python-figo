@@ -118,6 +118,11 @@ def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
 
+#todo: check response API
+def test_remove_pin():
+  response = pytest.session.remove_pin(data["access_id"])
+  assert response != None
+
 def test_delete_account():
   response = pytest.session.remove_account(pytest.account_id)
   assert response == None
@@ -125,3 +130,4 @@ def test_delete_account():
 def test_remove_user():
   response = pytest.session.remove_user()
   assert response == {}
+

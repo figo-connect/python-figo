@@ -142,6 +142,8 @@ class FigoObject(object):
             response = session.request(method, complete_path, json=data)
         finally:
             session.close()
+        print "############# response", path, data, method
+        print "############# response", response
 
         if 200 <= response.status_code < 300 or self._has_error(response.json()):
             if response.text == '':
@@ -691,6 +693,12 @@ class FigoSession(FigoObject):
 
     def get_access(self, access_id):
         return self._request_with_exception("/rest/accesses/{0}".format(access_id), method="GET")
+
+    def remove_pin(self, access_id):
+        return self._request_api(
+            path="/rest/accesses/%s/remove_pin" % access_id,
+            method="POST"
+        )
 
     def get_supported_payment_services(self, country_code):
         """Return a list of supported credit cards and other payment services.

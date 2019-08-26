@@ -49,7 +49,7 @@ def test_add_access():
   response = pytest.session.add_access(ACCESS_METHOD_ID, CREDENTIALS, CONSENT)
   pytest.access_id = response["id"]
   assert response.has_key("id") == True
-
+ 
 def test_add_access_with_wrong_access_id(access_token):
   figo_session = FigoSession(access_token)
   access_method_id = "pipo"

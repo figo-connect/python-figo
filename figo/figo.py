@@ -798,20 +798,31 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(Payment, "/rest/payments", collection_name="payments")
 
-    def get_payments(self, account_or_account_id):
+    def get_payments(self, account_or_account_id, accounts, count, offset, cents):
         """Get an array of `Payment` objects, one for each payment of the user on
         the specified account.
 
         Args:
             account_or_account_id: account to be queried or its ID
+            Accounts: Comma separated list of account IDs.
+            Count: Limit the number of returned items, Optional
+            Offset: Skip this number of transactions in the response, Optional
+            Cents: If true amounts will be shown in cents, Optional, default: False
 
         Returns:
             List of Payment objects
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
 
-        query = "/rest/accounts/{0}/payments".format(account_or_account_id)
+        options = { "accounts": accounts, "count": count, "offset": offset, "cents": cents }
+        options = { k: v for k, v in options.items() if v is not None }
+
+        if account_or_account_id
+          if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+          query = "/rest/accounts/{0}/payments?{1}".format(account_or_account_id, urllib.urlencode(options))
+        else
+          query = "/rest/payments?{0}".format(urllib.urlencode(options))
+
         return self._query_api_object(Payment, query, collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id):
@@ -820,14 +831,17 @@ class FigoSession(FigoObject):
         Args:
             account_or_account_id: account to be queried or its ID
             payment_id: ID of the payment to be retrieved
+            Cents: If true amounts will be shown in cents, Optional, default: False
 
         Returns:
             Payment object
         """
+        options = { "cents": cents } if cents else {}
+
         if isinstance(account_or_account_id, Account):
             account_or_account_id = account_or_account_id.account_id
 
-        query = "/rest/accounts/{0}/payments/{1}".format(account_or_account_id, payment_id)
+        query = "/rest/accounts/{0}/payments/{1}?{2}".format(account_or_account_id, payment_id, urllib.urlencode(options))
         return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
@@ -866,31 +880,39 @@ class FigoSession(FigoObject):
             method="DELETE")
 
     def submit_payment(self, payment, tan_scheme_id, state, redirect_uri=None):
-        """Submit payment to bank server.
+      """Submit payment to bank server.
 
-        Args:
-            payment: payment to be submitted
-            tan_scheme_id: TAN scheme ID of user-selected TAN scheme
-            state: Any kind of string that will be forwarded in the callback response message
-            redirect_uri: At the end of the submission process a response will
-                be sent to this callback URL
+      Args:
+          payment: payment to be submitted, Required
+          tan_scheme_id: TAN scheme ID of user-selected TAN scheme, Required
+          state: Any kind of string that will be forwarded in the callback response message, Required
+          redirect_uri: At the end of the submission process a response will
+              be sent to this callback URL, Optional
 
-        Returns:
-            the URL to be opened by the user for the TAN process
-        """
-        params = {'tan_scheme_id': tan_scheme_id, 'state': state}
-        if redirect_uri is not None:
-            params['redirect_uri'] = redirect_uri
+      Returns:
+          the URL to be opened by the user for the TAN process
+      """
+      params = {'tan_scheme_id': tan_scheme_id, 'state': state}
+      if redirect_uri is not None:
+          params['redirect_uri'] = redirect_uri
 
-        response = self._request_with_exception(
-            "/rest/accounts/%s/payments/%s/submit" % (payment.account_id, payment.payment_id),
-            params, "POST")
+      response = self._request_with_exception(
+          "/rest/accounts/%s/payments/%s/init" % (payment.account_id, payment.payment_id),
+          params, "POST")
 
-        if response is None:
-            return None
-        else:
-            return (self.api_endpoint + "/task/start?id=" +
-                    response["task_token"])
+    def get_payment_status(self, payment_id, init_id):
+      """Get initiation status for  payment initiated to bank server.
+
+      Args:
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+
+      Returns:
+          the initiation status of the payment
+      """
+      response = self._request_with_exception(
+          "/rest/accounts/%s/payments/%s/init/%s" % (payment.account_id, payment.payment_id, init_id), None, "GET")
+
 
     @property
     def payment_proposals(self):

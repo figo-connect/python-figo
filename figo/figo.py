@@ -697,6 +697,24 @@ class FigoSession(FigoObject):
 
         return catalog
 
+    def add_access(self, access_method_id, credentials, consent):
+        options=filterNone({
+            "access_method_id": access_method_id,
+            "credentials" : credentials,
+            "consent": consent
+        })
+        return self._request_api(
+            path="/rest/accesses",
+            data=options,
+            method="POST"
+        )
+        
+    def get_accesses(self):
+        return self._request_with_exception("/rest/accesses")
+
+    def get_access(self, access_id):
+        return self._request_with_exception("/rest/accesses/%s", access_id)
+
     def get_supported_payment_services(self, country_code):
         """Return a list of supported credit cards and other payment services.
 

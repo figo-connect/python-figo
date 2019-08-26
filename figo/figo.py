@@ -36,6 +36,7 @@ from figo.models import TaskToken
 from figo.models import Transaction
 from figo.models import User
 from figo.models import WebhookNotification
+from figo.models import Sync
 from figo.version import __version__
 
 
@@ -93,7 +94,7 @@ def filterKeys(object, allowed_keys):
   if object == None or object == {}:
     return {}
   else:
-    keys = [key for key in object.keys() if key in allowed_keys ]
+    keys = [key for key in object.keys() if key in allowed_keys]
     return dict(zip(keys, [object[key] for key in keys]))
 
 def filterNone(object):
@@ -361,11 +362,10 @@ class FigoConnection(FigoObject):
             Dictionary which contains an access token and a refresh token.
         """
 
-        data = {"grant_type": "password",
+        data = filterNone({"grant_type": "password",
                 "username": username,
-                "password": password}
-        if scope:
-            data["scope"] = scope
+                "password": password,
+                "scope": scope})
 
         response = self._request_api("/auth/token", data, method="POST")
 
@@ -614,42 +614,41 @@ class FigoSession(FigoObject):
         query = "/rest/accounts/{0}".format(account_or_account_id)
         self._request_with_exception(query, method="DELETE")
 
-    def sync_account(self, state, redirect_uri=None, account_ids=None, if_not_synced_since=None,
-                     sync_tasks=['transactions'], disable_notifications=False, auto_continue=False):
+    def add_sync(self, access_id, disable_notifications, redirect_uri, state, credentials, save_secrets):
         """
         Args:
-            state (str): Arbitrary string to maintain state between this request and the callback,
-                e.g. it might contain a session ID from your application.
-                The value should also contain a random component, which your
-                application checks to prevent cross-site request forgery.
-            redirect_uri (str): At the end of the synchronization process a response will be sent to
-                this callback URL. The value defaults to the first redirect URI
-                configured for the client.
-            disable_notifications (bool): This flag indicates whether notifications should be sent
-                to your application. Since your application will be notified by
-                the callback URL anyway, you might want to disable any
-                additional notifications.
-            if_not_synced_since (int): If this parameter is set, only those accounts will be
-                synchronized, which have not been synchronized within the
-                specified number of minutes.
-            auto_continue (bool): Automatically acknowledge and ignore any errors.
-            account_ids ([str]): Only sync the accounts with these IDs.
+            access_id (str): figo ID of the provider access, Required
+            disable_notifications (bool): This flag indicates whether notifications should be sent to your
+              application, Optional, default: False
+            redirect_uri (str): The URI to which the end user is redirected in OAuth cases, Optional
+            state (str): Arbitrary string to maintain state between this request and the callback
+            credentials (obj): Credentials used for authentication with the financial service provider.
+            save_secrets (bool): Indicates whether the confidential parts of the credentials should be saved, default: False
 
         Returns:
-            TaskToken: A task token for the synchronization task
+            Object: synchronization operation.
         """
-        data = {
-            'state': state,
-            'redirect_uri': redirect_uri,
-            'disable_notifications': disable_notifications,
-            'if_not_synced_since': if_not_synced_since,
-            'auto_continue': auto_continue,
-            'account_ids': account_ids,
-            'sync_tasks': sync_tasks,
-        }
+        data = filterNone({ "disable_notifications": disable_notifications, "redirect_uri": redirect_uri,
+                 "state": state, "credentials": credentials, "save_secrets": save_secrets})
 
-        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
-        return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+        return self._request_api(path="/rest/accesses/{0}/syncs".format(access_id), data=data, method='POST')
+
+    def get_sync(self, access_id, sync_id):
+        """
+        Args:
+        Returns:
+        """
+
+        return self._request_api(path="/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id), method='GET')
+
+    def solve_synchronization_challenge(self, access_id, sync_id, challenge_id, data):
+        """
+        Args:
+        Returns:
+        """
+
+        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response"
+                                .format(access_id, sync_id, challenge_id), data=data, method='GET')
 
     def get_account_balance(self, account_or_account_id):
         """Get balance and account limits.

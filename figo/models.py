@@ -482,6 +482,41 @@ class SynchronizationStatus(ModelBase):
     def __unicode__(self):
         return u"Synchronization Status: %s (%s)" % (self.code, self.message)
 
+class Sync(ModelBase):
+    """Object representing a syncronisation for account creation.
+
+    Attributes:
+        id: internal figo syncronisation id
+        status: Current processing state of the item.
+        challenge: AuthMethodSelectChallenge (object) or EmbeddedChallenge (object) or RedirectChallenge (object) or DecoupledChallenge (object) (Challenge).
+        error: Error detailing why the background operation failed.
+        created_at: Time at which the sync was created
+        started_at: Time at which the sync started
+        ended_at: Time at which the sync ended
+    """
+    __dump_attributes__ = []
+
+    id = None
+    status = None
+    challenge = None
+    error = None
+    created_at = None
+    started_at = None
+    ended_at = None
+
+    def __init__(self, session, **kwargs):
+        if self.created_at:
+            self.created_at = dateutil.parser.parse(self.created_at)
+
+        if self.started_at:
+            self.started_at = dateutil.parser.parse(self.started_at)
+
+        if self.ended_at:
+            self.ended_at = dateutil.parser.parse(self.ended_at)
+
+    def __unicode__(self):
+        return u"Sync: %s" % (self.id)
+
 
 class User(ModelBase):
     """Object representing an user.

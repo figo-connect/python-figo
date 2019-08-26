@@ -2,3 +2,4 @@ python-dateutil
 requests
 requests_toolbelt
 setuptools_scm
+python-dotenv

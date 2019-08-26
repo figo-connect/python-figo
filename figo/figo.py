@@ -81,6 +81,19 @@ ERROR_MESSAGES = {
     },
 }
 
+def getAccountId(account_or_account_id):
+  if account_or_account_id == None:
+    return None
+  elif isinstance(account_or_account_id, Account):
+    return account_or_account_id.account_id
+  else:
+    return account_or_account_id
+
+def filterKeys(object, allowed_keys):
+  if object == None or object == {} or object == {}:
+    return {} if object == None or object == {}
+  else:
+    return dict(zip(allowed_keys, [object[k] for k in allowed_keys]))
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
@@ -816,11 +829,10 @@ class FigoSession(FigoObject):
         options = { "accounts": accounts, "count": count, "offset": offset, "cents": cents }
         options = { k: v for k, v in options.items() if v is not None }
 
-        if account_or_account_id
-          if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-          query = "/rest/accounts/{0}/payments?{1}".format(account_or_account_id, urllib.urlencode(options))
-        else
+        account_id = getAccountId(account_or_account_id)
+        if account_id:
+          query = "/rest/accounts/{0}/payments?{1}".format(account_id, urllib.urlencode(options))
+        else:
           query = "/rest/payments?{0}".format(urllib.urlencode(options))
 
         return self._query_api_object(Payment, query, collection_name="payments")
@@ -831,17 +843,14 @@ class FigoSession(FigoObject):
         Args:
             account_or_account_id: account to be queried or its ID
             payment_id: ID of the payment to be retrieved
-            Cents: If true amounts will be shown in cents, Optional, default: False
+            Cents (bool): If true amounts will be shown in cents, Optional, default: False
 
         Returns:
             Payment object
         """
         options = { "cents": cents } if cents else {}
 
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/payments/{1}?{2}".format(account_or_account_id, payment_id, urllib.urlencode(options))
+        query = "/rest/accounts/{0}/payments/{1}?{2}".format(getAccountId(account_or_account_id), payment_id, urllib.urlencode(options))
         return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
@@ -853,9 +862,7 @@ class FigoSession(FigoObject):
         Returns:
             Payment object of the newly created payment as returned by the server
         """
-        return self._query_api_object(Payment,
-                                      "/rest/accounts/{0}/payments".format(payment.account_id),
-                                      payment.dump(), "POST")
+        return self._query_api_object(Payment, "/rest/accounts/{0}/payments".format(payment.account_id), payment.dump(), "POST")
 
     def modify_payment(self, payment):
         """Modify a payment.
@@ -988,52 +995,72 @@ class FigoSession(FigoObject):
         return self._query_api_object(Transaction, "/rest/transactions",
                                       collection_name="transactions")
 
-    def get_transactions(self, account_id=None, since=None, count=1000, offset=0,
-                         include_pending=False, sort='desc'):
-        """Get an array of `Transaction` objects, one for each transaction of the user.
+    def get_transactions(self, account_or_account_id, options ):
+        """Get an array of Transaction, one for each transaction of the user.
 
         Args:
-            account_id (str): ID of the account for which to list the transactions
-            since (str): This parameter can either be a transaction ID or a date.
+          account_or_account_id (str): ID of the account for which to list the transactions OR account object.
+
+          options (obj): further optional options
+            accounts: comma separated list of account IDs.
+            filter (obj) - Can take 4 possible keys:
+                - date (ISO date) - Transaction date
+                - person (str) - Payer or payee name
+                - purpose (str)
+                - amount (num)
+            sync_id (str): Show only those items that have been created within this synchronization.
             count (int): Limit the number of returned transactions.
             offset (int): Which offset into the result set should be used to determine the
-                          first transaction to return (useful in combination with count)
+                        first transaction to return (useful in combination with count)
+            sort (enum): ASC or DESC
+            since (ISO date): Return only transactions after this date based on since_type
+            until (ISO date): This parameter can either be a transaction ID or a date. Return only transactions which were booked on or before
+            since_type (enum): This parameter defines how the parameter since will be interpreted.
+                                Possible values: "booked" "created" "modified"
+            types (enum): Comma separated list of transaction types used for filtering.
+                          Possible values:"Transfer", "Standing order", "Direct debit", "Salary or rent", "GeldKarte", "Charges or interest"
+            cents (bool): If true amounts will be shown in cents, Optional, default: False
             include_pending (bool): This flag indicates whether pending transactions should
-                                    be included in the response. Pending transactions are always
-                                    included as a complete set, regardless of the `since` parameter.
+                                  be included in the response. Pending transactions are always
+                                  included as a complete set, regardless of the `since` parameter.
+            include_statistics (bool): Includes statistics on the returned transactionsif true, Default: false.
 
         Returns:
-            [Transaction]: List of `Transaction` objects
+          List of Transaction
         """
-        params = {'count': count, 'offset': offset, 'sort': sort,
-                  'include_pending': ("1" if include_pending else "0")}
-        if since is not None:
-            params['since'] = since
+        allowed_keys = ["accounts", "filter", "sync_id", "count", "offset", "sort", "since", "until", "since_type", "types", "cents", "include_pending", "include_statistics"]
+        options = filterKeys(options, allowed_keys)
 
-        params = urllib.urlencode(params)
+        options = { k: v for k, v in options.items() if v is not None }
 
+        account_id = getAccountId(account_or_account_id)
         if account_id is not None:
-            query = "/rest/accounts/{0}/transactions?{1}".format(account_id, params)
+            path = "/rest/accounts/{0}/transactions?{1}".format(account_id,  urllib.urlencode(options))
         else:
-            query = "/rest/transactions?{0}".format(params)
+            path = "/rest/transactions?{0}".format( urllib.urlencode(options))
 
-        return self._query_api_object(Transaction, query, collection_name="transactions")
+        return self._query_api_object(Transaction, path, collection_name="transactions")
 
-    def get_transaction(self, account_or_account_id, transaction_id):
+    def get_transaction(self, account_or_account_id, transaction_id, cents):
         """Retrieve a specific transaction.
 
         Args:
             account_or_account_id: account to be queried or its ID
             transaction_id: ID of the transaction to be retrieved
+            cents (bool): If true amounts will be shown in cents, Optional, default: False
 
         Returns:
             a Transaction object representing the transaction to be retrieved
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
+        options = { "cents": cents } if cents else {}
 
-        query = "/rest/accounts/{0}/transactions/{1}".format(account_or_account_id, transaction_id)
-        return self._query_api_object(Transaction, query)
+        account_id = getAccountId(account_or_account_id)
+        if account_id is not None:
+            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(account_or_account_id, transaction_id, urllib.urlencode(options))
+        else:
+            path = "/rest/transactions/{0}?{1}".format(transaction_id, urllib.urlencode(options))
+
+        return self._query_api_object(Transaction, path)
 
     @property
     def securities(self):

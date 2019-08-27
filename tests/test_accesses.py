@@ -25,7 +25,7 @@ data = {}
 
 
 def pytest_namespace():
-  return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': ''}
+  return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': '', 'account_id': ''}
 
 def test_add_user():
   response = connection.add_user("John Doe", "john.doe@example.com", "password")
@@ -87,6 +87,23 @@ def test_get_synchronization_challenges():
 def test_get_synchronization_challenge():
   response = pytest.session.get_synchronization_challenge(pytest.access_id, pytest.sync_id, pytest.challenge_id)
   assert len(response) > 0
+
+def test_get_accounts():
+  response = pytest.session.get_accounts()
+  pytest.account_id = response["accounts"][0]["account_id"]
+  assert isinstance(response["accounts"][0]["account_id"], unicode)
+
+def test_get_account():
+  response = pytest.session.get_account(pytest.account_id)
+  assert len(response) > 0
+
+def test_get_account_balance():
+  response = pytest.session.get_account_balance(pytest.account_id)
+  assert response.balance == 0
+
+def test_delete_account():
+  response = pytest.session.remove_account(pytest.account_id)
+  assert response == None
 
 def test_remove_user():
   response = pytest.session.remove_user()

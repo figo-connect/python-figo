@@ -530,65 +530,29 @@ class FigoSession(FigoObject):
 
         return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
 
-    def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """Add a bank account and start syncing it.
+    def get_accounts(self):
+      """
+      Args:
+        None
 
-        Args:
-            country (str): country code of the bank to add
-            credentials ([str]): list of credentials needed for bank login
-            bank_code (str): bank code of the bank to add
-            iban (str): iban of the account to add
-            save_pin (bool): save credentials on the figo Connect server
+      Returns:
+        List of Accounts accessible from Token
+      """
 
-        Returns:
-            TaskToken: A task token for the account creation task
+      return self._request_api(path="/rest/accounts", method='GET')
 
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
-            The number of sync retries is determined by `FigoSession.sync_poll_retry`.
-        """
-        task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
-        for _ in range(self.sync_poll_retry):
-            task_state = self.get_task_state(task_token)
-            logger.info("Adding account {0}/{1}: {2}".format(bank_code, iban, task_state.message))
-            logger.debug(str(task_state))
-            if task_state.is_ended or task_state.is_erroneous:
-                break
-            sleep(2)
-        else:
-            raise FigoException(
-                "could not sync",
-                "task was not finished after {0} tries".format(self.sync_poll_retry)
-            )
+    def get_account(self, account_or_account_id, cents):
+      """
+      Args:
+        account_or_account_id: account to be queried or its ID
+        cents (bool): If true amounts will be shown in cents, Optional, default: False
 
-        if task_state.is_erroneous:
-            if task_state.error and task_state.error['code'] == 10000:
-                raise FigoPinException(country, credentials, bank_code, iban, save_pin,
-                                       error=task_state.error['name'],
-                                       error_description=task_state.error['description'],
-                                       code=task_state.error['code'])
-            raise FigoException("", error_description=task_state.error['message'],
-                                code=task_state.error['code'])
-        return task_state
+      Returns:
+        Account: An account accessible from Token
+      """
+      options = { "cents": cents } if cents else {}
 
-    def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):
-        """Provide a new pin if the sync task was erroneous because of a wrong pin.
-
-        Args:
-            pin_exception: Exception of the sync task for which a new pin will be provided
-            new_pin: New pin for the sync task
-
-        Returns:
-            The state of the sync task. If the pin was wrong a FigoPinException is thrown
-        """
-        pin_exception.credentials[1] = new_pin
-        return self.add_account_and_sync(
-            pin_exception.country,
-            pin_exception.credentials,
-            pin_exception.bank_code,
-            pin_exception.iban,
-            pin_exception.save_pin,
-        )
+      return self._request_api(path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
 
     def modify_account(self, account):
         """Modify an account.
@@ -608,11 +572,8 @@ class FigoSession(FigoObject):
         Args:
             account_or_account_id: account to be removed or its ID
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}".format(account_or_account_id)
-        self._request_with_exception(query, method="DELETE")
+        path = "/rest/accounts/{0}".format(getAccountId(account_or_account_id))
+        self._request_with_exception(path, method="DELETE")
 
     def add_sync(self, access_id, disable_notifications, redirect_uri, state, credentials, save_secrets):
         """

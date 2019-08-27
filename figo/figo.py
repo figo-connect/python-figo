@@ -648,7 +648,7 @@ class FigoSession(FigoObject):
         """
 
         return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response"
-                                .format(access_id, sync_id, challenge_id), data=data, method='GET')
+                                .format(access_id, sync_id, challenge_id), data=data, method='POST')
 
     def get_account_balance(self, account_or_account_id):
         """Get balance and account limits.
@@ -697,22 +697,14 @@ class FigoSession(FigoObject):
         return catalog
 
     def add_access(self, access_method_id, credentials, consent):
-        options=filterNone({
-            "access_method_id": access_method_id,
-            "credentials" : credentials,
-            "consent": consent
-        })
-        return self._request_api(
-            path="/rest/accesses",
-            data=options,
-            method="POST"
-        )
-        
+        data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
+        return self._request_api(path="/rest/accesses", data=data, method="POST")
+
     def get_accesses(self):
         return self._request_with_exception("/rest/accesses")
 
     def get_access(self, access_id):
-        return self._request_with_exception("/rest/accesses/%s", access_id)
+        return self._request_with_exception("/rest/accesses/{0}".format(access_id), method="GET")
 
     def get_supported_payment_services(self, country_code):
         """Return a list of supported credit cards and other payment services.

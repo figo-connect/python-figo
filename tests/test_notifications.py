@@ -13,10 +13,10 @@ connection  = FigoConnection(CLIENT_ID, CLIENT_SECRET, "https://127.0.0.1/", api
 def pytest_namespace():
   return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': ''}
 
-# To call only once
-# def test_add_user():
-#   response = connection.add_user("John Doe", "john.doe@example.com", "password")
-#   assert response == {}
+#To call only once
+def test_add_user():
+  response = connection.add_user("John Doe", "john.doe@example.com", "password")
+  assert response == {}
 
 def test_create_token_and_session():
   token = connection.credential_login("john.doe@example.com", "password")
@@ -50,10 +50,3 @@ def test_get_notification(access_token):
 def test_remove_notification(access_token):
     response = pytest.session.remove_notification(pytest.notification.notification_id)
     assert response == None
-
-
-
-
-
-
-    

@@ -617,34 +617,69 @@ class FigoSession(FigoObject):
     def add_sync(self, access_id, disable_notifications, redirect_uri, state, credentials, save_secrets):
         """
         Args:
-            access_id (str): figo ID of the provider access, Required
-            disable_notifications (bool): This flag indicates whether notifications should be sent to your
-              application, Optional, default: False
-            redirect_uri (str): The URI to which the end user is redirected in OAuth cases, Optional
-            state (str): Arbitrary string to maintain state between this request and the callback
-            credentials (obj): Credentials used for authentication with the financial service provider.
-            save_secrets (bool): Indicates whether the confidential parts of the credentials should be saved, default: False
+          access_id (str): figo ID of the provider access, Required
+          disable_notifications (bool): This flag indicates whether notifications should be sent to your
+            application, Optional, default: False
+          redirect_uri (str): The URI to which the end user is redirected in OAuth cases, Optional
+          state (str): Arbitrary string to maintain state between this request and the callback
+          credentials (obj): Credentials used for authentication with the financial service provider.
+          save_secrets (bool): Indicates whether the confidential parts of the credentials should be saved, default: False
 
         Returns:
-            Object: synchronization operation.
+          Object: synchronization operation.
         """
         data = filterNone({ "disable_notifications": disable_notifications, "redirect_uri": redirect_uri,
                  "state": state, "credentials": credentials, "save_secrets": save_secrets})
 
         return self._request_api(path="/rest/accesses/{0}/syncs".format(access_id), data=data, method='POST')
 
-    def get_sync(self, access_id, sync_id):
+    def get_synchronization_status(self, access_id, sync_id):
         """
         Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+
         Returns:
+          Object: synchronization operation.
         """
 
         return self._request_api(path="/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id), method='GET')
 
+    def get_synchronization_challenges(self, access_id, sync_id):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+
+        Returns:
+          Object: List of challenges associated with synchronization operation.
+        """
+
+        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges"
+                                .format(access_id, sync_id), data={}, method='GET')
+
+    def get_synchronization_challenge(self, access_id, sync_id, challenge_id):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+          challenge_id (str): figo ID of the challenge, Required
+
+        Returns:
+          Object: Challenge associated with synchronization operation.
+        """
+        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}"
+                                .format(access_id, sync_id, challenge_id), data={}, method='GET')
+
     def solve_synchronization_challenge(self, access_id, sync_id, challenge_id, data):
         """
         Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+          challenge_id (str): figo ID of the challenge, Required
+
         Returns:
+          {}
         """
 
         return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response"

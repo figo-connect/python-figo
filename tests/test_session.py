@@ -5,6 +5,7 @@ import platform
 import pytest
 
 from figo import FigoException
+from figo import FigoSession
 from figo.models import Notification
 from figo.models import Payment
 from figo.models import TaskToken
@@ -142,34 +143,8 @@ def test_get_payment_proposals(figo_session):
     proposals = figo_session.get_payment_proposals()
     assert len(proposals) >= 1
 
-
-def test_start_task(figo_session):
-    # Valid task token needed
-    task_token = TaskToken(figo_session)
-    task_token.task_token = "invalidTaskToken"
-    with pytest.raises(FigoException):
-        figo_session.start_task(task_token)
-
-
-def test_poll_task_state(figo_session):
-    # Valid task token needed
-    task_token = TaskToken(figo_session)
-    task_token.task_token = "invalidTaskToken"
-    with pytest.raises(FigoException):
-        figo_session.get_task_state(task_token)
-
-
-def test_cancel_task(figo_session):
-    # Valid task token needed
-    task_token = TaskToken(figo_session)
-    task_token.task_token = "invalidTaskToken"
-    with pytest.raises(FigoException):
-        figo_session.cancel_task(task_token)
-
-
 def test_sync_account(figo_session):
     assert figo_session.sync_account(state="qweqwe")
-
 
 def test_get_bank(figo_session, giro_account):
 

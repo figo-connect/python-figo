@@ -86,7 +86,7 @@ def giro_account(figo_session):
 @pytest.fixture(scope='module')
 def access_token(figo_connection, new_user_id):
     figo_connection.add_user("Test", new_user_id, PASSWORD)
-    response = figo_connection.credential_login(new_user_id, PASSWORD)
+    response = figo_connection.credential_login(new_user_id, PASSWORD, scope="user=rw accounts=rw transactions=rw")
     access_token = response['access_token']
 
     yield access_token

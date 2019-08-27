@@ -33,17 +33,21 @@ def test_add_user():
   response = connection.add_user("John Doe", "john.doe@example.com", "password")
   assert response == {}
 
+def test_get_version():
+  response = connection.get_version()
+  assert response == {'environment': 'staging', 'version': '19.8.0.0rc46'}
+
 def test_create_token_and_session():
   token = connection.credential_login("john.doe@example.com", "password")
   pytest.token = token["access_token"]
-  assert pytest.token
-  pytest.session = FigoSession(token["access_token"])
+
+  pytest.session = FigoSession(pytest.token)
   assert pytest.session.user.full_name == "John Doe"
 
 def test_create_token_for_payments():
   token = connection.credential_login("john.doe@example.com", "password", scope="payments=rw")
   pytest.payments_token = token["access_token"]
-  assert pytest.token
+  assert token["scope"] == "payments=rw"
 
 def test_add_access():
   response = pytest.session.add_access(ACCESS_METHOD_ID, CREDENTIALS, CONSENT)
@@ -117,6 +121,10 @@ def test_get_payments():
 def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
+
+def test_remove_token_for_payments():
+  response = connection.revoke_token(pytest.payments_token)
+  assert response == None
 
 def test_delete_account():
   response = pytest.session.remove_account(pytest.account_id)

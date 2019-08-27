@@ -467,6 +467,12 @@ class FigoConnection(FigoObject):
         self.add_user(name, email, password, language)
         return self.credential_login(email, password)
 
+    def get_version(self):
+        """
+        Returns the version of the API.
+        """
+        return self._request_api(path="/version", method='GET')
+
 
 class FigoSession(FigoObject):
     """

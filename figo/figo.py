@@ -25,6 +25,7 @@ from time import sleep
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
+from figo.models import Challenge
 from figo.models import LoginSettings
 from figo.models import Notification
 from figo.models import Payment
@@ -940,6 +941,54 @@ class FigoSession(FigoObject):
       """
       response = self._request_with_exception(
           "/rest/accounts/%s/payments/%s/init/%s" % (payment.account_id, payment.payment_id, init_id), None, "GET")
+
+    def get_payment_challenges(self, account_or_account_id, payment_id, init_id):
+      """List payment challenges
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+
+      Returns:
+          List of challenges for the required payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges".format(account_id, payment_id, init_id), "GET")
+
+    def get_payment_challenge(self, account_or_account_id, payment_id, init_id, challenge_id):
+      """Get payment challenge
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+          challenge_id: challenge id, Required
+
+      Returns:
+          Challenge: The required challenge for the payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}".format(account_id, payment_id, init_id, challenge_id), "GET")
+
+    def solve_payment_challenges(self, account_or_account_id, payment_id, init_id, challenge_id):
+      """Get payment challenge
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+          challenge_id: challenge id, Required
+
+      Returns:
+          Challenge: The required challenge for the payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), "POST")
+
 
     @property
     def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):

@@ -294,6 +294,61 @@ class Payment(ModelBase):
         return u"Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
 
 
+class StandingOrder(ModelBase):
+  """Object representing one standing order on a certain bank account of the user.
+
+  Attributes:
+    standing_order_id: internal figo stanging order id
+    account_id: internal figo account id
+    iban: iban of creditor or debtor
+    amount: order amount
+    currency: three character currency code
+    cents:
+    name: name of originator or recipient
+    purpose: purpose text
+    execution_day: number of days of execution of the standing order
+    first_execution_date: starting day of execution
+    last_execution_date: finishing day of the execution
+    interval:
+    created_at: internal creation timestamp
+    modified_at: internal creation timestamp
+  """
+
+  __dump_attributes__ = []
+
+  standing_order_id = None
+  account_id = None
+  iban = None
+  amount = None
+  currency = None
+  cents = None
+  name = None
+  purpose = None
+  execution_day = None
+  first_execution_date = None
+  last_execution_date = None
+  interval = None
+  created_at = None
+  modified_at = None
+
+  def __init__(self, session, **kwargs):
+      super(StandingOrder, self).__init__(session, **kwargs)
+
+      if self.created_at:
+          self.created_at = dateutil.parser.parse(self.created_at)
+
+      if self.modified_at:
+          self.modified_at = dateutil.parser.parse(self.modified_at)
+
+      if self.first_execution_date:
+          self.first_execution_date = dateutil.parser.parse(self.first_execution_date)
+
+      if self.last_execution_date:
+          self.last_execution_date = dateutil.parser.parse(self.last_execution_date)
+
+  def __unicode__(self):
+      return u"Standing Order: %s " % (self.id)
+
 class Transaction(ModelBase):
     """Object representing one bank transaction on a certain bank account of the user.
 

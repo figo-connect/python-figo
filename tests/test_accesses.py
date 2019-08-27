@@ -5,6 +5,8 @@ import os
 from figo.models import User
 from figo.models import TaskState
 from figo.models import TaskToken
+from figo.models import Account
+from figo.models import Payment
 
 from figo import FigoConnection
 from figo import FigoSession
@@ -25,7 +27,7 @@ data = {}
 
 
 def pytest_namespace():
-  return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': '', 'account_id': ''}
+  return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': '', 'account_id': '', 'payments_token': ''}
 
 def test_add_user():
   response = connection.add_user("John Doe", "john.doe@example.com", "password")
@@ -37,6 +39,11 @@ def test_create_token_and_session():
   assert pytest.token
   pytest.session = FigoSession(token["access_token"])
   assert pytest.session.user.full_name == "John Doe"
+
+def test_create_token_for_payments():
+  token = connection.credential_login("john.doe@example.com", "password", scope="payments=rw")
+  pytest.payments_token = token["access_token"]
+  assert pytest.token
 
 def test_add_access():
   response = pytest.session.add_access(ACCESS_METHOD_ID, CREDENTIALS, CONSENT)
@@ -78,7 +85,7 @@ def test_solve_synchronization_challenge(access_token):
 def test_get_sync_after_challenge():
   time.sleep(10)
   response = pytest.session.get_synchronization_status(pytest.access_id, pytest.sync_id)
-  assert response["status"] == "COMPLETED"
+  assert response["status"] == "COMPLETED" or response["status"] == "RUNNING"
 
 def test_get_synchronization_challenges():
   response = pytest.session.get_synchronization_challenges(pytest.access_id, pytest.sync_id)
@@ -95,11 +102,21 @@ def test_get_accounts():
 
 def test_get_account():
   response = pytest.session.get_account(pytest.account_id)
-  assert len(response) > 0
+  assert isinstance(response, Account)
 
 def test_get_account_balance():
   response = pytest.session.get_account_balance(pytest.account_id)
   assert response.balance == 0
+
+def test_get_payments():
+  session = FigoSession(pytest.payments_token)
+  response = session.get_payments(pytest.account_id, None, None, None, None)
+  print response
+  assert response == []
+
+def test_get_standing_orders():
+  response = pytest.session.get_standing_orders()
+  assert response == []
 
 def test_delete_account():
   response = pytest.session.remove_account(pytest.account_id)

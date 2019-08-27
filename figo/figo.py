@@ -31,6 +31,7 @@ from figo.models import Payment
 from figo.models import PaymentProposal
 from figo.models import Security
 from figo.models import Service
+from figo.models import StandingOrder
 from figo.models import TaskState
 from figo.models import TaskToken
 from figo.models import Transaction
@@ -495,16 +496,17 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
-    def get_account(self, account_id):
-        """Retrieve a specific account.
+    def get_account(self, account_or_account_id, cents=None):
+      """
+      Args:
+        account_or_account_id: account to be queried or its ID
+        cents (bool): If true amounts will be shown in cents, Optional, default: False
 
-        Args:
-            account_id: id of the account to be retrieved
-
-        Returns:
-            Account object for the respective account
-        """
-        return self._query_api_object(Account, "/rest/accounts/%s" % account_id)
+      Returns:
+        Account: An account accessible from Token
+      """
+      options = { "cents": cents } if cents else {}
+      return self._query_api_object(Account, path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
 
     def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
         """Add a bank account to the figo user.
@@ -540,19 +542,6 @@ class FigoSession(FigoObject):
       """
 
       return self._request_api(path="/rest/accounts", method='GET')
-
-    def get_account(self, account_or_account_id, cents):
-      """
-      Args:
-        account_or_account_id: account to be queried or its ID
-        cents (bool): If true amounts will be shown in cents, Optional, default: False
-
-      Returns:
-        Account: An account accessible from Token
-      """
-      options = { "cents": cents } if cents else {}
-
-      return self._request_api(path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
 
     def modify_account(self, account):
         """Modify an account.
@@ -756,6 +745,31 @@ class FigoSession(FigoObject):
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/services/%s/%s" % (country_code, item_id))
 
+    def get_standing_orders(self, account_or_account_id=None, accounts=None, count=None, offset=None, cents=None):
+      """Get an array of `StandingOrder` objects, one for each standing order of the user on
+      the specified account.
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Optional
+          Accounts: Comma separated list of account IDs, Optional
+          Count: Limit the number of returned items, Optional
+          Offset: Skip this number of transactions in the response, Optional
+          Cents: If true amounts will be shown in cents, Optional, default: False
+
+      Returns:
+          List of standing order objects
+      """
+
+      options = filterNone({ "accounts": accounts, "count": count, "offset": offset, "cents": cents })
+
+      account_id = getAccountId(account_or_account_id)
+      if account_id:
+        query = "/rest/accounts/{0}/standing_orders?{1}".format(account_id, urllib.urlencode(options))
+      else:
+        query = "/rest/standing_orders?{0}".format(urllib.urlencode(options))
+
+      return self._query_api_object(StandingOrder, query, collection_name="standing_orders")
+
     @property
     def notifications(self):
         """An array of `Notification` objects, one for each registered notification."""
@@ -927,6 +941,41 @@ class FigoSession(FigoObject):
       response = self._request_with_exception(
           "/rest/accounts/%s/payments/%s/init/%s" % (payment.account_id, payment.payment_id, init_id), None, "GET")
 
+    @property
+    def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):
+        """Get a single `StandingOrder` object.
+
+        Args:
+            standing_order_id: ID of the standing order to be retrieved, Required
+            account_or_account_id: account to be queried or its ID, Optional
+            Cents (bool): If true amounts will be shown in cents, Optional, default: False
+
+        Returns:
+            standing order object
+        """
+        options = filterNone({ "accounts": accounts, "cents": cents })
+
+        account_id = getAccountId(account_or_account_id)
+        if account_id:
+          query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(account_id, standing_order_id, urllib.urlencode(options))
+        else:
+          query = "/rest/standing_orders/{0}?{1}".format(standing_order_i, urllib.urlencode(options))
+
+        return self._query_api_object(StandingOrder, query)
+
+    def remove_standing_order(self, StandingOrder, account_or_account_id=None):
+        """Remove a standing order.
+
+        Args:
+            StandingOrder: standing order to be removed, Required
+            account_or_account_id: account to be queried or its ID, Optional
+        """
+        if account_id:
+          path = "/rest/accounts/{0}/standing_orders/{1}".format(account_id, standing_order_id)
+        else:
+          path = "/rest/standing_orders/{0}".format(standing_order_id)
+
+        self._request_with_exception(path, method="DELETE")
 
     @property
     def payment_proposals(self):

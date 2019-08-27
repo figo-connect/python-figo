@@ -16,6 +16,7 @@ from figo.models import ProcessOptions
 from figo.models import ProcessStep
 from figo.models import Security
 from figo.models import Service
+from figo.models import StandingOrder
 from figo.models import SynchronizationStatus
 from figo.models import TaskState
 from figo.models import TaskToken
@@ -132,6 +133,25 @@ def test_create_transaction_from_dict(figo_session):
     transaction = Transaction.from_dict(figo_session, data)
     assert isinstance(transaction, Transaction)
 
+def test_create_stading_order_from_dict(figo_session):
+    data = {
+      "account_id": "A12345.6",
+      "standing_order_id": "SO12345.6",
+      "iban": "DE99012345678910020030",
+      "amount": 125.5,
+      "currency": "EUR",
+      "cents": False,
+      "name": "John Doe",
+      "purpose": "So long and thanks for all the fish",
+      "execution_day": 1,
+      "first_execution_date": "2018-08-30T00:00:00.000Z",
+      "last_execution_date": "2018-08-30T00:00:00.000Z",
+      "interval": "monthly",
+      "created_at": "2018-08-30T00:00:00.000Z",
+      "modified_at": "2018-08-31T00:00:00.000Z"
+    }
+    standing_order = StandingOrder.from_dict(figo_session, data)
+    assert isinstance(standing_order, StandingOrder)
 
 def test_create_transaction_with_categories(figo_session):
     data = {
@@ -228,11 +248,11 @@ def test_create_service_from_dict(figo_session):
         "icon": "https://api.figo.me/assets/images/accounts/demokonto.png",
         "name": "Demokonto",
         "language": {
-            "available_languages": [
+            "available": [
                 "de",
                 "en",
             ],
-            "current_language": "de",
+            "current": "de",
         },
     }
     service = Service.from_dict(figo_session, data)

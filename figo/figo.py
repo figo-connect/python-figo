@@ -661,7 +661,7 @@ class FigoSession(FigoObject):
             catalog[k] = [Service.from_dict(self, service) for service in v]
 
         return catalog
-        
+
     def add_access(self, access_method_id, credentials, consent):
         data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
         return self._request_api(path="/rest/accesses", data=data, method="POST")

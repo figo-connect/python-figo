@@ -54,4 +54,3 @@ def test_remove_notification(access_token):
 def test_remove_user():
   response = pytest.session.remove_user()
   assert response == {}
-  

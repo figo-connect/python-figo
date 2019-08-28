@@ -25,7 +25,6 @@ CONSENT = { "recurring": True, "period": 90, "scopes": ["ACCOUNTS", "BALANCES", 
 ACCESS_METHOD_ID = "ae441170-b726-460c-af3c-b76756de00e0"
 data = {}
 
-
 def pytest_namespace():
   return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': '', 'account_id': '', 'payments_token': ''}
 
@@ -62,7 +61,6 @@ def test_add_access_with_wrong_access_id(access_token):
 
 def test_get_accesses():
   accesses = pytest.session.get_accesses()
-  print accesses
   assert len(accesses) > 0
 
 def test_get_access():
@@ -115,7 +113,6 @@ def test_get_account_balance():
 def test_get_payments():
   session = FigoSession(pytest.payments_token)
   response = session.get_payments(pytest.account_id, None, None, None, None)
-  print response
   assert response == []
 
 def test_get_standing_orders():

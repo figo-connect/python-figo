@@ -23,10 +23,8 @@ from figo.models import TaskToken
 from figo.models import Transaction
 from figo.models import User
 
-from tests.test_writing_methods import CLIENT_ERROR
-
 HTTP_NOT_ACCEPTABLE = 406
-
+CLIENT_ERROR = 1000
 
 def test_create_account_from_dict(figo_session):
     data = {

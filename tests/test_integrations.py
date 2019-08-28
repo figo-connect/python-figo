@@ -128,10 +128,6 @@ def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
 
-def test_remove_token_for_payments():
-  response = connection.revoke_token(pytest.payments_token)
-  assert response == None
-
 #todo: check response API
 def test_remove_pin():
   response = pytest.session.remove_pin(pytest.access_id)

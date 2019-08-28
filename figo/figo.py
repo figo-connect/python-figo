@@ -661,22 +661,6 @@ class FigoSession(FigoObject):
             catalog[k] = [Service.from_dict(self, service) for service in v]
 
         return catalog
-
-    def get_catalog(self, country_code=None):
-        """Return a dict with lists of supported banks and payment services.
-
-        Returns:
-            dict {'banks': [Service], 'services': [Service]}:
-                dict with lists of supported banks and payment services
-        """
-        options = { "country": country_code }
-        options = { k: v for k, v in options.items() if v is not None }
-
-        catalog = self._request_with_exception("/rest/catalog?" + urllib.urlencode(options))
-        for k, v in catalog.items():
-            catalog[k] = [Service.from_dict(self, service) for service in v]
-
-        return catalog
         
     def add_access(self, access_method_id, credentials, consent):
         data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }

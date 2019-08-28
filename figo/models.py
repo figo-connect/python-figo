@@ -560,6 +560,7 @@ class Sync(ModelBase):
     ended_at = None
 
     def __init__(self, session, **kwargs):
+        super(Sync, self).__init__(session, **kwargs)
         if self.created_at:
             self.created_at = dateutil.parser.parse(self.created_at)
 
@@ -569,9 +570,11 @@ class Sync(ModelBase):
         if self.ended_at:
             self.ended_at = dateutil.parser.parse(self.ended_at)
 
+        if self.challenge:
+            self.challenge = Challenge.from_dict(self.session, self.challenge)
+
     def __unicode__(self):
         return u"Sync: %s" % (self.id)
-
 
 class User(ModelBase):
     """Object representing an user.
@@ -775,10 +778,12 @@ class Challenge(ModelBase):
     """
     __dump_attributes__ = ["title", "label", "format"]
 
+    id = None
     title = None
     label = None
     format = None
     data = None
+    type = None
 
     def __unicode__(self, *args, **kwargs):
         return u"Challenge: %s" % (self.title)

@@ -7,6 +7,8 @@ from figo.models import TaskState
 from figo.models import TaskToken
 from figo.models import Account
 from figo.models import Payment
+from figo.models import Sync
+from figo.models import Challenge
 
 from figo import FigoConnection
 from figo import FigoSession
@@ -69,15 +71,16 @@ def test_get_access():
 
 def test_add_sync():
   response = pytest.session.add_sync(pytest.access_id, None, None, None, None, None)
-  #TODO: Add error and challenge in the response!!!
-  pytest.sync_id = response["id"]
-  assert response["status"] == 'QUEUED'
+  pytest.sync_id = response.id
+  assert isinstance(response, Sync)
+  assert response.status == 'QUEUED'
 
 def test_get_synchronization_status():
   time.sleep(10)
   response = pytest.session.get_synchronization_status(pytest.access_id, pytest.sync_id)
-  pytest.challenge_id = response["challenge"]["id"]
-  assert response["status"] == "AWAIT_AUTH"
+  pytest.challenge_id = response.challenge.id
+  assert isinstance(response, Sync)
+  assert response.status == "AWAIT_AUTH"
 
 def test_solve_synchronization_challenge(access_token):
   payload = { "value": "111111" }
@@ -87,7 +90,8 @@ def test_solve_synchronization_challenge(access_token):
 def test_get_sync_after_challenge():
   time.sleep(10)
   response = pytest.session.get_synchronization_status(pytest.access_id, pytest.sync_id)
-  assert response["status"] == "COMPLETED" or response["status"] == "RUNNING"
+  assert isinstance(response, Sync)
+  assert response.status == "COMPLETED" or response.status == "RUNNING"
 
 def test_get_synchronization_challenges():
   response = pytest.session.get_synchronization_challenges(pytest.access_id, pytest.sync_id)
@@ -95,12 +99,13 @@ def test_get_synchronization_challenges():
 
 def test_get_synchronization_challenge():
   response = pytest.session.get_synchronization_challenge(pytest.access_id, pytest.sync_id, pytest.challenge_id)
-  assert len(response) > 0
+  assert isinstance(response, Challenge)
 
 def test_get_accounts():
   response = pytest.session.get_accounts()
-  pytest.account_id = response["accounts"][0]["account_id"]
-  assert isinstance(response["accounts"][0]["account_id"], unicode)
+  pytest.account_id = response[0].account_id
+  assert isinstance(response[0], Account)
+  assert isinstance(response[0].account_id, unicode)
 
 def test_get_account():
   response = pytest.session.get_account(pytest.account_id)
@@ -118,10 +123,6 @@ def test_get_payments():
 def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
-
-def test_remove_token_for_payments():
-  response = connection.revoke_token(pytest.payments_token)
-  assert response == None
 
 def test_delete_account():
   response = pytest.session.remove_account(pytest.account_id)

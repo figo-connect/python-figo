@@ -180,6 +180,9 @@ class FigoObject(object):
             return None
         elif collection_name is None:
             return model.from_dict(self, response)
+        elif collection_name == "collection":
+            # Some collections in the API response ARE NOT embbeded in collection name. (Ex: challenges, accesses)
+            return [model.from_dict(self, dict_entry) for dict_entry in response]
         else:
             return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
@@ -515,30 +518,6 @@ class FigoSession(FigoObject):
       options = { "cents": cents } if cents else {}
       return self._query_api_object(Account, path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
 
-    def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """Add a bank account to the figo user.
-
-        Args:
-            country (str): country code of the bank to add
-            credentials ([str]): list of credentials needed for bank login
-            bank_code (str): bank code of the bank to add
-            iban (str): iban of the account to add
-            save_pin (bool): save credentials on the figo Connect server
-
-        Returns:
-            TaskToken: A task token for the account creation task
-
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
-        """
-        data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
-        if iban:
-            data['iban'] = iban
-        elif bank_code:
-            data['bank_code'] = bank_code
-
-        return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
-
     def get_accounts(self):
       """
       Args:
@@ -548,7 +527,7 @@ class FigoSession(FigoObject):
         List of Accounts accessible from Token
       """
 
-      return self._request_api(path="/rest/accounts", method='GET')
+      return self._query_api_object(Account, path="/rest/accounts", method='GET', collection_name="accounts")
 
     def modify_account(self, account):
         """Modify an account.
@@ -588,7 +567,7 @@ class FigoSession(FigoObject):
         data = filterNone({ "disable_notifications": disable_notifications, "redirect_uri": redirect_uri,
                  "state": state, "credentials": credentials, "save_secrets": save_secrets})
 
-        return self._request_api(path="/rest/accesses/{0}/syncs".format(access_id), data=data, method='POST')
+        return self._query_api_object(Sync, "/rest/accesses/{0}/syncs".format(access_id), data=data, method='POST')
 
     def get_synchronization_status(self, access_id, sync_id):
         """
@@ -599,8 +578,7 @@ class FigoSession(FigoObject):
         Returns:
           Object: synchronization operation.
         """
-
-        return self._request_api(path="/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id), method='GET')
+        return self._query_api_object(Sync, "/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id), method='GET')
 
     def get_synchronization_challenges(self, access_id, sync_id):
         """
@@ -611,9 +589,7 @@ class FigoSession(FigoObject):
         Returns:
           Object: List of challenges associated with synchronization operation.
         """
-
-        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges"
-                                .format(access_id, sync_id), data={}, method='GET')
+        return self._query_api_object(Challenge, "/rest/accesses/{0}/syncs/{1}/challenges".format(access_id, sync_id), method='GET', collection_name="collection")
 
     def get_synchronization_challenge(self, access_id, sync_id, challenge_id):
         """
@@ -625,8 +601,7 @@ class FigoSession(FigoObject):
         Returns:
           Object: Challenge associated with synchronization operation.
         """
-        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}"
-                                .format(access_id, sync_id, challenge_id), data={}, method='GET')
+        return self._query_api_object(Challenge, "/rest/accesses/{0}/syncs/{1}/challenges/{2}".format(access_id, sync_id, challenge_id), method='GET')
 
     def solve_synchronization_challenge(self, access_id, sync_id, challenge_id, data):
         """
@@ -638,7 +613,6 @@ class FigoSession(FigoObject):
         Returns:
           {}
         """
-
         return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response"
                                 .format(access_id, sync_id, challenge_id), data=data, method='POST')
 

@@ -33,23 +33,27 @@ def test_add_user():
   response = connection.add_user("John Doe", "john.doe@example.com", "password")
   assert response == {}
 
+def test_get_version():
+  response = connection.get_version()
+  assert response == {'environment': 'staging', 'version': '19.8.0.0rc46'}
+
 def test_create_token_and_session():
   token = connection.credential_login("john.doe@example.com", "password")
   pytest.token = token["access_token"]
-  assert pytest.token
-  pytest.session = FigoSession(token["access_token"])
+
+  pytest.session = FigoSession(pytest.token)
   assert pytest.session.user.full_name == "John Doe"
 
 def test_create_token_for_payments():
   token = connection.credential_login("john.doe@example.com", "password", scope="payments=rw")
   pytest.payments_token = token["access_token"]
-  assert pytest.token
+  assert token["scope"] == "payments=rw"
 
 def test_add_access():
   response = pytest.session.add_access(ACCESS_METHOD_ID, CREDENTIALS, CONSENT)
   pytest.access_id = response["id"]
   assert response.has_key("id") == True
- 
+
 def test_add_access_with_wrong_access_id(access_token):
   figo_session = FigoSession(access_token)
   access_method_id = "pipo"
@@ -108,6 +112,10 @@ def test_get_account_balance():
   response = pytest.session.get_account_balance(pytest.account_id)
   assert response.balance == 0
 
+def test_get_securities(access_token):
+  response = pytest.session.get_securities()
+  assert response != None
+
 def test_get_payments():
   session = FigoSession(pytest.payments_token)
   response = session.get_payments(pytest.account_id, None, None, None, None)
@@ -118,9 +126,13 @@ def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
 
+def test_remove_token_for_payments():
+  response = connection.revoke_token(pytest.payments_token)
+  assert response == None
+
 #todo: check response API
 def test_remove_pin():
-  response = pytest.session.remove_pin(data["access_id"])
+  response = pytest.session.remove_pin(pytest.access_id)
   assert response != None
 
 def test_delete_account():
@@ -130,4 +142,5 @@ def test_delete_account():
 def test_remove_user():
   response = pytest.session.remove_user()
   assert response == {}
+
 

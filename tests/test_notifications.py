@@ -50,3 +50,8 @@ def test_get_notification(access_token):
 def test_remove_notification(access_token):
     response = pytest.session.remove_notification(pytest.notification.notification_id)
     assert response == None
+
+def test_remove_user():
+  response = pytest.session.remove_user()
+  assert response == {}
+  

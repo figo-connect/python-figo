@@ -14,9 +14,9 @@ def pytest_namespace():
   return {'session': '', 'token': '', 'access_id': '', 'sync_id': '', 'challenge_id': ''}
 
 # To call only once
-# def test_add_user():
-#   response = connection.add_user("John Doe", "john.doe@example.com", "password")
-#   assert response == {}
+def test_add_user():
+  response = connection.add_user("John Doe", "john.doe@example.com", "password")
+  assert response == {}
 
 def test_create_token_and_session():
   token = connection.credential_login("john.doe@example.com", "password")
@@ -29,5 +29,7 @@ def test_get_securities(access_token):
   response = pytest.session.get_securities()
   assert response != None
 
-# def test_get_security(access_token):
-#   response = pytest.session.get_security()
+def test_get_security(access_token):
+  response = pytest.session.get_security(pytest.account_id,pytest.security_id)
+  assert 1==2
+

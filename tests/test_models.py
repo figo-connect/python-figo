@@ -23,10 +23,8 @@ from figo.models import TaskToken
 from figo.models import Transaction
 from figo.models import User
 
-from tests.test_writing_methods import CLIENT_ERROR
-
 HTTP_NOT_ACCEPTABLE = 406
-
+CLIENT_ERROR = 1000
 
 def test_create_account_from_dict(figo_session):
     data = {
@@ -133,7 +131,7 @@ def test_create_transaction_from_dict(figo_session):
     transaction = Transaction.from_dict(figo_session, data)
     assert isinstance(transaction, Transaction)
 
-def test_create_stading_order_from_dict(figo_session):
+def test_create_standing_order_from_dict(figo_session):
     data = {
       "account_id": "A12345.6",
       "standing_order_id": "SO12345.6",

@@ -25,17 +25,20 @@ from time import sleep
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
+from figo.models import Challenge
 from figo.models import LoginSettings
 from figo.models import Notification
 from figo.models import Payment
 from figo.models import PaymentProposal
 from figo.models import Security
 from figo.models import Service
+from figo.models import StandingOrder
 from figo.models import TaskState
 from figo.models import TaskToken
 from figo.models import Transaction
 from figo.models import User
 from figo.models import WebhookNotification
+from figo.models import Sync
 from figo.version import __version__
 
 
@@ -93,7 +96,7 @@ def filterKeys(object, allowed_keys):
   if object == None or object == {}:
     return {}
   else:
-    keys = [key for key in object.keys() if key in allowed_keys ]
+    keys = [key for key in object.keys() if key in allowed_keys]
     return dict(zip(keys, [object[key] for key in keys]))
 
 def filterNone(object):
@@ -177,6 +180,9 @@ class FigoObject(object):
             return None
         elif collection_name is None:
             return model.from_dict(self, response)
+        elif collection_name == "collection":
+            # Some collections in the API response ARE NOT embbeded in collection name. (Ex: challenges, accesses)
+            return [model.from_dict(self, dict_entry) for dict_entry in response]
         else:
             return [model.from_dict(self, dict_entry) for dict_entry in response[collection_name]]
 
@@ -361,11 +367,10 @@ class FigoConnection(FigoObject):
             Dictionary which contains an access token and a refresh token.
         """
 
-        data = {"grant_type": "password",
+        data = filterNone({"grant_type": "password",
                 "username": username,
-                "password": password}
-        if scope:
-            data["scope"] = scope
+                "password": password,
+                "scope": scope})
 
         response = self._request_api("/auth/token", data, method="POST")
 
@@ -465,6 +470,12 @@ class FigoConnection(FigoObject):
         self.add_user(name, email, password, language)
         return self.credential_login(email, password)
 
+    def get_version(self):
+        """
+        Returns the version of the API.
+        """
+        return self._request_api(path="/version", method='GET')
+
 
 class FigoSession(FigoObject):
     """
@@ -495,100 +506,28 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(Account, "/rest/accounts", collection_name="accounts")
 
-    def get_account(self, account_id):
-        """Retrieve a specific account.
+    def get_account(self, account_or_account_id, cents=None):
+      """
+      Args:
+        account_or_account_id: account to be queried or its ID
+        cents (bool): If true amounts will be shown in cents, Optional, default: False
 
-        Args:
-            account_id: id of the account to be retrieved
+      Returns:
+        Account: An account accessible from Token
+      """
+      options = { "cents": cents } if cents else {}
+      return self._query_api_object(Account, path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
 
-        Returns:
-            Account object for the respective account
-        """
-        return self._query_api_object(Account, "/rest/accounts/%s" % account_id)
+    def get_accounts(self):
+      """
+      Args:
+        None
 
-    def add_account(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """Add a bank account to the figo user.
+      Returns:
+        List of Accounts accessible from Token
+      """
 
-        Args:
-            country (str): country code of the bank to add
-            credentials ([str]): list of credentials needed for bank login
-            bank_code (str): bank code of the bank to add
-            iban (str): iban of the account to add
-            save_pin (bool): save credentials on the figo Connect server
-
-        Returns:
-            TaskToken: A task token for the account creation task
-
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
-        """
-        data = {'country': country, 'credentials': credentials, 'save_pin': save_pin}
-        if iban:
-            data['iban'] = iban
-        elif bank_code:
-            data['bank_code'] = bank_code
-
-        return self._query_api_object(TaskToken, "/rest/accounts", data, "POST")
-
-    def add_account_and_sync(self, country, credentials, bank_code=None, iban=None, save_pin=False):
-        """Add a bank account and start syncing it.
-
-        Args:
-            country (str): country code of the bank to add
-            credentials ([str]): list of credentials needed for bank login
-            bank_code (str): bank code of the bank to add
-            iban (str): iban of the account to add
-            save_pin (bool): save credentials on the figo Connect server
-
-        Returns:
-            TaskToken: A task token for the account creation task
-
-        Note:
-            `bank_code` or `iban` must be set, and `iban` overrides `bank_code`.
-            The number of sync retries is determined by `FigoSession.sync_poll_retry`.
-        """
-        task_token = self.add_account(country, credentials, bank_code, iban, save_pin)
-        for _ in range(self.sync_poll_retry):
-            task_state = self.get_task_state(task_token)
-            logger.info("Adding account {0}/{1}: {2}".format(bank_code, iban, task_state.message))
-            logger.debug(str(task_state))
-            if task_state.is_ended or task_state.is_erroneous:
-                break
-            sleep(2)
-        else:
-            raise FigoException(
-                "could not sync",
-                "task was not finished after {0} tries".format(self.sync_poll_retry)
-            )
-
-        if task_state.is_erroneous:
-            if task_state.error and task_state.error['code'] == 10000:
-                raise FigoPinException(country, credentials, bank_code, iban, save_pin,
-                                       error=task_state.error['name'],
-                                       error_description=task_state.error['description'],
-                                       code=task_state.error['code'])
-            raise FigoException("", error_description=task_state.error['message'],
-                                code=task_state.error['code'])
-        return task_state
-
-    def add_account_and_sync_with_new_pin(self, pin_exception, new_pin):
-        """Provide a new pin if the sync task was erroneous because of a wrong pin.
-
-        Args:
-            pin_exception: Exception of the sync task for which a new pin will be provided
-            new_pin: New pin for the sync task
-
-        Returns:
-            The state of the sync task. If the pin was wrong a FigoPinException is thrown
-        """
-        pin_exception.credentials[1] = new_pin
-        return self.add_account_and_sync(
-            pin_exception.country,
-            pin_exception.credentials,
-            pin_exception.bank_code,
-            pin_exception.iban,
-            pin_exception.save_pin,
-        )
+      return self._query_api_object(Account, path="/rest/accounts", method='GET', collection_name="accounts")
 
     def modify_account(self, account):
         """Modify an account.
@@ -608,48 +547,74 @@ class FigoSession(FigoObject):
         Args:
             account_or_account_id: account to be removed or its ID
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
+        path = "/rest/accounts/{0}".format(getAccountId(account_or_account_id))
+        self._request_with_exception(path, method="DELETE")
 
-        query = "/rest/accounts/{0}".format(account_or_account_id)
-        self._request_with_exception(query, method="DELETE")
-
-    def sync_account(self, state, redirect_uri=None, account_ids=None, if_not_synced_since=None,
-                     sync_tasks=['transactions'], disable_notifications=False, auto_continue=False):
+    def add_sync(self, access_id, disable_notifications, redirect_uri, state, credentials, save_secrets):
         """
         Args:
-            state (str): Arbitrary string to maintain state between this request and the callback,
-                e.g. it might contain a session ID from your application.
-                The value should also contain a random component, which your
-                application checks to prevent cross-site request forgery.
-            redirect_uri (str): At the end of the synchronization process a response will be sent to
-                this callback URL. The value defaults to the first redirect URI
-                configured for the client.
-            disable_notifications (bool): This flag indicates whether notifications should be sent
-                to your application. Since your application will be notified by
-                the callback URL anyway, you might want to disable any
-                additional notifications.
-            if_not_synced_since (int): If this parameter is set, only those accounts will be
-                synchronized, which have not been synchronized within the
-                specified number of minutes.
-            auto_continue (bool): Automatically acknowledge and ignore any errors.
-            account_ids ([str]): Only sync the accounts with these IDs.
+          access_id (str): figo ID of the provider access, Required
+          disable_notifications (bool): This flag indicates whether notifications should be sent to your
+            application, Optional, default: False
+          redirect_uri (str): The URI to which the end user is redirected in OAuth cases, Optional
+          state (str): Arbitrary string to maintain state between this request and the callback
+          credentials (obj): Credentials used for authentication with the financial service provider.
+          save_secrets (bool): Indicates whether the confidential parts of the credentials should be saved, default: False
 
         Returns:
-            TaskToken: A task token for the synchronization task
+          Object: synchronization operation.
         """
-        data = {
-            'state': state,
-            'redirect_uri': redirect_uri,
-            'disable_notifications': disable_notifications,
-            'if_not_synced_since': if_not_synced_since,
-            'auto_continue': auto_continue,
-            'account_ids': account_ids,
-            'sync_tasks': sync_tasks,
-        }
+        data = filterNone({ "disable_notifications": disable_notifications, "redirect_uri": redirect_uri,
+                 "state": state, "credentials": credentials, "save_secrets": save_secrets})
 
-        data = dict((k, v) for k, v in data.items() if v is not None)  # noqa, py26 compatibility
-        return self._query_api_object(model=TaskToken, path='/rest/sync', data=data, method='POST')
+        return self._query_api_object(Sync, "/rest/accesses/{0}/syncs".format(access_id), data=data, method='POST')
+
+    def get_synchronization_status(self, access_id, sync_id):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+
+        Returns:
+          Object: synchronization operation.
+        """
+        return self._query_api_object(Sync, "/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id), method='GET')
+
+    def get_synchronization_challenges(self, access_id, sync_id):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+
+        Returns:
+          Object: List of challenges associated with synchronization operation.
+        """
+        return self._query_api_object(Challenge, "/rest/accesses/{0}/syncs/{1}/challenges".format(access_id, sync_id), method='GET', collection_name="collection")
+
+    def get_synchronization_challenge(self, access_id, sync_id, challenge_id):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+          challenge_id (str): figo ID of the challenge, Required
+
+        Returns:
+          Object: Challenge associated with synchronization operation.
+        """
+        return self._query_api_object(Challenge, "/rest/accesses/{0}/syncs/{1}/challenges/{2}".format(access_id, sync_id, challenge_id), method='GET')
+
+    def solve_synchronization_challenge(self, access_id, sync_id, challenge_id, data):
+        """
+        Args:
+          access_id (str): figo ID of the provider access, Required
+          sync_id (str): figo ID of the synchronization operation, Required
+          challenge_id (str): figo ID of the challenge, Required
+
+        Returns:
+          {}
+        """
+        return self._request_api(path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response"
+                                .format(access_id, sync_id, challenge_id), data=data, method='POST')
 
     def get_account_balance(self, account_or_account_id):
         """Get balance and account limits.
@@ -698,22 +663,20 @@ class FigoSession(FigoObject):
         return catalog
 
     def add_access(self, access_method_id, credentials, consent):
-        options=filterNone({
-            "access_method_id": access_method_id,
-            "credentials" : credentials,
-            "consent": consent
-        })
-        return self._request_api(
-            path="/rest/accesses",
-            data=options,
-            method="POST"
-        )
-        
+        data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
+        return self._request_api(path="/rest/accesses", data=data, method="POST")
+
     def get_accesses(self):
         return self._request_with_exception("/rest/accesses")
 
     def get_access(self, access_id):
-        return self._request_with_exception("/rest/accesses/%s", access_id)
+        return self._request_with_exception("/rest/accesses/{0}".format(access_id), method="GET")
+
+    def remove_pin(self, access_id):
+        return self._request_api(
+            path="/rest/accesses/%s/remove_pin" % access_id,
+            method="POST"
+        )
 
     def get_supported_payment_services(self, country_code):
         """Return a list of supported credit cards and other payment services.
@@ -768,6 +731,31 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(LoginSettings,
                                       "/rest/catalog/services/%s/%s" % (country_code, item_id))
+
+    def get_standing_orders(self, account_or_account_id=None, accounts=None, count=None, offset=None, cents=None):
+      """Get an array of `StandingOrder` objects, one for each standing order of the user on
+      the specified account.
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Optional
+          Accounts: Comma separated list of account IDs, Optional
+          Count: Limit the number of returned items, Optional
+          Offset: Skip this number of transactions in the response, Optional
+          Cents: If true amounts will be shown in cents, Optional, default: False
+
+      Returns:
+          List of standing order objects
+      """
+
+      options = filterNone({ "accounts": accounts, "count": count, "offset": offset, "cents": cents })
+
+      account_id = getAccountId(account_or_account_id)
+      if account_id:
+        query = "/rest/accounts/{0}/standing_orders?{1}".format(account_id, urllib.urlencode(options))
+      else:
+        query = "/rest/standing_orders?{0}".format(urllib.urlencode(options))
+
+      return self._query_api_object(StandingOrder, query, collection_name="standing_orders")
 
     @property
     def notifications(self):
@@ -940,6 +928,89 @@ class FigoSession(FigoObject):
       response = self._request_with_exception(
           "/rest/accounts/%s/payments/%s/init/%s" % (payment.account_id, payment.payment_id, init_id), None, "GET")
 
+    def get_payment_challenges(self, account_or_account_id, payment_id, init_id):
+      """List payment challenges
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+
+      Returns:
+          List of challenges for the required payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges".format(account_id, payment_id, init_id), "GET")
+
+    def get_payment_challenge(self, account_or_account_id, payment_id, init_id, challenge_id):
+      """Get payment challenge
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+          challenge_id: challenge id, Required
+
+      Returns:
+          Challenge: The required challenge for the payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}".format(account_id, payment_id, init_id, challenge_id), "GET")
+
+    def solve_payment_challenges(self, account_or_account_id, payment_id, init_id, challenge_id):
+      """Get payment challenge
+
+      Args:
+          account_or_account_id: account to be queried or its ID, Required
+          payment: payment to be retrieved the status for, Required
+          init_id: initiation id, Required
+          challenge_id: challenge id, Required
+
+      Returns:
+          Challenge: The required challenge for the payment
+      """
+      account_id = getAccountId(account_or_account_id)
+
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), "POST")
+
+
+    @property
+    def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):
+        """Get a single `StandingOrder` object.
+
+        Args:
+            standing_order_id: ID of the standing order to be retrieved, Required
+            account_or_account_id: account to be queried or its ID, Optional
+            Cents (bool): If true amounts will be shown in cents, Optional, default: False
+
+        Returns:
+            standing order object
+        """
+        options = filterNone({ "accounts": accounts, "cents": cents })
+
+        account_id = getAccountId(account_or_account_id)
+        if account_id:
+          query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(account_id, standing_order_id, urllib.urlencode(options))
+        else:
+          query = "/rest/standing_orders/{0}?{1}".format(standing_order_i, urllib.urlencode(options))
+
+        return self._query_api_object(StandingOrder, query)
+
+    def remove_standing_order(self, StandingOrder, account_or_account_id=None):
+        """Remove a standing order.
+
+        Args:
+            StandingOrder: standing order to be removed, Required
+            account_or_account_id: account to be queried or its ID, Optional
+        """
+        if account_id:
+          path = "/rest/accounts/{0}/standing_orders/{1}".format(account_id, standing_order_id)
+        else:
+          path = "/rest/standing_orders/{0}".format(standing_order_id)
+
+        self._request_with_exception(path, method="DELETE")
 
     @property
     def payment_proposals(self):
@@ -1085,11 +1156,11 @@ class FigoSession(FigoObject):
         """An array of `Security` objects, one for each transaction of the user."""
         return self._query_api_object(Security, "/rest/securities", collection_name="securities")
 
-    def get_securities(self, account_id=None, since=None, count=1000, offset=0, accounts=None):
+    def get_securities(self, account_or_account_id=None, since=None, count=1000, offset=0, accounts=None):
         """Get an array of `Security` objects, one for each security of the user.
 
         Args:
-            account_id: ID of the account for which to list the securities
+            account_id: Account for which to list the securities or its ID
             since: this parameter can either be a transaction ID or a date
             count: limit the number of returned transactions
             offset: which offset into the result set should be used to determine the first
@@ -1108,7 +1179,7 @@ class FigoSession(FigoObject):
             params['since'] = since
 
         params = urllib.urlencode(params)
-
+        account_id = getAccountId(account_or_account_id)
         if account_id:
             query = "/rest/accounts/{0}/securities?{1}".format(account_id, params)
         else:
@@ -1126,10 +1197,8 @@ class FigoSession(FigoObject):
         Returns:
             a Security object representing the transaction to be retrieved
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
 
-        query = "/rest/accounts/{0}/securities/{1}".format(account_or_account_id, security_id)
+        query = "/rest/accounts/{0}/securities/{1}".format(getAccountId(account_or_account_id), security_id)
         return self._query_api_object(Security, query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):

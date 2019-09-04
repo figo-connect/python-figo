@@ -115,6 +115,10 @@ def test_get_account_balance():
   response = pytest.session.get_account_balance(pytest.account_id)
   assert response.balance == 0
 
+def test_get_securities(access_token):
+  response = pytest.session.get_securities()
+  assert response != None
+
 def test_get_payments():
   session = FigoSession(pytest.payments_token)
   response = session.get_payments(pytest.account_id, None, None, None, None)
@@ -124,6 +128,11 @@ def test_get_standing_orders():
   response = pytest.session.get_standing_orders()
   assert response == []
 
+#todo: check response API
+def test_remove_pin():
+  response = pytest.session.remove_pin(pytest.access_id)
+  assert response != None
+
 def test_delete_account():
   response = pytest.session.remove_account(pytest.account_id)
   assert response == None
@@ -131,3 +140,5 @@ def test_delete_account():
 def test_remove_user():
   response = pytest.session.remove_user()
   assert response == {}
+
+

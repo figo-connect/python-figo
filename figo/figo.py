@@ -672,6 +672,12 @@ class FigoSession(FigoObject):
     def get_access(self, access_id):
         return self._request_with_exception("/rest/accesses/{0}".format(access_id), method="GET")
 
+    def remove_pin(self, access_id):
+        return self._request_api(
+            path="/rest/accesses/%s/remove_pin" % access_id,
+            method="POST"
+        )
+
     def get_supported_payment_services(self, country_code):
         """Return a list of supported credit cards and other payment services.
 
@@ -1150,11 +1156,11 @@ class FigoSession(FigoObject):
         """An array of `Security` objects, one for each transaction of the user."""
         return self._query_api_object(Security, "/rest/securities", collection_name="securities")
 
-    def get_securities(self, account_id=None, since=None, count=1000, offset=0, accounts=None):
+    def get_securities(self, account_or_account_id=None, since=None, count=1000, offset=0, accounts=None):
         """Get an array of `Security` objects, one for each security of the user.
 
         Args:
-            account_id: ID of the account for which to list the securities
+            account_id: Account for which to list the securities or its ID
             since: this parameter can either be a transaction ID or a date
             count: limit the number of returned transactions
             offset: which offset into the result set should be used to determine the first
@@ -1173,7 +1179,7 @@ class FigoSession(FigoObject):
             params['since'] = since
 
         params = urllib.urlencode(params)
-
+        account_id = getAccountId(account_or_account_id)
         if account_id:
             query = "/rest/accounts/{0}/securities?{1}".format(account_id, params)
         else:
@@ -1191,10 +1197,8 @@ class FigoSession(FigoObject):
         Returns:
             a Security object representing the transaction to be retrieved
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
 
-        query = "/rest/accounts/{0}/securities/{1}".format(account_or_account_id, security_id)
+        query = "/rest/accounts/{0}/securities/{1}".format(getAccountId(account_or_account_id), security_id)
         return self._query_api_object(Security, query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):

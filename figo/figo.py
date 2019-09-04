@@ -663,16 +663,47 @@ class FigoSession(FigoObject):
         return catalog
 
     def add_access(self, access_method_id, credentials, consent):
+        """Add provider access
+
+        Args:
+            access_method_id (str): figo ID of the provider access method. [required]
+            credentials (Crendentials object): Credentials used for authentication with the financial service provider.
+            consent (Consent object): Configuration of the PSD2 consents. Is ignored for non-PSD2 accesses.
+
+         Returns:
+           Access object added
+        """
         data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
         return self._request_api(path="/rest/accesses", data=data, method="POST")
 
     def get_accesses(self):
+        """List all connected provider accesses of user.
+
+         Returns:
+           Array of Access objects
+        """
         return self._request_with_exception("/rest/accesses")
 
     def get_access(self, access_id):
+        """Retrieve the details of a specific provider access identified by its ID.
+
+        Args:
+            access_id (str): figo ID of the provider access. [required]
+
+         Returns:
+           Access object matching the access_id
+        """
         return self._request_with_exception("/rest/accesses/{0}".format(access_id), method="GET")
 
     def remove_pin(self, access_id):
+        """Remove a PIN from the API backend that has been previously stored for automatic synchronization or ease of use.
+
+        Args:
+            access_id (str): figo ID of the provider access. [required]
+
+         Returns:
+           Access object for which the PIN was removed
+        """
         return self._request_api(
             path="/rest/accesses/%s/remove_pin" % access_id,
             method="POST"
@@ -959,22 +990,29 @@ class FigoSession(FigoObject):
 
       return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}".format(account_id, payment_id, init_id, challenge_id), "GET")
 
-    def solve_payment_challenges(self, account_or_account_id, payment_id, init_id, challenge_id):
+    def solve_payment_challenges(self, account_or_account_id, payment_id, init_id, challenge_id, payload):
       """Get payment challenge
 
       Args:
-          account_or_account_id: account to be queried or its ID, Required
-          payment: payment to be retrieved the status for, Required
-          init_id: initiation id, Required
-          challenge_id: challenge id, Required
+          account_or_account_id (str): account to be queried or its ID, Required
+          payment (str): payment to be retrieved the status for, Required
+          init_id (str): initiation id, Required
+          challenge_id (str): challenge id, Required
+          payload (one of):
+                AuthMethodSelectResponse:
+                    - method_id (str): figo ID of TAN scheme.
+                ChallengeResponse:
+                     value (str): Response to the auth challenge. The source of the value depends on the selected authentication method.
+                ChallengeResponseJWE:
+                    - type (str): The type of the value. Always set to the value "encrypted".
+                    - value (str): JWE encrypted auth challenge response.
 
       Returns:
           Challenge: The required challenge for the payment
       """
       account_id = getAccountId(account_or_account_id)
 
-      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), "POST")
-
+      return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), payload, "POST")
 
     @property
     def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):

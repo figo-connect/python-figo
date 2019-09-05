@@ -49,7 +49,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
-API_ENDPOINT = os.getenv("API_ENDPOINT")
+API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
 
 ERROR_MESSAGES = {
     400: {
@@ -673,7 +673,11 @@ class FigoSession(FigoObject):
          Returns:
            Access object added
         """
-        data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
+        data = filterNone({
+            "access_method_id": access_method_id,
+            "credentials" : credentials,
+            "consent": consent,
+        })
         return self._request_api(path="/rest/accesses", data=data, method="POST")
 
     def get_accesses(self):
@@ -746,8 +750,25 @@ class FigoSession(FigoObject):
             LoginSettings: Object that contains information which are needed for
                            logging in to the bank
         """
-        return self._query_api_object(LoginSettings,
-                                      "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+        query_params = urllib.urlencode({
+            'country': country_code,
+            'q': item_id,
+        })
+
+        # now the catalog returns matches for all possible banks
+        response = self._query_api_object(
+            LoginSettings,
+            "/catalog/banks?{}".format(query_params),
+            collection_name='collection',
+        )
+        if len(response) > 0:
+            return response[0]
+
+        err_msg = 'Login settings for bank {} were not found'.format(item_id)
+
+        raise FigoException(
+            error='login_settings_not_found', error_description=err_msg
+        )
 
     def get_service_login_settings(self, country_code, item_id):
         """Return the login settings of a payment service.

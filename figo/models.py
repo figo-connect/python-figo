@@ -549,7 +549,15 @@ class Sync(ModelBase):
         started_at: Time at which the sync started
         ended_at: Time at which the sync ended
     """
-    __dump_attributes__ = []
+    __dump_attributes__ = [
+        'id',
+        'status',
+        'challenge',
+        'error',
+        'created_at',
+        'started_at',
+        'ended_at',
+    ]
 
     id = None
     status = None
@@ -575,6 +583,16 @@ class Sync(ModelBase):
 
     def __unicode__(self):
         return u"Sync: %s" % (self.id)
+
+    def dump(self):
+        dumped_value = super(Sync, self).dump()
+        if self.challenge:
+            dumped_value.update({
+                'challenge': self.challenge.dump()
+            })
+
+        return dumped_value
+
 
 class User(ModelBase):
     """Object representing an user.
@@ -682,19 +700,21 @@ class LoginSettings(ModelBase):
         advice: any additional advice useful to locate the required credentials
     """
 
-    __dump_attributes__ = ["bank_name", "supported", "icon", "additional_icons",
-                           "credentials", "auth_type", "advice"]
+    __dump_attributes__ = ['id', 'name', 'icon', 'supported', 'country',
+                           'language', 'bic', 'access_methods', 'bank_code', ]
 
-    bank_name = None
-    supported = None
+    id = None
+    name = None
     icon = None
-    additional_icons = None
-    credentials = None
-    auth_type = None
-    advice = None
+    supported = None
+    country = None
+    language = None
+    bic = None
+    access_methods = None
+    bank_code = None
 
     def __unicode__(self, *args, **kwargs):
-        return u"LoginSettings: %s" % (self.bank_name)
+        return u"LoginSettings: %s" % (self.name)
 
 
 class Credential(ModelBase):
@@ -776,7 +796,7 @@ class Challenge(ModelBase):
         data: challenge data
 
     """
-    __dump_attributes__ = ["title", "label", "format"]
+    __dump_attributes__ = ["id", "title", "label", "format", "data", "type"]
 
     id = None
     title = None

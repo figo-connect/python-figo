@@ -1,3 +1,5 @@
+.vscode/settings.json
+
 *.py[cod]
 
 # C extensions
@@ -37,3 +39,6 @@ htmlcov/*
 .pydevproject
 .eggs/
 .pytest_cache/
+
+# env variables
+.env

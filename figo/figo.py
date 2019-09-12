@@ -9,7 +9,6 @@ import json
 import logging
 import re
 import sys
-import urllib
 import os
 
 from dotenv import load_dotenv
@@ -17,11 +16,9 @@ load_dotenv()
 
 from datetime import datetime
 from datetime import timedelta
-from requests.exceptions import SSLError
 from requests import Session
-from time import sleep
+from six import python_2_unicode_compatible
 
-# from figo.credentials import CREDENTIALS
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
@@ -198,6 +195,7 @@ class FigoObject(object):
             del self.headers['Accept-Language']
 
 
+@python_2_unicode_compatible
 class FigoException(Exception):
     """Base class for all exceptions transported via the figo connect API.
 
@@ -227,6 +225,7 @@ class FigoException(Exception):
                    dictionary['error'].get('code'))
 
 
+@python_2_unicode_compatible
 class FigoPinException(FigoException):
     """
     This exception is thrown if the wrong pin was submitted to a task. It contains information about

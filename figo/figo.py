@@ -74,12 +74,23 @@ ERROR_MESSAGES = {
         'description': "Unexpected request method.",
         'code': 90000,
     },
+    423: {
+        'message': 'resource_locked',
+        'description': 'Resource locked',
+        'code': 1008,
+    },
     503: {
         'message': "service_unavailable",
         'description': "Exceeded rate limit.",
         'code': 90000,
     },
+    504: {
+        'message': 'upstream_request_timeout',
+        'description': 'Upstream request timeout.',
+        'code': 90000,
+    },
 }
+
 
 def getAccountId(account_or_account_id):
   if account_or_account_id == None:
@@ -119,13 +130,16 @@ class FigoObject(object):
         self.language = language
         self.api_endpoint = api_endpoint
 
-    def _request_api(self, path, data=None, method="GET"):
+    def _request_api(self, path, data=None, method="GET", raise_exception=False):
         """Helper method for making a REST-compliant API call.
 
         Args:
             path: path on the server to call
             data: dictionary of data to send to the server in message body
             method: - HTTP verb to use for the request
+            raise_exception: flag to trigger raise Exception
+                when status not in range 200 - 299
+                and JSON data has error exception
 
         Returns:
             the JSON-parsed result body
@@ -140,10 +154,23 @@ class FigoObject(object):
         finally:
             session.close()
 
-        if 200 <= response.status_code < 300 or self._has_error(response.json()):
-            if response.text == '':
-                return {}
-            return response.json()
+        if response.text == '':
+            data = {}
+        else:
+            try:
+                data = response.json()
+            except Exception as err:
+                logger.error(
+                    "Convert data to JSON format failed: {}".format(err)
+                )
+                data = {}
+
+        if 200 <= response.status_code < 300:
+            return data
+        elif self._has_error(data):
+            if raise_exception:
+                raise FigoException.from_dict(data)
+            return data
         elif response.status_code in ERROR_MESSAGES:
             return {'error': ERROR_MESSAGES[response.status_code]}
 
@@ -157,13 +184,8 @@ class FigoObject(object):
             'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
-        response = self._request_api(path, data, method)
-        # the check for is_erroneous in response is here to not confuse a task/progress
-        # response with an error object
-        if self._has_error(response) and 'is_erroneous' not in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
+        """Helper to trigger raise exception on _request_api"""
+        return self._request_api(path, data, method, raise_exception=True)
 
     def _has_error(self, response):
         return 'error' in response and response["error"]
@@ -213,7 +235,10 @@ class FigoException(Exception):
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: {} ({})".format(self.error_description, self.error)
+        return "FigoException: {} ({}){}".format(
+            self.error_description, self.error,
+            "- code: {}".format(self.code) if self.code else ""
+        )
 
     @classmethod
     def from_dict(cls, dictionary):

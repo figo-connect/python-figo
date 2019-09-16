@@ -151,6 +151,15 @@ class FigoObject(object):
 
         try:
             response = session.request(method, complete_path, json=data)
+        except Exception as err:
+            logger.error("Request Error was raised: {}".format(err))
+        else:
+            logger.debug("{} '{}' result with status {} and text: {}".format(
+                method,
+                complete_path,
+                response.status_code,
+                response.text[:2000],
+            ))
         finally:
             session.close()
 

@@ -1,14 +1,40 @@
 import pytest
+import os
 
 from figo import FigoException
+from figo import FigoConnection
 from figo import FigoSession
 from figo.models import Service
 from figo.models import LoginSettings
+from figo.models import BankContact
 
-CREDENTIALS = ["figo", "figo"]
-BANK_CODE = "90090042"
+from dotenv import load_dotenv
+load_dotenv()
+
+API_ENDPOINT = os.getenv("API_ENDPOINT")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
 CLIENT_ERROR = 1000
+connection  = FigoConnection(CLIENT_ID, CLIENT_SECRET, "https://127.0.0.1/", api_endpoint=API_ENDPOINT)
 
+@pytest.mark.parametrize('language', ['de'])
+@pytest.mark.parametrize('country', ['DE', 'AT'])
+def test_get_catalog_en_client_auth(language, country):
+    catalog = connection.get_catalog(None, country)
+    for bank in catalog['banks']:
+      assert isinstance(bank, BankContact)
+      assert bank.country == country
+    for service in catalog['services']:
+      assert isinstance(service, Service)
+
+def test_get_catalog_client_auth_query():
+    q = 'PayPal'
+    catalog = connection.get_catalog(q, None)
+    for bank in catalog['banks']:
+      assert bank.name == q
+    for service in catalog['services']:
+      assert service.name == q
 
 @pytest.mark.parametrize('language', ['de'])
 @pytest.mark.parametrize('country', ['DE', 'FR'])

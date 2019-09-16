@@ -489,7 +489,7 @@ class FigoConnection(FigoObject):
         for k, v in catalog.items():
           if k == 'banks':
             catalog[k] = [BankContact.from_dict(self, bank) for bank in v]
-          if k == 'services':
+          elif k == 'services':
             catalog[k] = [Service.from_dict(self, service) for service in v]
 
         return catalog

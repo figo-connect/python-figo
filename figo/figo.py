@@ -476,6 +476,24 @@ class FigoConnection(FigoObject):
         """
         return self._request_api(path="/version", method='GET')
 
+    def get_catalog(self, q=None, country_code=None):
+        """Return a dict with lists of supported banks and payment services, with client auth.
+
+        Returns:
+            dict {'banks': [BankContact], 'services': [Service]}:
+                dict with lists of supported banks and payment services
+        """
+        options = filterNone({ "country": country_code, "q": q })
+        catalog = self._query_api("/catalog?" + urllib.urlencode(options))
+
+        for k, v in catalog.items():
+          if k == 'banks':
+            catalog[k] = [BankContact.from_dict(self, bank) for bank in v]
+          elif k == 'services':
+            catalog[k] = [Service.from_dict(self, service) for service in v]
+
+        return catalog
+
 
 class FigoSession(FigoObject):
     """

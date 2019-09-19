@@ -116,7 +116,6 @@ class FigoObject(object):
         """
         self.headers = {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
             'User-Agent': "python_figo/{0}".format(__version__),
         }
         self.language = language
@@ -137,6 +136,8 @@ class FigoObject(object):
 
         session = Session()
         session.headers.update(self.headers)
+        if data is not None:
+            session.headers['Content-Type'] = 'application/json'
 
         try:
             response = session.request(method, complete_path, json=data)

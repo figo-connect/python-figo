@@ -869,7 +869,10 @@ class Challenge(ModelBase):
         data: challenge data
 
     """
-    __dump_attributes__ = ["id", "title", "label", "format", "data", "type"]
+    __dump_attributes__ = [
+        "id", "title", "label", "format", "data", "type", "location",
+        "created_at"
+    ]
 
     id = None
     title = None
@@ -877,6 +880,8 @@ class Challenge(ModelBase):
     format = None
     data = None
     type = None
+    location = None
+    created_at = None
 
     def __unicode__(self, *args, **kwargs):
         return u"Challenge: %s" % (self.title)

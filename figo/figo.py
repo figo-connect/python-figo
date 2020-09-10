@@ -9,7 +9,6 @@ import json
 import logging
 import re
 import sys
-import urllib
 import os
 
 from dotenv import load_dotenv
@@ -17,11 +16,9 @@ load_dotenv()
 
 from datetime import datetime
 from datetime import timedelta
-from requests.exceptions import SSLError
 from requests import Session
-from time import sleep
+from six import python_2_unicode_compatible
 
-# from figo.credentials import CREDENTIALS
 from figo.models import Account
 from figo.models import AccountBalance
 from figo.models import BankContact
@@ -49,7 +46,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
-API_ENDPOINT = os.getenv("API_ENDPOINT")
+API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
 
 ERROR_MESSAGES = {
     400: {
@@ -77,12 +74,23 @@ ERROR_MESSAGES = {
         'description': "Unexpected request method.",
         'code': 90000,
     },
+    423: {
+        'message': 'resource_locked',
+        'description': 'Resource locked',
+        'code': 1008,
+    },
     503: {
         'message': "service_unavailable",
         'description': "Exceeded rate limit.",
         'code': 90000,
     },
+    504: {
+        'message': 'upstream_request_timeout',
+        'description': 'Upstream request timeout.',
+        'code': 90000,
+    },
 }
+
 
 def getAccountId(account_or_account_id):
   if account_or_account_id == None:
@@ -122,13 +130,16 @@ class FigoObject(object):
         self.language = language
         self.api_endpoint = api_endpoint
 
-    def _request_api(self, path, data=None, method="GET"):
+    def _request_api(self, path, data=None, method="GET", raise_exception=False):
         """Helper method for making a REST-compliant API call.
 
         Args:
             path: path on the server to call
             data: dictionary of data to send to the server in message body
             method: - HTTP verb to use for the request
+            raise_exception: flag to trigger raise Exception
+                when status not in range 200 - 299
+                and JSON data has error exception
 
         Returns:
             the JSON-parsed result body
@@ -140,13 +151,35 @@ class FigoObject(object):
 
         try:
             response = session.request(method, complete_path, json=data)
+        except Exception as err:
+            logger.error("Request Error was raised: {}".format(err))
+        else:
+            logger.debug("{} '{}' result with status {} and text: {}".format(
+                method,
+                complete_path,
+                response.status_code,
+                response.text[:2000],
+            ))
         finally:
             session.close()
 
-        if 200 <= response.status_code < 300 or self._has_error(response.json()):
-            if response.text == '':
-                return {}
-            return response.json()
+        if response.text == '':
+            data = {}
+        else:
+            try:
+                data = response.json()
+            except Exception as err:
+                logger.error(
+                    "Convert data to JSON format failed: {}".format(err)
+                )
+                data = {}
+
+        if 200 <= response.status_code < 300:
+            return data
+        elif self._has_error(data):
+            if raise_exception:
+                raise FigoException.from_dict(data)
+            return data
         elif response.status_code in ERROR_MESSAGES:
             return {'error': ERROR_MESSAGES[response.status_code]}
 
@@ -160,13 +193,8 @@ class FigoObject(object):
             'code': 90000}}
 
     def _request_with_exception(self, path, data=None, method="GET"):
-        response = self._request_api(path, data, method)
-        # the check for is_erroneous in response is here to not confuse a task/progress
-        # response with an error object
-        if self._has_error(response) and 'is_erroneous' not in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
+        """Helper to trigger raise exception on _request_api"""
+        return self._request_api(path, data, method, raise_exception=True)
 
     def _has_error(self, response):
         return 'error' in response and response["error"]
@@ -198,6 +226,7 @@ class FigoObject(object):
             del self.headers['Accept-Language']
 
 
+@python_2_unicode_compatible
 class FigoException(Exception):
     """Base class for all exceptions transported via the figo connect API.
 
@@ -215,7 +244,10 @@ class FigoException(Exception):
 
     def __str__(self):
         """String representation of the FigoException."""
-        return "FigoException: {} ({})".format(self.error_description, self.error)
+        return "FigoException: {} ({}){}".format(
+            self.error_description, self.error,
+            "- code: {}".format(self.code) if self.code else ""
+        )
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -227,6 +259,7 @@ class FigoException(Exception):
                    dictionary['error'].get('code'))
 
 
+@python_2_unicode_compatible
 class FigoPinException(FigoException):
     """
     This exception is thrown if the wrong pin was submitted to a task. It contains information about
@@ -691,7 +724,11 @@ class FigoSession(FigoObject):
          Returns:
            Access object added
         """
-        data = { "access_method_id": access_method_id, "credentials" : credentials, "consent": consent }
+        data = filterNone({
+            "access_method_id": access_method_id,
+            "credentials" : credentials,
+            "consent": consent,
+        })
         return self._request_api(path="/rest/accesses", data=data, method="POST")
 
     def get_accesses(self):
@@ -764,8 +801,25 @@ class FigoSession(FigoObject):
             LoginSettings: Object that contains information which are needed for
                            logging in to the bank
         """
-        return self._query_api_object(LoginSettings,
-                                      "/rest/catalog/banks/%s/%s" % (country_code, item_id))
+        query_params = urllib.urlencode({
+            'country': country_code,
+            'q': item_id,
+        })
+
+        # now the catalog returns matches for all possible banks
+        response = self._query_api_object(
+            LoginSettings,
+            "/catalog/banks?{}".format(query_params),
+            collection_name='collection',
+        )
+        if len(response) > 0:
+            return response[0]
+
+        err_msg = 'Login settings for bank {} were not found'.format(item_id)
+
+        raise FigoException(
+            error='login_settings_not_found', error_description=err_msg
+        )
 
     def get_service_login_settings(self, country_code, item_id):
         """Return the login settings of a payment service.

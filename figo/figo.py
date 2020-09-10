@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-from __future__ import unicode_literals
-from __future__ import absolute_import
+from __future__ import unicode_literals, absolute_import
 
 import base64
 import json
@@ -14,28 +13,29 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from requests import Session
 from six import python_2_unicode_compatible
 
-from figo.models import Account
-from figo.models import AccountBalance
-from figo.models import BankContact
-from figo.models import Challenge
-from figo.models import LoginSettings
-from figo.models import Notification
-from figo.models import Payment
-from figo.models import PaymentProposal
-from figo.models import Security
-from figo.models import Service
-from figo.models import StandingOrder
-from figo.models import TaskState
-from figo.models import TaskToken
-from figo.models import Transaction
-from figo.models import User
-from figo.models import WebhookNotification
-from figo.models import Sync
+from figo.models import (
+    Account,
+    AccountBalance,
+    BankContact,
+    Challenge,
+    LoginSettings,
+    Notification,
+    Payment,
+    PaymentProposal,
+    Security,
+    Service,
+    StandingOrder,
+    TaskState,
+    TaskToken,
+    Transaction,
+    User,
+    WebhookNotification,
+    Sync,
+)
 from figo.version import __version__
 
 
@@ -93,29 +93,30 @@ ERROR_MESSAGES = {
 
 
 def getAccountId(account_or_account_id):
-  if account_or_account_id == None:
-    return None
-  elif isinstance(account_or_account_id, Account):
-    return account_or_account_id.account_id
-  else:
-    return account_or_account_id
+    if account_or_account_id is None:
+        return None
+    elif isinstance(account_or_account_id, Account):
+        return account_or_account_id.account_id
+    else:
+        return account_or_account_id
+
 
 def filterKeys(object, allowed_keys):
-  if object == None or object == {}:
-    return {}
-  else:
-    keys = [key for key in object.keys() if key in allowed_keys]
-    return dict(zip(keys, [object[key] for key in keys]))
+    if object is None or object == {}:
+        return {}
+    else:
+        keys = [key for key in object.keys() if key in allowed_keys]
+        return dict(zip(keys, [object[key] for key in keys]))
+
 
 def filterNone(object):
-  return { k: v for k, v in object.items() if v is not None }
+    return {k: v for k, v in object.items() if v is not None}
+
 
 class FigoObject(object):
     """A FigoObject has the ability to communicate with the Figo API."""
 
-    def __init__(self,
-                 api_endpoint=API_ENDPOINT,
-                 language=None):
+    def __init__(self, api_endpoint=API_ENDPOINT, language=None):
         """Create a FigoObject instance.
 
         Args:
@@ -183,9 +184,11 @@ class FigoObject(object):
         elif response.status_code in ERROR_MESSAGES:
             return {'error': ERROR_MESSAGES[response.status_code]}
 
-        logger.warn("Querying the API failed when accessing '%s': %d",
-                    complete_path,
-                    response.status_code)
+        logger.warning(
+            "Querying the API failed when accessing '%s': %d",
+            complete_path,
+            response.status_code
+        )
 
         return {'error': {
             'message': "internal_server_error",

@@ -16,9 +16,8 @@ class ModelBase(object):
 
     @classmethod
     def from_dict(cls, session, data_dict):
-        """
-        Creating an instance of the specific type from the data passed
-        in the dictionary `data_dict`.
+        """Creating an instance of the specific type from the data passed in
+        the dictionary `data_dict`.
         """
         return cls(session, **data_dict)
 
@@ -38,7 +37,8 @@ class ModelBase(object):
 
 
 class Account(ModelBase):
-    """Object representing one bank account of the user, independent of the exact account type.
+    """Object representing one bank account of the user, independent of the
+    exact account type.
 
     Attributes:
         account_id: internal figo connect account id
@@ -46,14 +46,15 @@ class Account(ModelBase):
         bank_id: internal figo connect bank id
         name: account name
         owner: account owner
-        auto_sync: boolean value that indicates whether the account is automatically synchronized
+        auto_sync: boolean value that indicates whether the account is
+            automatically synchronized
         account_number: account number
         bank_code: bank code
         currency: three character currency code
         iban: iban code
         bic: bic code
-        type: account type, one of (Giro account, Savings account, Credit card, Loan account,
-                                    PayPal, Cash book, Unknown)
+        type: account type, one of (Giro account, Savings account,
+            Credit card, Loan account, PayPal, Cash book, Unknown)
         supported_tan_schemes: List of supported tan schemes
         preferred_tan_scheme: id of preferred tan scheme
         icon: account icon URL
@@ -61,7 +62,7 @@ class Account(ModelBase):
         status: synchronization status object
     """
 
-    __dump_attributes__ = ["name", "owner", "auto_sync"]
+    __dump_attributes__ = ['name', 'owner', 'auto_sync']
 
     account_id = None
     balance = None
@@ -89,7 +90,9 @@ class Account(ModelBase):
 
     @property
     def payments(self):
-        """An array of `Payment` objects, one for each transaction on the account."""
+        """An array of `Payment` objects, one for each transaction on the
+        account.
+        """
         return self.session.get_payments(self.account_id)
 
     def get_payment(self, payment_id):
@@ -105,25 +108,33 @@ class Account(ModelBase):
 
     @property
     def transactions(self):
-        """An array of `Transaction` objects, one for each transaction on the account."""
+        """An array of `Transaction` objects, one for each transaction on the
+        account.
+        """
         return self.session.get_transactions(self.account_id)
 
-    def get_transactions(self, since=None, count=1000, offset=0, include_pending=False):
-        """Get an array of `Transaction` objects, one for each transaction of the user.
+    def get_transactions(
+        self, since=None, count=1000, offset=0, include_pending=False
+    ):
+        """Get an array of `Transaction` objects, one for each transaction of
+        the user.
 
         Args:
             since: This parameter can either be a transaction ID or a date.
             count: Limit the number of returned transactions
-            offset Offset into the result set to determine the first transaction returned
-                (useful in combination with count)
-            include_pending: boolean, indicates whether pending transactions should be included
-                in the response; pending transactions are always included as a
-                complete set, regardless of the `since` parameter.
+            offset: Offset into the result set to determine the first
+                transaction returned (useful in combination with count)
+            include_pending: boolean, indicates whether pending transactions
+                should be included in the response; pending transactions are
+                always included as a complete set, regardless of the `since`
+                parameter.
 
         Returns:
             A list of Transaction objects
         """
-        return self.session.get_transactions(self.account_id, since, count, offset, include_pending)
+        return self.session.get_transactions(
+            self.account_id, since, count, offset, include_pending
+        )
 
     def get_transaction(self, transaction_id):
         """Retrieve a specific transaction.
@@ -138,7 +149,9 @@ class Account(ModelBase):
 
     @property
     def securities(self):
-        """An array of `Securities` objects, one for each security on the account."""
+        """An array of `Securities` objects, one for each security on the
+        account.
+        """
         return self.session.get_securities(self.account_id)
 
     def get_securities(self, since=None, count=1000, offset=0, accounts=None):
@@ -148,15 +161,17 @@ class Account(ModelBase):
             account_id: ID of the account for which to list the securities
             since: This parameter can either be a transaction ID or a date.
             count: Limit the number of returned transactions
-            offset: Offset into the result set to determine the first security returned
-                (useful in combination with count)
-            accounts: list of accounts. If retrieving the securities for all accounts, filter
-                the securities to be only from these accounts.
+            offset: Offset into the result set to determine the first security
+                returned (useful in combination with count)
+            accounts: list of accounts. If retrieving the securities for all
+                accounts, filter the securities to be only from these accounts.
 
         Returns:
             A list of Security objects
         """
-        return self.session.get_securities(self.account_id, since, count, offset, accounts)
+        return self.session.get_securities(
+            self.account_id, since, count, offset, accounts
+        )
 
     def get_security(self, security_id):
         """Retrieve a specific security.
@@ -171,14 +186,20 @@ class Account(ModelBase):
         return self.session.get_security(self.account_id, security_id)
 
     def __unicode__(self):
-        return u"Account: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+        return u"Account: %s (%s at %s)" % (
+            self.name, self.account_number, self.bank_name
+        )
 
     def __init__(self, session, **kwargs):
         super(Account, self).__init__(session, **kwargs)
         if self.status:
-            self.status = SynchronizationStatus.from_dict(self.session, self.status)
+            self.status = SynchronizationStatus.from_dict(
+                self.session, self.status
+            )
         if self.balance:
-            self.balance = AccountBalance.from_dict(self.session, self.balance)
+            self.balance = AccountBalance.from_dict(
+                self.session, self.balance
+            )
 
 
 class BankContact(ModelBase):
@@ -205,7 +226,8 @@ class AccountBalance(ModelBase):
 
     Attributes:
         balance: acccount balance or None if the balance is not yet known
-        balance_date: bank server timestamp of balance or None if the balance is not yet known.
+        balance_date: bank server timestamp of balance or None if the balance
+            is not yet known.
         credit_line: credit line
         monthly_spending_limit: user-defined spending limit
         status: synchronization status object
@@ -225,7 +247,9 @@ class AccountBalance(ModelBase):
     def __init__(self, session, **kwargs):
         super(AccountBalance, self).__init__(session, **kwargs)
         if self.status:
-            self.status = SynchronizationStatus.from_dict(self.session, self.status)
+            self.status = SynchronizationStatus.from_dict(
+                self.session, self.status
+            )
 
         if self.balance_date:
             self.balance_date = dateutil.parser.parse(self.balance_date)
@@ -240,7 +264,8 @@ class Payment(ModelBase):
     Attributes:
         payment_id: internal figo payment id
         account_id: internal figo account id
-        type: payment type, one of (Transfer, Direct Debit, SEPA transfer, SEPA direct debit)
+        type: payment type, one of (Transfer, Direct Debit, SEPA transfer,
+            SEPA direct debit)
         name: name of creditor or debtor
         account_number: account number of creditor or debtor
         bank_code: bank code of creditor or debtor
@@ -255,11 +280,14 @@ class Payment(ModelBase):
         submission_timestamp: submission timestamp
         creation_timestamp: internal creation timestamp
         modification_timestamp: internal creation timestamp
-        traditional_id: transaction id, only set if payment has been matched to a transaction
+        traditional_id: transaction id, only set if payment has been matched
+            to a transaction
     """
 
-    __dump_attributes__ = ["type", "name", "account_number", "bank_code",
-                           "amount", "currency", "purpose"]
+    __dump_attributes__ = [
+        "type", "name", "account_number", "bank_code", "amount", "currency",
+        "purpose"
+    ]
 
     payment_id = None
     account_id = None
@@ -282,75 +310,90 @@ class Payment(ModelBase):
         super(Payment, self).__init__(session, **kwargs)
 
         if self.submission_timestamp:
-            self.submission_timestamp = dateutil.parser.parse(self.submission_timestamp)
+            self.submission_timestamp = dateutil.parser.parse(
+                self.submission_timestamp
+            )
 
         if self.creation_timestamp:
-            self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
+            self.creation_timestamp = dateutil.parser.parse(
+                self.creation_timestamp
+            )
 
         if self.modification_timestamp:
-            self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
+            self.modification_timestamp = dateutil.parser.parse(
+                self.modification_timestamp
+            )
 
     def __unicode__(self):
-        return u"Payment: %s (%s at %s)" % (self.name, self.account_number, self.bank_name)
+        return u"Payment: %s (%s at %s)" % (
+            self.name, self.account_number, self.bank_name
+        )
 
 
 class StandingOrder(ModelBase):
-  """Object representing one standing order on a certain bank account of the user.
+    """Object representing one standing order on a certain bank account of the
+    user.
 
-  Attributes:
-    standing_order_id: internal figo stanging order id
-    account_id: internal figo account id
-    iban: iban of creditor or debtor
-    amount: order amount
-    currency: three character currency code
-    cents:
-    name: name of originator or recipient
-    purpose: purpose text
-    execution_day: number of days of execution of the standing order
-    first_execution_date: starting day of execution
-    last_execution_date: finishing day of the execution
-    interval:
-    created_at: internal creation timestamp
-    modified_at: internal creation timestamp
-  """
+    Attributes:
+        standing_order_id: internal figo stanging order id
+        account_id: internal figo account id
+        iban: iban of creditor or debtor
+        amount: order amount
+        currency: three character currency code
+        cents:
+        name: name of originator or recipient
+        purpose: purpose text
+        execution_day: number of days of execution of the standing order
+        first_execution_date: starting day of execution
+        last_execution_date: finishing day of the execution
+        interval:
+        created_at: internal creation timestamp
+        modified_at: internal creation timestamp
+    """
 
-  __dump_attributes__ = []
+    __dump_attributes__ = []
 
-  standing_order_id = None
-  account_id = None
-  iban = None
-  amount = None
-  currency = None
-  cents = None
-  name = None
-  purpose = None
-  execution_day = None
-  first_execution_date = None
-  last_execution_date = None
-  interval = None
-  created_at = None
-  modified_at = None
+    standing_order_id = None
+    account_id = None
+    iban = None
+    amount = None
+    currency = None
+    cents = None
+    name = None
+    purpose = None
+    execution_day = None
+    first_execution_date = None
+    last_execution_date = None
+    interval = None
+    created_at = None
+    modified_at = None
 
-  def __init__(self, session, **kwargs):
-      super(StandingOrder, self).__init__(session, **kwargs)
+    def __init__(self, session, **kwargs):
+        super(StandingOrder, self).__init__(session, **kwargs)
 
-      if self.created_at:
-          self.created_at = dateutil.parser.parse(self.created_at)
+        if self.created_at:
+            self.created_at = dateutil.parser.parse(self.created_at)
 
-      if self.modified_at:
-          self.modified_at = dateutil.parser.parse(self.modified_at)
+        if self.modified_at:
+            self.modified_at = dateutil.parser.parse(self.modified_at)
 
-      if self.first_execution_date:
-          self.first_execution_date = dateutil.parser.parse(self.first_execution_date)
+        if self.first_execution_date:
+            self.first_execution_date = dateutil.parser.parse(
+                self.first_execution_date
+            )
 
-      if self.last_execution_date:
-          self.last_execution_date = dateutil.parser.parse(self.last_execution_date)
+        if self.last_execution_date:
+            self.last_execution_date = dateutil.parser.parse(
+                self.last_execution_date
+            )
 
-  def __unicode__(self):
-      return u"Standing Order: %s " % (self.id)
+    def __unicode__(self):
+        return u"Standing Order: %s " % (self.id)
+
 
 class Transaction(ModelBase):
-    """Object representing one bank transaction on a certain bank account of the user.
+    """Object representing one bank transaction on a certain bank account of
+    the user.
 
     Attributes:
         transaction_id: internal figo transaction id
@@ -364,16 +407,16 @@ class Transaction(ModelBase):
         booking_date: booking date
         value_date: value date
         purpose: purpose text
-        type: transaction type, one of (Transfer, Standing order, Direct debit, Salary or rent,
-            GeldKarte, Charges or interest)
+        type: transaction type, one of (Transfer, Standing order, Direct debit,
+            Salary or rent, GeldKarte, Charges or interest)
         booking_text: booking text
         booked: boolean, indicates whether transaction is booked or pending
-        categories: list of categories assigned to this transaction, ordered from general to
-            specific
+        categories: list of categories assigned to this transaction, ordered
+            from general to specific
         creation_timestamp: create date
         modification_timestamp: modification date
-        visited: boolean, indicates whether the transaction has already been marked as visited
-            by the user
+        visited: boolean, indicates whether the transaction has already been
+            marked as visited by the user
         bic: bic
         iban: iban
         booking_key: booking key
@@ -456,10 +499,14 @@ class Transaction(ModelBase):
         super(Transaction, self).__init__(session, **kwargs)
 
         if self.creation_timestamp:
-            self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
+            self.creation_timestamp = dateutil.parser.parse(
+                self.creation_timestamp
+            )
 
         if self.modification_timestamp:
-            self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
+            self.modification_timestamp = dateutil.parser.parse(
+                self.modification_timestamp
+            )
 
         if self.booking_date:
             self.booking_date = dateutil.parser.parse(self.booking_date)
@@ -468,11 +515,14 @@ class Transaction(ModelBase):
             self.value_date = dateutil.parser.parse(self.value_date)
 
         if self.categories:
-            self.categories = [Category.from_dict(session, c) for c in self.categories]
+            self.categories = [
+                Category.from_dict(session, c) for c in self.categories
+            ]
 
     def __unicode__(self):
-        return u"Transaction: %d %s to %s at %s" % (self.amount, self.currency,
-                                                    self.name, str(self.value_date))
+        return u"Transaction: %d %s to %s at %s" % (
+            self.amount, self.currency, self.name, str(self.value_date)
+        )
 
 
 class Category(ModelBase):
@@ -496,13 +546,17 @@ class Category(ModelBase):
 
 
 class Notification(ModelBase):
-    """Object representing a configured notification, e.g a webhook or email hook.
+    """Object representing a configured notification, e.g a webhook or email
+    hook.
 
     Attributes:
-        notification_id: internal figo notification ID from the notification registration response
-        observe_key: notification key, see http://developer.figo.me/#notification_keys
+        notification_id: internal figo notification ID from the notification
+            registration response
+        observe_key: notification key, see
+            http://developer.figo.me/#notification_keys
         notify_uri: notification messages will be sent to this URL
-        state: state similiar to sync and login process. It will passed as POST data for webhooks
+        state: state similiar to sync and login process. It will passed as
+            POST data for webhooks
     """
 
     __dump_attributes__ = ["observe_key", "notify_uri", "state"]
@@ -513,12 +567,14 @@ class Notification(ModelBase):
     state = None
 
     def __unicode__(self):
-        return u"Notification: %s triggering %s" % (self.observe_key, self.notify_uri)
+        return u"Notification: %s triggering %s" % (
+            self.observe_key, self.notify_uri
+        )
 
 
 class SynchronizationStatus(ModelBase):
-    """Object representing the synchronization status of the figo servers with banks,
-    payment providers or financial service providers.
+    """Object representing the synchronization status of the figo servers with
+    banks, payment providers or financial service providers.
 
     Attributes:
         code: internal figo status code
@@ -537,13 +593,16 @@ class SynchronizationStatus(ModelBase):
     def __unicode__(self):
         return u"Synchronization Status: %s (%s)" % (self.code, self.message)
 
+
 class Sync(ModelBase):
     """Object representing a syncronisation for account creation.
 
     Attributes:
         id: internal figo syncronisation id
         status: Current processing state of the item.
-        challenge: AuthMethodSelectChallenge (object) or EmbeddedChallenge (object) or RedirectChallenge (object) or DecoupledChallenge (object) (Challenge).
+        challenge: AuthMethodSelectChallenge (object) or EmbeddedChallenge
+            (object) or RedirectChallenge (object) or DecoupledChallenge
+            (object) (Challenge).
         error: Error detailing why the background operation failed.
         created_at: Time at which the sync was created
         started_at: Time at which the sync started
@@ -602,8 +661,10 @@ class User(ModelBase):
         name: full name
         email: email address
         address: postal address
-        verified_email: boolean, indicates whether the email address has been verified
-        send_newsletter: boolean, incicates whether the user has signed up for the newsletter
+        verified_email: boolean, indicates whether the email address has been
+            verified
+        send_newsletter: boolean, incicates whether the user has signed up for
+            the newsletter
         language: two letter code for preferred language
         premium: --
         premium_expires_on: --
@@ -639,7 +700,8 @@ class WebhookNotification(ModelBase):
     """Object representing a WebhookNotification.
 
     Attributes:
-        notification_id: internal figo notification ID from the notification registration response
+        notification_id: internal figo notification ID from the notification
+            registration response
         observe_key: notification key
         state: the state parameter from the notification registration request
         data: object or list with the data (AccountBalance or Transaction)
@@ -653,7 +715,7 @@ class WebhookNotification(ModelBase):
     data = None
 
     def __unicode__(self):
-        return u"WebhookNotification: %s" % (self.notification_id)
+        return u"WebhookNotification: %s" % (self.notification_id,)
 
 
 class Service(ModelBase):
@@ -668,7 +730,9 @@ class Service(ModelBase):
         available_languages: list of other available languages
     """
 
-    __dump_attributes__ = ["name", "bank_code", "icon", "additional_icons", "language"]
+    __dump_attributes__ = [
+        "name", "bank_code", "icon", "additional_icons", "language"
+    ]
 
     name = None
     bank_code = None
@@ -700,8 +764,10 @@ class LoginSettings(ModelBase):
         advice: any additional advice useful to locate the required credentials
     """
 
-    __dump_attributes__ = ['id', 'name', 'icon', 'supported', 'country',
-                           'language', 'bic', 'access_methods', 'bank_code', ]
+    __dump_attributes__ = [
+        'id', 'name', 'icon', 'supported', 'country', 'language', 'bic',
+        'access_methods', 'bank_code',
+    ]
 
     id = None
     name = None
@@ -714,7 +780,7 @@ class LoginSettings(ModelBase):
     bank_code = None
 
     def __unicode__(self, *args, **kwargs):
-        return u"LoginSettings: %s" % (self.name)
+        return u"LoginSettings: %s" % (self.name,)
 
 
 class Credential(ModelBase):
@@ -722,9 +788,10 @@ class Credential(ModelBase):
 
     Attributes:
         label: label for text input field
-        masked: boolean, if set the text input field is used for password entry and should be
-            masked
-        optional: boolean, if set the field is optional and may be an empty string
+        masked: boolean, if set the text input field is used for password
+            entry and should be masked
+        optional: boolean, if set the field is optional and may be an empty
+            string
     """
 
     __dump_attributes__ = ["label", "masked", "optional"]
@@ -734,7 +801,7 @@ class Credential(ModelBase):
     optional = None
 
     def __unicode__(self, *args, **kwargs):
-        return u"Credential: %s" % (self.label)
+        return u"Credential: %s" % (self.label,)
 
 
 class TaskToken(ModelBase):
@@ -749,7 +816,7 @@ class TaskToken(ModelBase):
     task_token = None
 
     def __unicode__(self, *args, **kwargs):
-        return u"TaskToken: %s" % (self.task_token)
+        return u"TaskToken: %s" % (self.task_token,)
 
 
 class TaskState(ModelBase):
@@ -757,20 +824,24 @@ class TaskState(ModelBase):
 
     Attributes:
         account_id: account id of currently processed account
-        message: status message or error message for currently processed account
+        message: status message or error message for currently processed
+            account
         is_waiting_for_pin: boolean, if set the figo server is waiting for PIN
-        is_waiting_for_response: boolean, if set the figo server is waiting for a response to
-            the parameter challenge
+        is_waiting_for_response: boolean, if set the figo server is waiting
+            for a response to the parameter challenge
         is_erroneous: boolean, if set an error occurred
-        is_ended: boolean, if set the communication with the bank has been completed
+        is_ended: boolean, if set the communication with the bank has been
+            completed
         challenge: challenge object
         error: dictionary, populated in the case of error
 
     """
 
-    __dump_attributes__ = ["account_id", "message", "is_waiting_for_pin",
-                           "is_waiting_for_response", "is_erroneous",
-                           "is_ended", "challenge", "error"]
+    __dump_attributes__ = [
+        "account_id", "message", "is_waiting_for_pin",
+        "is_waiting_for_response", "is_erroneous", "is_ended", "challenge",
+        "error"
+    ]
 
     account_id = None
     message = None
@@ -782,8 +853,10 @@ class TaskState(ModelBase):
     error = None
 
     def __unicode__(self, *args, **kwargs):
-        return (u"TaskState: '{self.message}' (is_erroneous: {self.is_erroneous}, "
-                "is_ended: {self.is_ended})".format(self=self))
+        return (
+            u"TaskState: '{self.message}' (is_erroneous: {self.is_erroneous}, "
+            u"is_ended: {self.is_ended})".format(self=self)
+        )
 
 
 class Challenge(ModelBase):
@@ -796,7 +869,10 @@ class Challenge(ModelBase):
         data: challenge data
 
     """
-    __dump_attributes__ = ["id", "title", "label", "format", "data", "type"]
+    __dump_attributes__ = [
+        "id", "title", "label", "format", "data", "type", "location",
+        "created_at"
+    ]
 
     id = None
     title = None
@@ -804,6 +880,8 @@ class Challenge(ModelBase):
     format = None
     data = None
     type = None
+    location = None
+    created_at = None
 
     def __unicode__(self, *args, **kwargs):
         return u"Challenge: %s" % (self.title)
@@ -832,23 +910,29 @@ class Process(ModelBase):
     """Object representing a Business Process.
 
     Attributes:
-        email: The email of the existing user to use as context or the new user to create
-            beforehand. In the latter case it must obey the figo username & password policy.
-        password: The password of the user existing or new user. In the latter case it must obey
-            the figo username & password policy.
-        redirect_uri: The authorization code will be sent to this callback URL. It must match one
-            of the URLs registered during application registration.
-        state: Any kind of string that will be forwarded in the callback response message. It
-            serves two purposes: The value is used to maintain state between this request and the
-            callback, e.g. it might contain a session ID from your application. The value should
-            also contain a random component, which your application checks to mitigate cross-site
-            request forgery.
-        steps: A list of step definitions. Each step definition is a dictionary with type and
-            options keys, where type is the name of step type and options is another dictionary
-            containing all the settings for the respective step.
+        email: The email of the existing user to use as context or the new
+            user to create beforehand. In the latter case it must obey the figo
+            username & password policy.
+        password: The password of the user existing or new user. In the latter
+            case it must obey the figo username & password policy.
+        redirect_uri: The authorization code will be sent to this callback URL.
+            It must match one of the URLs registered during application
+            registration.
+        state: Any kind of string that will be forwarded in the callback
+            response message. It serves two purposes: The value is used to
+            maintain state between this request and the callback, e.g. it might
+            contain a session ID from your application. The value should
+            also contain a random component, which your application checks to
+            mitigate cross-site request forgery.
+        steps: A list of step definitions. Each step definition is a dictionary
+            with type and options keys, where type is the name of step type and
+            options is another dictionary containing all the settings for the
+            respective step.
     """
 
-    __dump_attributes__ = ["email", "password", "redirect_uri", "state", "steps"]
+    __dump_attributes__ = [
+        "email", "password", "redirect_uri", "state", "steps"
+    ]
 
     email = None
     password = None
@@ -887,8 +971,10 @@ class ProcessOptions(ModelBase):
         type:
     """
 
-    __dump_attributes__ = ["account_number", "amount", "bank_code", "currency",
-                           "name", "purpose", "type"]
+    __dump_attributes__ = [
+        "account_number", "amount", "bank_code", "currency", "name", "purpose",
+        "type"
+    ]
 
     account_number = None
     amount = None
@@ -915,7 +1001,8 @@ class ProcessToken(ModelBase):
 
 
 class Security(ModelBase):
-    """Object representing one bank security on a certain bank account of the user.
+    """Object representing one bank security on a certain bank account of the
+    user.
 
     Attributes:
         security_id: internal figo connect security id
@@ -932,7 +1019,8 @@ class Security(ModelBase):
         price_currency: currency of current price
         purchase_price: purchase price
         purchase_price_currency: currency of purchase price
-        visited: boolean that indicates whether the security has been marked as visited by the user
+        visited: boolean that indicates whether the security has been marked
+            as visited by the user
         trade_timestamp: trade timestamp
         creation_timestamp: internal creation timestamp
         modification_timestamp: internal modification timestamp
@@ -967,11 +1055,16 @@ class Security(ModelBase):
             self.trade_timestamp = dateutil.parser.parse(self.trade_timestamp)
 
         if self.creation_timestamp:
-            self.creation_timestamp = dateutil.parser.parse(self.creation_timestamp)
+            self.creation_timestamp = dateutil.parser.parse(
+                self.creation_timestamp
+            )
 
         if self.modification_timestamp:
-            self.modification_timestamp = dateutil.parser.parse(self.modification_timestamp)
+            self.modification_timestamp = dateutil.parser.parse(
+                self.modification_timestamp
+            )
 
     def __unicode__(self):
-        return u"Security: %d %s to %s at %s" % (self.amount, self.currency, self.name,
-                                                 self.trade_timestamp)
+        return u"Security: %d %s to %s at %s" % (
+            self.amount, self.currency, self.name, self.trade_timestamp
+        )

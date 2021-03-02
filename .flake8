@@ -1,0 +1,5 @@
+[flake8]
+ignore = W503, W504, E203
+max-line-length = 79
+max-complexity = 18
+exclude = .git,__pycache__,.tox,.eggs,*.egg,.*env,src

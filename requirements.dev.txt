@@ -5,7 +5,9 @@
 -r requirements-test.txt
 black==19.10b0
 flake8>=3.8.3
+ipdb>=0.12
 ipython>=7.15.0
 isort[requirements]>=5.0.3
+jedi==0.17.2  # this jedi version is required for newest ipython (higher will broke it)
 pip-tools>=5.2.1
 safety

@@ -1,0 +1,11 @@
+#
+# Additional dependencies for development
+#
+-r requirements.txt
+-r requirements-test.txt
+black==19.10b0
+flake8>=3.8.3
+ipython>=7.15.0
+isort[requirements]>=5.0.3
+pip-tools>=5.2.1
+safety

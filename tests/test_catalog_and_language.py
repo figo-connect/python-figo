@@ -11,9 +11,9 @@ from figo.models import BankContact
 from dotenv import load_dotenv
 load_dotenv()
 
-API_ENDPOINT = os.getenv("API_ENDPOINT")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
+CLIENT_ID = os.getenv("FIGO_CLIENT_ID")
+CLIENT_SECRET = os.getenv("FIGO_CLIENT_SECRET")
 
 CLIENT_ERROR = 1000
 connection  = FigoConnection(CLIENT_ID, CLIENT_SECRET, "https://127.0.0.1/", api_endpoint=API_ENDPOINT)
@@ -21,6 +21,7 @@ connection  = FigoConnection(CLIENT_ID, CLIENT_SECRET, "https://127.0.0.1/", api
 @pytest.mark.parametrize('language', ['de'])
 @pytest.mark.parametrize('country', ['DE', 'AT'])
 def test_get_catalog_en_client_auth(language, country):
+    print()
     catalog = connection.get_catalog(None, country)
     for bank in catalog['banks']:
       assert isinstance(bank, BankContact)

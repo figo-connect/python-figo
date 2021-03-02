@@ -14,9 +14,9 @@ load_dotenv()
 
 basicConfig(level='DEBUG')
 
-API_ENDPOINT = os.getenv("API_ENDPOINT")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
+CLIENT_ID = os.getenv("FIGO_CLIENT_ID")
+CLIENT_SECRET = os.getenv("FIGO_CLIENT_SECRET")
 PASSWORD = 'some_words'
 
 

@@ -5,9 +5,9 @@ from figo import FigoConnection
 from figo import FigoSession
 from figo.models import Notification
 
-API_ENDPOINT = os.getenv("API_ENDPOINT")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
+CLIENT_ID = os.getenv("FIGO_CLIENT_ID")
+CLIENT_SECRET = os.getenv("FIGO_CLIENT_SECRET")
 connection  = FigoConnection(CLIENT_ID, CLIENT_SECRET, "https://127.0.0.1/", api_endpoint=API_ENDPOINT)
 
 def pytest_namespace():

@@ -97,13 +97,20 @@ def test_add_sync():
 
 
 def test_get_synchronization_status():
-    time.sleep(10)
-    response = pytest.session.get_synchronization_status(
-        pytest.access_id, pytest.sync_id
-    )
-    pytest.challenge_id = response.challenge.id
-    assert isinstance(response, Sync)
+    status = "QUEUED"
+    count = 0
+    while status in ["QUEUED", "RUNNING"]:
+        time.sleep(1)
+        response = pytest.session.get_synchronization_status(
+            pytest.access_id, pytest.sync_id
+        )
+        status = response.status
+        assert count < 20
+        count += 1
+
     assert response.status == "AWAIT_AUTH"
+    assert isinstance(response, Sync)
+    pytest.challenge_id = response.challenge.id
 
 
 def test_solve_synchronization_challenge():
@@ -115,12 +122,19 @@ def test_solve_synchronization_challenge():
 
 
 def test_get_sync_after_challenge():
-    time.sleep(10)
-    response = pytest.session.get_synchronization_status(
-        pytest.access_id, pytest.sync_id
-    )
+    status = "QUEUED"
+    count = 0
+    while status in ["QUEUED", "RUNNING"]:
+        time.sleep(1)
+        response = pytest.session.get_synchronization_status(
+            pytest.access_id, pytest.sync_id
+        )
+        status = response.status
+        assert count < 20
+        count += 1
+
+    assert response.status == "COMPLETED"
     assert isinstance(response, Sync)
-    assert response.status == "COMPLETED" or response.status == "RUNNING"
 
 
 def test_get_synchronization_challenges():

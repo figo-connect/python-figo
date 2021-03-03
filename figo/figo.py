@@ -1,23 +1,20 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import base64
 import json
 import logging
-import re
-import sys
 import os
+import re
+from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 from dotenv import load_dotenv
-load_dotenv()
-
-from datetime import datetime, timedelta
 from requests import Session
-from six import python_2_unicode_compatible
 
-from figo.models import (
+from .models import (
     Account,
     AccountBalance,
     BankContact,
@@ -29,21 +26,16 @@ from figo.models import (
     Security,
     Service,
     StandingOrder,
+    Sync,
     TaskState,
     TaskToken,
     Transaction,
     User,
     WebhookNotification,
-    Sync,
 )
-from figo.version import __version__
+from .version import __version__
 
-
-if sys.version_info[0] > 2:
-    import urllib.parse as urllib
-else:
-    import urllib
-
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 API_ENDPOINT = os.getenv("FIGO_API_ENDPOINT")
@@ -229,7 +221,6 @@ class FigoObject(object):
             del self.headers['Accept-Language']
 
 
-@python_2_unicode_compatible
 class FigoException(Exception):
     """Base class for all exceptions transported via the figo connect API.
 
@@ -262,7 +253,6 @@ class FigoException(Exception):
                    dictionary['error'].get('code'))
 
 
-@python_2_unicode_compatible
 class FigoPinException(FigoException):
     """
     This exception is thrown if the wrong pin was submitted to a task. It contains information about
@@ -347,7 +337,7 @@ class FigoConnection(FigoObject):
         """
         return (self.api_endpoint +
                 "/auth/code?" +
-                urllib.urlencode(
+                urlencode(
                     {'response_type': 'code',
                      'client_id': self.client_id,
                      'redirect_uri': self.redirect_uri,
@@ -457,7 +447,7 @@ class FigoConnection(FigoObject):
         Args:
             token: access or refresh token to be revoked
         """
-        response = self._request_api("/auth/revoke?" + urllib.urlencode({'token': token}))
+        response = self._request_api("/auth/revoke?" + urlencode({'token': token}))
         if 'error' in response:
             raise FigoException.from_dict(response)
 
@@ -520,7 +510,7 @@ class FigoConnection(FigoObject):
                 dict with lists of supported banks and payment services
         """
         options = filterNone({ "country": country_code, "q": q })
-        catalog = self._query_api("/catalog?" + urllib.urlencode(options))
+        catalog = self._query_api("/catalog?" + urlencode(options))
 
         for k, v in catalog.items():
           if k == 'banks':
@@ -710,7 +700,7 @@ class FigoSession(FigoObject):
         """
         options = filterNone({ "country": country_code })
 
-        catalog = self._request_with_exception("/rest/catalog?" + urllib.urlencode(options))
+        catalog = self._request_with_exception("/rest/catalog?" + urlencode(options))
         for k, v in catalog.items():
             catalog[k] = [Service.from_dict(self, service) for service in v]
 
@@ -804,7 +794,7 @@ class FigoSession(FigoObject):
             LoginSettings: Object that contains information which are needed for
                            logging in to the bank
         """
-        query_params = urllib.urlencode({
+        query_params = urlencode({
             'country': country_code,
             'q': item_id,
         })
@@ -857,9 +847,9 @@ class FigoSession(FigoObject):
 
       account_id = get_account_id(account_or_account_id)
       if account_id:
-        query = "/rest/accounts/{0}/standing_orders?{1}".format(account_id, urllib.urlencode(options))
+        query = "/rest/accounts/{0}/standing_orders?{1}".format(account_id, urlencode(options))
       else:
-        query = "/rest/standing_orders?{0}".format(urllib.urlencode(options))
+        query = "/rest/standing_orders?{0}".format(urlencode(options))
 
       return self._query_api_object(StandingOrder, query, collection_name="standing_orders")
 
@@ -945,9 +935,9 @@ class FigoSession(FigoObject):
 
         account_id = get_account_id(account_or_account_id)
         if account_id:
-          query = "/rest/accounts/{0}/payments?{1}".format(account_id, urllib.urlencode(options))
+          query = "/rest/accounts/{0}/payments?{1}".format(account_id, urlencode(options))
         else:
-          query = "/rest/payments?{0}".format(urllib.urlencode(options))
+          query = "/rest/payments?{0}".format(urlencode(options))
 
         return self._query_api_object(Payment, query, collection_name="payments")
 
@@ -964,7 +954,7 @@ class FigoSession(FigoObject):
         """
         options = { "cents": cents } if cents else {}
 
-        query = "/rest/accounts/{0}/payments/{1}?{2}".format(get_account_id(account_or_account_id), payment_id, urllib.urlencode(options))
+        query = "/rest/accounts/{0}/payments/{1}?{2}".format(get_account_id(account_or_account_id), payment_id, urlencode(options))
         return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
@@ -1021,7 +1011,7 @@ class FigoSession(FigoObject):
           "/rest/accounts/%s/payments/%s/init" % (payment.account_id, payment.payment_id),
           params, "POST")
 
-    def get_payment_status(self, payment_id, init_id):
+    def get_payment_status(self, payment, init_id):
       """Get initiation status for  payment initiated to bank server.
 
       Args:
@@ -1089,7 +1079,7 @@ class FigoSession(FigoObject):
 
       return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), payload, "POST")
 
-    def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):
+    def get_standing_order(self, standing_order_id, account_or_account_id=None, accounts=None, cents=None):
         """Get a single `StandingOrder` object.
 
         Args:
@@ -1104,9 +1094,9 @@ class FigoSession(FigoObject):
 
         account_id = get_account_id(account_or_account_id)
         if account_id:
-          query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(account_id, standing_order_id, urllib.urlencode(options))
+          query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(account_id, standing_order_id, urlencode(options))
         else:
-          query = "/rest/standing_orders/{0}?{1}".format(standing_order_id, urllib.urlencode(options))
+          query = "/rest/standing_orders/{0}?{1}".format(standing_order_id, urlencode(options))
 
         return self._query_api_object(StandingOrder, query)
 
@@ -1237,9 +1227,9 @@ class FigoSession(FigoObject):
 
         account_id = get_account_id(account_or_account_id)
         if account_id is not None:
-            path = "/rest/accounts/{0}/transactions?{1}".format(account_id,  urllib.urlencode(options))
+            path = "/rest/accounts/{0}/transactions?{1}".format(account_id,  urlencode(options))
         else:
-            path = "/rest/transactions?{0}".format( urllib.urlencode(options))
+            path = "/rest/transactions?{0}".format( urlencode(options))
 
         return self._query_api_object(Transaction, path, collection_name="transactions")
 
@@ -1258,9 +1248,9 @@ class FigoSession(FigoObject):
 
         account_id = get_account_id(account_or_account_id)
         if account_id is not None:
-            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(account_or_account_id, transaction_id, urllib.urlencode(options))
+            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(account_or_account_id, transaction_id, urlencode(options))
         else:
-            path = "/rest/transactions/{0}?{1}".format(transaction_id, urllib.urlencode(options))
+            path = "/rest/transactions/{0}?{1}".format(transaction_id, urlencode(options))
 
         return self._query_api_object(Transaction, path)
 
@@ -1291,7 +1281,7 @@ class FigoSession(FigoObject):
         if since is not None:
             params['since'] = since
 
-        params = urllib.urlencode(params)
+        params = urlencode(params)
         account_id = get_account_id(account_or_account_id)
         if account_id:
             query = "/rest/accounts/{0}/securities?{1}".format(account_id, params)

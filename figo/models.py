@@ -414,7 +414,7 @@ class StandingOrder(ModelBase):
             )
 
     def __str__(self):
-        return f"Standing Order: {self.id}"
+        return f"Standing Order: {self.standing_order_id}"
 
 
 class Transaction(ModelBase):

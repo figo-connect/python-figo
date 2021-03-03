@@ -92,7 +92,7 @@ ERROR_MESSAGES = {
 }
 
 
-def getAccountId(account_or_account_id):
+def get_account_id(account_or_account_id):
     if account_or_account_id is None:
         return None
     elif isinstance(account_or_account_id, Account):
@@ -570,7 +570,7 @@ class FigoSession(FigoObject):
         Account: An account accessible from Token
       """
       options = { "cents": cents } if cents else {}
-      return self._query_api_object(Account, path="/rest/accounts/{0}".format(getAccountId(account_or_account_id)), method='GET')
+      return self._query_api_object(Account, path="/rest/accounts/{0}".format(get_account_id(account_or_account_id)), method='GET')
 
     def get_accounts(self):
       """
@@ -601,7 +601,7 @@ class FigoSession(FigoObject):
         Args:
             account_or_account_id: account to be removed or its ID
         """
-        path = "/rest/accounts/{0}".format(getAccountId(account_or_account_id))
+        path = "/rest/accounts/{0}".format(get_account_id(account_or_account_id))
         self._request_with_exception(path, method="DELETE")
 
     def add_sync(self, access_id, disable_notifications, redirect_uri, state, credentials, save_secrets):
@@ -855,7 +855,7 @@ class FigoSession(FigoObject):
 
       options = filterNone({ "accounts": accounts, "count": count, "offset": offset, "cents": cents })
 
-      account_id = getAccountId(account_or_account_id)
+      account_id = get_account_id(account_or_account_id)
       if account_id:
         query = "/rest/accounts/{0}/standing_orders?{1}".format(account_id, urllib.urlencode(options))
       else:
@@ -943,7 +943,7 @@ class FigoSession(FigoObject):
 
         options = filterNone({ "accounts": accounts, "count": count, "offset": offset, "cents": cents })
 
-        account_id = getAccountId(account_or_account_id)
+        account_id = get_account_id(account_or_account_id)
         if account_id:
           query = "/rest/accounts/{0}/payments?{1}".format(account_id, urllib.urlencode(options))
         else:
@@ -964,7 +964,7 @@ class FigoSession(FigoObject):
         """
         options = { "cents": cents } if cents else {}
 
-        query = "/rest/accounts/{0}/payments/{1}?{2}".format(getAccountId(account_or_account_id), payment_id, urllib.urlencode(options))
+        query = "/rest/accounts/{0}/payments/{1}?{2}".format(get_account_id(account_or_account_id), payment_id, urllib.urlencode(options))
         return self._query_api_object(Payment, query)
 
     def add_payment(self, payment):
@@ -1045,7 +1045,7 @@ class FigoSession(FigoObject):
       Returns:
           List of challenges for the required payment
       """
-      account_id = getAccountId(account_or_account_id)
+      account_id = get_account_id(account_or_account_id)
 
       return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges".format(account_id, payment_id, init_id), "GET")
 
@@ -1061,7 +1061,7 @@ class FigoSession(FigoObject):
       Returns:
           Challenge: The required challenge for the payment
       """
-      account_id = getAccountId(account_or_account_id)
+      account_id = get_account_id(account_or_account_id)
 
       return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}".format(account_id, payment_id, init_id, challenge_id), "GET")
 
@@ -1085,11 +1085,10 @@ class FigoSession(FigoObject):
       Returns:
           Challenge: The required challenge for the payment
       """
-      account_id = getAccountId(account_or_account_id)
+      account_id = get_account_id(account_or_account_id)
 
       return self._query_api_object(Challenge, "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}/response".format(account_id, payment_id, init_id, challenge_id), payload, "POST")
 
-    @property
     def get_standing_order(self, standing_order_id, account_or_account_id=None, cents=None):
         """Get a single `StandingOrder` object.
 
@@ -1103,21 +1102,22 @@ class FigoSession(FigoObject):
         """
         options = filterNone({ "accounts": accounts, "cents": cents })
 
-        account_id = getAccountId(account_or_account_id)
+        account_id = get_account_id(account_or_account_id)
         if account_id:
           query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(account_id, standing_order_id, urllib.urlencode(options))
         else:
-          query = "/rest/standing_orders/{0}?{1}".format(standing_order_i, urllib.urlencode(options))
+          query = "/rest/standing_orders/{0}?{1}".format(standing_order_id, urllib.urlencode(options))
 
         return self._query_api_object(StandingOrder, query)
 
-    def remove_standing_order(self, StandingOrder, account_or_account_id=None):
+    def remove_standing_order(self, standing_order_id, account_or_account_id=None):
         """Remove a standing order.
 
         Args:
             StandingOrder: standing order to be removed, Required
             account_or_account_id: account to be queried or its ID, Optional
         """
+        account_id = get_account_id(account_or_account_id)
         if account_id:
           path = "/rest/accounts/{0}/standing_orders/{1}".format(account_id, standing_order_id)
         else:
@@ -1235,7 +1235,7 @@ class FigoSession(FigoObject):
         allowed_keys = ["accounts", "filter", "sync_id", "count", "offset", "sort", "since", "until", "since_type", "types", "cents", "include_pending", "include_statistics"]
         options = filterNone(filterKeys(options, allowed_keys))
 
-        account_id = getAccountId(account_or_account_id)
+        account_id = get_account_id(account_or_account_id)
         if account_id is not None:
             path = "/rest/accounts/{0}/transactions?{1}".format(account_id,  urllib.urlencode(options))
         else:
@@ -1256,7 +1256,7 @@ class FigoSession(FigoObject):
         """
         options = { "cents": cents } if cents else {}
 
-        account_id = getAccountId(account_or_account_id)
+        account_id = get_account_id(account_or_account_id)
         if account_id is not None:
             path = "/rest/accounts/{0}/transactions/{1}?{2}".format(account_or_account_id, transaction_id, urllib.urlencode(options))
         else:
@@ -1292,7 +1292,7 @@ class FigoSession(FigoObject):
             params['since'] = since
 
         params = urllib.urlencode(params)
-        account_id = getAccountId(account_or_account_id)
+        account_id = get_account_id(account_or_account_id)
         if account_id:
             query = "/rest/accounts/{0}/securities?{1}".format(account_id, params)
         else:
@@ -1311,7 +1311,7 @@ class FigoSession(FigoObject):
             a Security object representing the transaction to be retrieved
         """
 
-        query = "/rest/accounts/{0}/securities/{1}".format(getAccountId(account_or_account_id), security_id)
+        query = "/rest/accounts/{0}/securities/{1}".format(get_account_id(account_or_account_id), security_id)
         return self._query_api_object(Security, query)
 
     def modify_security(self, account_or_account_id, security_or_security_id, visited=None):

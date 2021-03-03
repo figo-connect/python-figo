@@ -193,7 +193,7 @@ def test_remove_pin():
 
 def test_delete_account():
     response = pytest.session.remove_account(pytest.account_id)
-    assert response is None
+    assert response == {}
 
 
 def test_remove_user():

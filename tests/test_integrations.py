@@ -168,6 +168,7 @@ def test_get_account_balance():
     assert response.balance in [-4040.0, 0.0]
 
 
+# TODO: check response API
 def test_get_securities():
     response = pytest.session.get_securities()
     assert response is not None
@@ -184,7 +185,7 @@ def test_get_standing_orders():
     assert response == []
 
 
-# todo: check response API
+# TODO: check response API
 def test_remove_pin():
     response = pytest.session.remove_pin(pytest.access_id)
     assert response is not None

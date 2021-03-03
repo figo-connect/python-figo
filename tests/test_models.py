@@ -34,6 +34,20 @@ ICONS = {
 DEMOBANK_ICON = "https://api.figo.me/assets/images/accounts/demokonto.png"
 
 
+def test_create_user_from_dict(figo_session):
+    data = {
+        "email": "demo@figo.me",
+        "created_at": "2012-04-19T17:25:54.000Z",
+        "language": "en",
+        "full_name": "John Doe",
+        "id": "U12345",
+    }
+    user = User.from_dict(figo_session, data)
+    assert isinstance(user, User)
+    print(user)
+    assert user.dump() == {'full_name': 'John Doe', 'language': 'en'}
+
+
 def test_create_account_from_dict(figo_session):
     data = {
         "account_id": "A1.1",
@@ -68,6 +82,7 @@ def test_create_account_from_dict(figo_session):
     }
     account = Account.from_dict(figo_session, data)
     assert isinstance(account, Account)
+    print(account)
 
 
 def test_create_bank_contact_from_dict(figo_session):
@@ -78,6 +93,7 @@ def test_create_bank_contact_from_dict(figo_session):
     }
     bank_contact = BankContact.from_dict(figo_session, data)
     assert isinstance(bank_contact, BankContact)
+    print(bank_contact)
 
 
 def test_create_account_balance_from_dict(figo_session):
@@ -89,6 +105,7 @@ def test_create_account_balance_from_dict(figo_session):
     }
     account_balance = AccountBalance.from_dict(figo_session, data)
     assert isinstance(account_balance, AccountBalance)
+    print(account_balance)
 
 
 def test_create_payment_from_dict(figo_session):
@@ -112,6 +129,7 @@ def test_create_payment_from_dict(figo_session):
     }
     payment = Payment.from_dict(figo_session, data)
     assert isinstance(payment, Payment)
+    print(payment)
 
 
 def test_create_transaction_from_dict(figo_session):
@@ -136,6 +154,7 @@ def test_create_transaction_from_dict(figo_session):
     }
     transaction = Transaction.from_dict(figo_session, data)
     assert isinstance(transaction, Transaction)
+    print(transaction)
 
 
 def test_create_standing_order_from_dict(figo_session):
@@ -157,6 +176,7 @@ def test_create_standing_order_from_dict(figo_session):
     }
     standing_order = StandingOrder.from_dict(figo_session, data)
     assert isinstance(standing_order, StandingOrder)
+    print(standing_order)
 
 
 def test_create_transaction_with_categories(figo_session):
@@ -188,6 +208,7 @@ def test_create_transaction_with_categories(figo_session):
     for category in transaction.categories:
         assert isinstance(category, Category)
         assert hasattr(category, "id")
+        print(category)
 
 
 def test_create_notification_from_dict(figo_session):
@@ -199,6 +220,7 @@ def test_create_notification_from_dict(figo_session):
     }
     notification = Notification.from_dict(figo_session, data)
     assert isinstance(notification, Notification)
+    print(notification)
 
 
 def test_create_sync_status_from_dict(figo_session):
@@ -213,29 +235,7 @@ def test_create_sync_status_from_dict(figo_session):
     }
     sync_status = SynchronizationStatus.from_dict(figo_session, data)
     assert isinstance(sync_status, SynchronizationStatus)
-
-
-def test_create_user_from_dict(figo_session):
-    data = {
-        "address": {
-            "city": "Berlin",
-            "company": "figo",
-            "postal_code": "10969",
-            "street": "Ritterstr. 2-3",
-        },
-        "email": "demo@figo.me",
-        "join_date": "2012-04-19T17:25:54.000Z",
-        "language": "en",
-        "name": "John Doe",
-        "premium": True,
-        "premium_expires_on": "2014-04-19T17:25:54.000Z",
-        "premium_subscription": "paymill",
-        "send_newsletter": True,
-        "user_id": "U12345",
-        "verified_email": True,
-    }
-    user = User.from_dict(figo_session, data)
-    assert isinstance(user, User)
+    print(sync_status)
 
 
 def test_create_service_from_dict(figo_session):
@@ -248,6 +248,7 @@ def test_create_service_from_dict(figo_session):
     }
     service = Service.from_dict(figo_session, data)
     assert isinstance(service, Service)
+    print(service)
 
 
 def test_create_login_settings_from_dict(figo_session):
@@ -265,12 +266,14 @@ def test_create_login_settings_from_dict(figo_session):
     }
     login_settings = LoginSettings.from_dict(figo_session, data)
     assert isinstance(login_settings, LoginSettings)
+    print(login_settings)
 
 
 def test_create_credential_from_dict(figo_session):
     data = {"label": "Benutzername"}
     credential = Credential.from_dict(figo_session, data)
     assert isinstance(credential, Credential)
+    print(credential)
 
 
 def test_create_task_token_from_dict(figo_session):
@@ -282,6 +285,7 @@ def test_create_task_token_from_dict(figo_session):
     }
     task_token = TaskToken.from_dict(figo_session, data)
     assert isinstance(task_token, TaskToken)
+    print(task_token)
 
 
 def test_create_task_state_from_dict(figo_session):
@@ -295,6 +299,7 @@ def test_create_task_state_from_dict(figo_session):
     }
     task_state = TaskState.from_dict(figo_session, data)
     assert isinstance(task_state, TaskState)
+    print(task_state)
 
 
 def test_create_challenge_from_dict(figo_session):
@@ -306,6 +311,7 @@ def test_create_challenge_from_dict(figo_session):
     }
     challenge = Challenge.from_dict(figo_session, data)
     assert isinstance(challenge, Challenge)
+    print(challenge)
 
 
 def test_create_payment_proposal_from_dict(figo_session):
@@ -316,6 +322,7 @@ def test_create_payment_proposal_from_dict(figo_session):
     }
     payment_proposal = PaymentProposal.from_dict(figo_session, data)
     assert isinstance(payment_proposal, PaymentProposal)
+    print(payment_proposal)
 
 
 def test_create_process_from_dict(figo_session):
@@ -341,6 +348,7 @@ def test_create_process_from_dict(figo_session):
     }
     process = Process.from_dict(figo_session, data)
     assert isinstance(process, Process)
+    print(process)
 
 
 def test_create_process_step_from_dict(figo_session):
@@ -358,6 +366,7 @@ def test_create_process_step_from_dict(figo_session):
     }
     process_step = ProcessStep.from_dict(figo_session, data)
     assert isinstance(process_step, ProcessStep)
+    print(process_step)
 
 
 def test_create_process_options_from_dict(figo_session):
@@ -372,6 +381,7 @@ def test_create_process_options_from_dict(figo_session):
     }
     process_options = ProcessOptions.from_dict(figo_session, data)
     assert isinstance(process_options, ProcessOptions)
+    print(process_options)
 
 
 def test_create_process_token_from_dict(figo_session):
@@ -383,6 +393,7 @@ def test_create_process_token_from_dict(figo_session):
     }
     task_token = TaskToken.from_dict(figo_session, data)
     assert isinstance(task_token, TaskToken)
+    print(task_token)
 
 
 def test_create_security_from_dict(figo_session):
@@ -402,6 +413,7 @@ def test_create_security_from_dict(figo_session):
     }
     security = Security.from_dict(figo_session, data)
     assert isinstance(security, Security)
+    print(security)
 
 
 OLD_ERROR_FORMAT = {
@@ -430,3 +442,4 @@ NEW_ERROR_FORMAT = {
 def test_create_figo_exception_from_dict(payload):
     exc = FigoException.from_dict(payload)
     assert isinstance(exc, FigoException)
+    print(exc)

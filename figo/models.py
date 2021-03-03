@@ -1,5 +1,3 @@
-import sys
-
 import dateutil.parser
 
 
@@ -7,12 +5,6 @@ class ModelBase(object):
     """Super class for all models. Provides basic serialization."""
 
     __dump_attributes__ = []
-
-    # Borrowed from Armin Ronacher
-    if sys.version_info > (3, 0):
-        __str__ = lambda x: x.__unicode__()  # noqa
-    else:
-        __str__ = lambda x: unicode(x).encode('utf-8')  # noqa
 
     @classmethod
     def from_dict(cls, session, data_dict):
@@ -34,6 +26,37 @@ class ModelBase(object):
             if value is not None:
                 result[attribute] = value
         return result
+
+
+class User(ModelBase):
+    """Object representing an user.
+    https://docs.finx.finleap.cloud/stable/#operation/getUser
+
+    Attributes:
+        id: internal figo user id
+        full_name: full name
+        email: email address
+        language: two letter code for preferred language
+        created_at: created datetime
+    """
+
+    # TODO: "email" and "password" can be also modify - should we add them here
+    __dump_attributes__ = ["full_name", "language"]
+
+    id = None
+    full_name = None
+    email = None
+    language = None
+    created_at = None
+
+    def __init__(self, session, **kwargs):
+        super().__init__(session, **kwargs)
+
+        if self.created_at:
+            self.created_at = dateutil.parser.parse(self.created_at)
+
+    def __str__(self):
+        return f"User: {self.full_name} ({self.id}, {self.email})"
 
 
 class Account(ModelBase):
@@ -62,7 +85,7 @@ class Account(ModelBase):
         status: synchronization status object
     """
 
-    __dump_attributes__ = ['name', 'owner', 'auto_sync']
+    __dump_attributes__ = ["name", "owner", "auto_sync"]
 
     account_id = None
     balance = None
@@ -185,9 +208,9 @@ class Account(ModelBase):
         """
         return self.session.get_security(self.account_id, security_id)
 
-    def __unicode__(self):
-        return u"Account: %s (%s at %s)" % (
-            self.name, self.account_number, self.bank_name
+    def __str__(self):
+        return (
+            f"Account: {self.name} ({self.account_number} at {self.bank_name})"
         )
 
     def __init__(self, session, **kwargs):
@@ -197,9 +220,7 @@ class Account(ModelBase):
                 self.session, self.status
             )
         if self.balance:
-            self.balance = AccountBalance.from_dict(
-                self.session, self.balance
-            )
+            self.balance = AccountBalance.from_dict(self.session, self.balance)
 
 
 class BankContact(ModelBase):
@@ -217,8 +238,8 @@ class BankContact(ModelBase):
     sepa_creditor_id = None
     save_pin = None
 
-    def __unicode__(self):
-        return u"BankContact: %s " % self.bank_id
+    def __str__(self):
+        return f"BankContact: {self.bank_id}"
 
 
 class AccountBalance(ModelBase):
@@ -241,8 +262,8 @@ class AccountBalance(ModelBase):
     monthly_spending_limit = None
     status = None
 
-    def __unicode__(self):
-        return u"Balance: %d at %s" % (self.balance, str(self.balance_date))
+    def __str__(self):
+        return f"Balance: {self.balance} at {self.balance_date}"
 
     def __init__(self, session, **kwargs):
         super(AccountBalance, self).__init__(session, **kwargs)
@@ -285,8 +306,13 @@ class Payment(ModelBase):
     """
 
     __dump_attributes__ = [
-        "type", "name", "account_number", "bank_code", "amount", "currency",
-        "purpose"
+        "type",
+        "name",
+        "account_number",
+        "bank_code",
+        "amount",
+        "currency",
+        "purpose",
     ]
 
     payment_id = None
@@ -324,9 +350,9 @@ class Payment(ModelBase):
                 self.modification_timestamp
             )
 
-    def __unicode__(self):
-        return u"Payment: %s (%s at %s)" % (
-            self.name, self.account_number, self.bank_name
+    def __str__(self):
+        return (
+            f"Payment: {self.name} ({self.account_number} at {self.bank_name})"
         )
 
 
@@ -387,8 +413,8 @@ class StandingOrder(ModelBase):
                 self.last_execution_date
             )
 
-    def __unicode__(self):
-        return u"Standing Order: %s " % (self.id)
+    def __str__(self):
+        return f"Standing Order: {self.id}"
 
 
 class Transaction(ModelBase):
@@ -519,9 +545,10 @@ class Transaction(ModelBase):
                 Category.from_dict(session, c) for c in self.categories
             ]
 
-    def __unicode__(self):
-        return u"Transaction: %d %s to %s at %s" % (
-            self.amount, self.currency, self.name, str(self.value_date)
+    def __str__(self):
+        return (
+            f"Transaction: {self.amount} {self.currency} to {self.name} at "
+            f"{self.value_date}"
         )
 
 
@@ -541,8 +568,8 @@ class Category(ModelBase):
     parent_id = None
     name = None
 
-    def __unicode__(self):
-        return self.name
+    def __str__(self):
+        return f"Category: {self.name}"
 
 
 class Notification(ModelBase):
@@ -566,10 +593,8 @@ class Notification(ModelBase):
     notify_uri = None
     state = None
 
-    def __unicode__(self):
-        return u"Notification: %s triggering %s" % (
-            self.observe_key, self.notify_uri
-        )
+    def __str__(self):
+        return f"Notification: {self.observe_key} triggering {self.notify_uri}"
 
 
 class SynchronizationStatus(ModelBase):
@@ -590,8 +615,8 @@ class SynchronizationStatus(ModelBase):
     sync_timestamp = None
     success_timestamp = None
 
-    def __unicode__(self):
-        return u"Synchronization Status: %s (%s)" % (self.code, self.message)
+    def __str__(self):
+        return f"Synchronization Status: {self.code} ({self.message})"
 
 
 class Sync(ModelBase):
@@ -608,14 +633,15 @@ class Sync(ModelBase):
         started_at: Time at which the sync started
         ended_at: Time at which the sync ended
     """
+
     __dump_attributes__ = [
-        'id',
-        'status',
-        'challenge',
-        'error',
-        'created_at',
-        'started_at',
-        'ended_at',
+        "id",
+        "status",
+        "challenge",
+        "error",
+        "created_at",
+        "started_at",
+        "ended_at",
     ]
 
     id = None
@@ -640,60 +666,15 @@ class Sync(ModelBase):
         if self.challenge:
             self.challenge = Challenge.from_dict(self.session, self.challenge)
 
-    def __unicode__(self):
-        return u"Sync: %s" % (self.id)
+    def __str__(self):
+        return f"Sync: {self.id}"
 
     def dump(self):
         dumped_value = super(Sync, self).dump()
         if self.challenge:
-            dumped_value.update({
-                'challenge': self.challenge.dump()
-            })
+            dumped_value.update({"challenge": self.challenge.dump()})
 
         return dumped_value
-
-
-class User(ModelBase):
-    """Object representing an user.
-
-    Attributes:
-        user_id: internal figo user id
-        name: full name
-        email: email address
-        address: postal address
-        verified_email: boolean, indicates whether the email address has been
-            verified
-        send_newsletter: boolean, incicates whether the user has signed up for
-            the newsletter
-        language: two letter code for preferred language
-        premium: --
-        premium_expires_on: --
-        join_date: --
-
-    """
-
-    __dump_attributes__ = ["name", "address", "send_newsletter", "language"]
-
-    user_id = None
-    name = None
-    email = None
-    address = None
-    verified_email = None
-    send_newsletter = None
-    language = None
-    premium = None
-    premium_expires_on = None
-    premium_subscription = None
-    join_date = None
-
-    def __init__(self, session, **kwargs):
-        super(User, self).__init__(session, **kwargs)
-
-        if self.join_date:
-            self.join_date = dateutil.parser.parse(self.join_date)
-
-    def __unicode__(self):
-        return u"User: %s (%s, %s)" % (self.name, self.user_id, self.email)
 
 
 class WebhookNotification(ModelBase):
@@ -714,8 +695,8 @@ class WebhookNotification(ModelBase):
     state = None
     data = None
 
-    def __unicode__(self):
-        return u"WebhookNotification: %s" % (self.notification_id,)
+    def __str__(self):
+        return f"WebhookNotification: {self.notification_id}"
 
 
 class Service(ModelBase):
@@ -731,7 +712,11 @@ class Service(ModelBase):
     """
 
     __dump_attributes__ = [
-        "name", "bank_code", "icon", "additional_icons", "language"
+        "name",
+        "bank_code",
+        "icon",
+        "additional_icons",
+        "language",
     ]
 
     name = None
@@ -744,11 +729,13 @@ class Service(ModelBase):
     def __init__(self, session, **kwargs):
         super(Service, self).__init__(session, **kwargs)
         if self.language:
-            self.available_languages = [l for l in self.language['available']]
-            self.language = self.language['current']
+            self.available_languages = [
+                lang for lang in self.language["available"]
+            ]
+            self.language = self.language["current"]
 
-    def __unicode__(self, *args, **kwargs):
-        return u"Service: %s" % (self.bank_code)
+    def __str__(self, *args, **kwargs):
+        return f"Service: {self.bank_code}"
 
 
 class LoginSettings(ModelBase):
@@ -765,8 +752,15 @@ class LoginSettings(ModelBase):
     """
 
     __dump_attributes__ = [
-        'id', 'name', 'icon', 'supported', 'country', 'language', 'bic',
-        'access_methods', 'bank_code',
+        "id",
+        "name",
+        "icon",
+        "supported",
+        "country",
+        "language",
+        "bic",
+        "access_methods",
+        "bank_code",
     ]
 
     id = None
@@ -779,8 +773,8 @@ class LoginSettings(ModelBase):
     access_methods = None
     bank_code = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"LoginSettings: %s" % (self.name,)
+    def __str__(self, *args, **kwargs):
+        return f"LoginSettings: {self.name}"
 
 
 class Credential(ModelBase):
@@ -800,8 +794,8 @@ class Credential(ModelBase):
     masked = None
     optional = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"Credential: %s" % (self.label,)
+    def __str__(self, *args, **kwargs):
+        return f"Credential: {self.label}"
 
 
 class TaskToken(ModelBase):
@@ -815,8 +809,8 @@ class TaskToken(ModelBase):
 
     task_token = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"TaskToken: %s" % (self.task_token,)
+    def __str__(self, *args, **kwargs):
+        return f"TaskToken: {self.task_token}"
 
 
 class TaskState(ModelBase):
@@ -838,9 +832,14 @@ class TaskState(ModelBase):
     """
 
     __dump_attributes__ = [
-        "account_id", "message", "is_waiting_for_pin",
-        "is_waiting_for_response", "is_erroneous", "is_ended", "challenge",
-        "error"
+        "account_id",
+        "message",
+        "is_waiting_for_pin",
+        "is_waiting_for_response",
+        "is_erroneous",
+        "is_ended",
+        "challenge",
+        "error",
     ]
 
     account_id = None
@@ -852,10 +851,10 @@ class TaskState(ModelBase):
     challenge = None
     error = None
 
-    def __unicode__(self, *args, **kwargs):
+    def __str__(self, *args, **kwargs):
         return (
-            u"TaskState: '{self.message}' (is_erroneous: {self.is_erroneous}, "
-            u"is_ended: {self.is_ended})".format(self=self)
+            f"TaskState: {self.message} (is_erroneous: {self.is_erroneous}, "
+            f"is_ended: {self.is_ended})"
         )
 
 
@@ -869,9 +868,16 @@ class Challenge(ModelBase):
         data: challenge data
 
     """
+
     __dump_attributes__ = [
-        "id", "title", "label", "format", "data", "type", "location",
-        "created_at"
+        "id",
+        "title",
+        "label",
+        "format",
+        "data",
+        "type",
+        "location",
+        "created_at",
     ]
 
     id = None
@@ -883,8 +889,8 @@ class Challenge(ModelBase):
     location = None
     created_at = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"Challenge: %s" % (self.title)
+    def __str__(self, *args, **kwargs):
+        return f"Challenge: {self.title}"
 
 
 class PaymentProposal(ModelBase):
@@ -902,8 +908,8 @@ class PaymentProposal(ModelBase):
     bank_code = None
     name = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"Payment Proposal: %s" % (self.name)
+    def __str__(self, *args, **kwargs):
+        return f"Payment Proposal: {self.name}"
 
 
 class Process(ModelBase):
@@ -931,7 +937,11 @@ class Process(ModelBase):
     """
 
     __dump_attributes__ = [
-        "email", "password", "redirect_uri", "state", "steps"
+        "email",
+        "password",
+        "redirect_uri",
+        "state",
+        "steps",
     ]
 
     email = None
@@ -954,8 +964,8 @@ class ProcessStep(ModelBase):
     type = None
     options = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"ProcessStep Type: %s" % (self.type)
+    def __str__(self, *args, **kwargs):
+        return f"ProcessStep Type: {self.type}"
 
 
 class ProcessOptions(ModelBase):
@@ -972,8 +982,13 @@ class ProcessOptions(ModelBase):
     """
 
     __dump_attributes__ = [
-        "account_number", "amount", "bank_code", "currency", "name", "purpose",
-        "type"
+        "account_number",
+        "amount",
+        "bank_code",
+        "currency",
+        "name",
+        "purpose",
+        "type",
     ]
 
     account_number = None
@@ -996,8 +1011,8 @@ class ProcessToken(ModelBase):
 
     process_token = None
 
-    def __unicode__(self, *args, **kwargs):
-        return u"Process Token: %s" % (self.process_token)
+    def __str__(self, *args, **kwargs):
+        return f"Process Token: {self.process_token}"
 
 
 class Security(ModelBase):
@@ -1064,7 +1079,8 @@ class Security(ModelBase):
                 self.modification_timestamp
             )
 
-    def __unicode__(self):
-        return u"Security: %d %s to %s at %s" % (
-            self.amount, self.currency, self.name, self.trade_timestamp
+    def __str__(self):
+        return (
+            f"Security: {self.amount} {self.currency} to {self.name} at "
+            f"{self.trade_timestamp}"
         )

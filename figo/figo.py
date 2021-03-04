@@ -454,6 +454,9 @@ class FigoSession(FigoObject):
         )
         self.sync_poll_retry = sync_poll_retry
 
+    # User management
+    # (https://docs.finx.finleap.cloud/stable/#tag/User-Management):
+
     @property
     def user(self):
         """Get the current figo Account.
@@ -464,6 +467,9 @@ class FigoSession(FigoObject):
         return self._query_api_object(User, "/rest/user")
 
     # TODO: Missing test cases
+    # TODO: Is different User available to create or modify different user?
+    #  If not we shouldn't use here parameter user, but property directly in
+    #  method?
     def modify_user(self, user):
         """Modify figo Account.
 
@@ -479,35 +485,26 @@ class FigoSession(FigoObject):
         """Delete figo Account."""
         return self._request_with_exception("/rest/user", method="DELETE")
 
-    def get_supported_payment_services(self, country_code):
-        """Return a list of supported credit cards and other payment services.
+    # Catalog user auth (https://docs.finx.finleap.cloud/stable/#tag/Catalog):
 
-        Args:
-            country_code (str): country code of the requested payment services
-
-        Returns:
-            [LoginSettings]: list of supported credit cards and other payment
-                services
-        """
-        services = self._request_with_exception(
-            "/rest/catalog/services/%s" % country_code
-        )["services"]
-        return self._process_catalog_list(services)
-
-    def get_supported_banks(self, country_code):
-        """Return a list of supported banks.
-
-        Args:
-            country_code (str): country code of the requested banks
+    def get_catalog(self, country_code=None):
+        """Return a dict with lists of supported banks and payment services.
 
         Returns:
-            [LoginSettings]: list of supported banks
+            dict {"banks": [LoginSettings], "services": [LoginSettings]}:
+                dict with lists of supported banks and payment services
         """
-        banks = self._request_with_exception(
-            "/rest/catalog/banks/%s" % country_code
-        )["banks"]
-        return self._process_catalog_list(banks)
+        options = urlencode(filter_none({"country": country_code}))
 
+        catalog = self._request_with_exception(f"/rest/catalog?{options}")
+
+        for k, v in catalog.items():
+            catalog[k] = self._process_catalog_list(v)
+        return catalog
+
+    # TODO: Missing unit test but used in ownly-backend
+    # TODO: Maybe we should use directly FigoBank instead of this method.
+    # TODO: Looks like this is more FigoConnection method
     def get_login_settings(self, country_code, item_id):
         """Return the login settings of a bank.
 
@@ -534,23 +531,6 @@ class FigoSession(FigoObject):
 
         raise FigoException(
             error="login_settings_not_found", error_description=err_msg
-        )
-
-    def get_service_login_settings(self, country_code, item_id):
-        """Return the login settings of a payment service.
-
-        Args:
-            country_code (str): country code of the requested payment service
-            item_id (str): bank code or fake bank code of the requested
-                payment service
-
-        Returns:
-            LoginSettings: Object that contains information which are needed
-                for logging in to the payment service.
-        """
-        return self._query_api_object(
-            LoginSettings,
-            "/rest/catalog/services/%s/%s" % (country_code, item_id),
         )
 
     @property
@@ -772,23 +752,6 @@ class FigoSession(FigoObject):
         return self._query_api_object(
             AccountBalance, query, account_balance.dump(), "PUT"
         )
-
-    def get_catalog(self, country_code=None):
-        """Return a dict with lists of supported banks and payment services.
-
-        Returns:
-            dict {"banks": [LoginSettings], "services": [LoginSettings]}:
-                dict with lists of supported banks and payment services
-        """
-        options = filter_none({"country": country_code})
-
-        catalog = self._request_with_exception(
-            "/rest/catalog?" + urlencode(options)
-        )
-        for k, v in catalog.items():
-            catalog[k] = self._process_catalog_list(v)
-
-        return catalog
 
     def add_access(self, access_method_id, credentials, consent):
         """Add provider access

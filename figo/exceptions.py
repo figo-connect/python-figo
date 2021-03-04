@@ -73,37 +73,3 @@ class FigoException(Exception):
             dictionary["error"].get("description"),
             dictionary["error"].get("code"),
         )
-
-
-class FigoPinException(FigoException):
-    """This exception is thrown if the wrong pin was submitted to a task. It
-    contains information about current state of the task.
-    """
-
-    def __init__(
-        self,
-        country,
-        credentials,
-        bank_code,
-        iban,
-        save_pin,
-        error="Wrong PIN",
-        error_description=(
-            "You've entered a wrong PIN, please provide a new one."
-        ),
-        code=None,
-    ):
-        """Initialise an Exception for a wrong PIN which contains information
-        about the task.
-        """
-        super().__init__(error, error_description, code)
-
-        self.country = country
-        self.credentials = credentials
-        self.bank_code = bank_code
-        self.iban = iban
-        self.save_pin = save_pin
-
-    def __str__(self):
-        """String representation of the FigoPinException."""
-        return f"FigoPinException: {self.error_description}({self.error})"

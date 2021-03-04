@@ -5,7 +5,6 @@ from figo.exceptions import FigoException
 from figo.models import (  # noqa: F401
     Account,
     AccountBalance,
-    BankContact,
     Category,
     Challenge,
     Credential,
@@ -17,7 +16,6 @@ from figo.models import (  # noqa: F401
     ProcessOptions,
     ProcessStep,
     Security,
-    Service,
     StandingOrder,
     Sync,
     SynchronizationStatus,
@@ -86,17 +84,6 @@ def test_create_account_from_dict(figo_session):
     account = Account.from_dict(figo_session, data)
     assert isinstance(account, Account)
     print(account)
-
-
-def test_create_bank_contact_from_dict(figo_session):
-    data = {
-        "bank_id": "B1.1",
-        "sepa_creditor_id": "DE67900900424711951500",
-        "save_pin": True,
-    }
-    bank_contact = BankContact.from_dict(figo_session, data)
-    assert isinstance(bank_contact, BankContact)
-    print(bank_contact)
 
 
 def test_create_account_balance_from_dict(figo_session):
@@ -239,19 +226,6 @@ def test_create_sync_status_from_dict(figo_session):
     sync_status = SynchronizationStatus.from_dict(figo_session, data)
     assert isinstance(sync_status, SynchronizationStatus)
     print(sync_status)
-
-
-def test_create_service_from_dict(figo_session):
-    data = {
-        "additional_icons": ICONS,
-        "bank_code": "90090042",
-        "icon": DEMOBANK_ICON,
-        "name": "Demokonto",
-        "language": {"available": ["de", "en"], "current": "de"},
-    }
-    service = Service.from_dict(figo_session, data)
-    assert isinstance(service, Service)
-    print(service)
 
 
 def test_create_login_settings_from_dict(figo_session):

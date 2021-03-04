@@ -10,16 +10,10 @@ from dotenv import load_dotenv
 from requests import Session
 
 # TODO: We need verify which of this unused import can be remove from SDK
-#  for example FigoPinException is used by figo_connection/utils.py
-from .exceptions import (  # noqa: F401
-    ERROR_MESSAGES,
-    FigoException,
-    FigoPinException,
-)
+from .exceptions import ERROR_MESSAGES, FigoException
 from .models import (  # noqa: F401
     Account,
     AccountBalance,
-    BankContact,
     Category,
     Challenge,
     Credential,
@@ -31,7 +25,6 @@ from .models import (  # noqa: F401
     ProcessOptions,
     ProcessStep,
     Security,
-    Service,
     StandingOrder,
     Sync,
     SynchronizationStatus,
@@ -179,6 +172,10 @@ class FigoObject:
                 model.from_dict(self, dict_entry)
                 for dict_entry in res_data[collection_name]
             ]
+
+    def _process_catalog_list(self, entities):
+        """Helper to proceed list of entities for catalog."""
+        return [LoginSettings.from_dict(self, entity) for entity in entities]
 
     @property
     def language(self):
@@ -403,26 +400,30 @@ class FigoConnection(FigoObject):
         """Returns the version of the API."""
         return self._request_with_exception("/version")
 
-    def get_catalog(self, q=None, country_code=None):
+    def get_catalog(self, q=None, country_code='de', entity_type=None):
         """Return a dict with lists of supported banks and payment services,
         with client auth.
 
         Returns:
-            dict {"banks": [BankContact], "services": [Service]}:
+            dict {"banks": [LoginSettings], "services": [LoginSettings]}:
                 dict with lists of supported banks and payment services
+            or list with target entity types when it has been chosen:
+                [LoginSettings]
         """
-        options = filter_none({"country": country_code, "q": q})
-        catalog = self._request_with_exception(
-            "/catalog?" + urlencode(options)
-        )
+        options = urlencode(filter_none({"country": country_code, "q": q}))
+        catalog = self._request_with_exception(f"/catalog?{options}")
+
+        if entity_type:
+            # working with "banks" and "services"
+            entities = catalog.get(entity_type)
+            if entities:
+                return self._process_catalog_list(entities)
 
         for k, v in catalog.items():
             if k == "banks":
-                catalog[k] = [BankContact.from_dict(self, bank) for bank in v]
+                catalog[k] = self._process_catalog_list(v)
             elif k == "services":
-                catalog[k] = [
-                    Service.from_dict(self, service) for service in v
-                ]
+                catalog[k] = self._process_catalog_list(v)
 
         return catalog
 
@@ -681,7 +682,7 @@ class FigoSession(FigoObject):
         """Return a dict with lists of supported banks and payment services.
 
         Returns:
-            dict {"banks": [Service], "services": [Service]}:
+            dict {"banks": [LoginSettings], "services": [LoginSettings]}:
                 dict with lists of supported banks and payment services
         """
         options = filter_none({"country": country_code})
@@ -690,7 +691,7 @@ class FigoSession(FigoObject):
             "/rest/catalog?" + urlencode(options)
         )
         for k, v in catalog.items():
-            catalog[k] = [Service.from_dict(self, service) for service in v]
+            catalog[k] = self._process_catalog_list(v)
 
         return catalog
 
@@ -762,13 +763,13 @@ class FigoSession(FigoObject):
             country_code (str): country code of the requested payment services
 
         Returns:
-            [Service]: list of supported credit cards and other payment
+            [LoginSettings]: list of supported credit cards and other payment
                 services
         """
         services = self._request_with_exception(
             "/rest/catalog/services/%s" % country_code
         )["services"]
-        return [Service.from_dict(self, service) for service in services]
+        return self._process_catalog_list(services)
 
     def get_supported_banks(self, country_code):
         """Return a list of supported banks.
@@ -777,12 +778,12 @@ class FigoSession(FigoObject):
             country_code (str): country code of the requested banks
 
         Returns:
-            [Service]: list of supported banks
+            [LoginSettings]: list of supported banks
         """
         banks = self._request_with_exception(
             "/rest/catalog/banks/%s" % country_code
         )["banks"]
-        return [Service.from_dict(self, bank) for bank in banks]
+        return self._process_catalog_list(banks)
 
     def get_login_settings(self, country_code, item_id):
         """Return the login settings of a bank.
@@ -1595,45 +1596,6 @@ class FigoSession(FigoObject):
             account_or_account_id, transaction_or_transaction_id
         )
         return self._request_with_exception(query, method="DELETE")
-
-    def get_bank(self, bank_id):
-        """Get bank.
-
-        Args:
-            bank_id: ID of the bank to be retrieved.
-
-        Returns:
-            BankContact object representing the bank to be retrieved
-        """
-        return self._query_api_object(BankContact, "/rest/banks/%s" % bank_id)
-
-    def modify_bank(self, bank):
-        """Modify a bank.
-
-        Args:
-            bank: modified bank object to be saved
-
-        Returns:
-            BankContact object for the updated bank
-        """
-        return self._query_api_object(
-            BankContact,
-            "/rest/banks/{0}".format(bank.bank_id),
-            bank.dump(),
-            "PUT",
-        )
-
-    def remove_bank_pin(self, bank_or_bank_id):
-        """Remove the stored PIN for a bank (if there was one).
-
-        Args:
-            bank_or_bank_id: bank whose pin should be removed or its ID
-        """
-        if isinstance(bank_or_bank_id, BankContact):
-            bank_or_bank_id = bank_or_bank_id.bank_id
-
-        query = "/rest/banks/{0}/remove_pin".format(bank_or_bank_id)
-        self._request_with_exception(query, method="POST")
 
     @property
     def user(self):

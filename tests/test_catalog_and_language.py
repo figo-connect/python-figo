@@ -2,7 +2,7 @@ import pytest
 from dotenv import load_dotenv
 
 from figo import FigoSession
-from figo.models import BankContact, Service
+from figo.models import LoginSettings
 
 load_dotenv()
 
@@ -12,10 +12,10 @@ load_dotenv()
 def test_get_catalog_en_client_auth(figo_connection, language, country):
     catalog = figo_connection.get_catalog(None, country)
     for bank in catalog["banks"]:
-        assert isinstance(bank, BankContact)
+        assert isinstance(bank, LoginSettings)
         assert bank.country == country
     for service in catalog["services"]:
-        assert isinstance(service, Service)
+        assert isinstance(service, LoginSettings)
 
 
 def test_get_catalog_client_auth_query(figo_connection):

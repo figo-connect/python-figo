@@ -59,64 +59,6 @@ class User(ModelBase):
         return f"User: {self.full_name} ({self.id}, {self.email})"
 
 
-class BankContact(ModelBase):
-    """Object representing a BankContact.
-
-    Attributes:
-        bank_id: figo internal bank id
-        sepa_creditor_id: SEPA direct debit creditor id
-        save_pin: boolean, indicates whether user has chosen to save PIN
-    """
-
-    __dump_attributes__ = ["sepa_creditor_id"]
-
-    bank_id = None
-    sepa_creditor_id = None
-    save_pin = None
-
-    def __str__(self):
-        return f"BankContact: {self.bank_id}"
-
-
-class Service(ModelBase):
-    """Object representing a payment service.
-
-    Attributes:
-        name: human readable name of the service
-        bank_code: surrogate bank code used for this service
-        state: URL to a logo of the bank
-        additional_icons: dictionary that maps resolutions to icon URLs
-        language: the language the service description is in
-        available_languages: list of other available languages
-    """
-
-    __dump_attributes__ = [
-        "name",
-        "bank_code",
-        "icon",
-        "additional_icons",
-        "language",
-    ]
-
-    name = None
-    bank_code = None
-    state = None
-    additional_icons = None
-    language = None
-    available_languages = []
-
-    def __init__(self, session, **kwargs):
-        super(Service, self).__init__(session, **kwargs)
-        if self.language:
-            self.available_languages = [
-                lang for lang in self.language["available"]
-            ]
-            self.language = self.language["current"]
-
-    def __str__(self, *args, **kwargs):
-        return f"Service: {self.bank_code}"
-
-
 class LoginSettings(ModelBase):
     """Object representing login settings for a banking service.
 
@@ -202,11 +144,6 @@ class Account(ModelBase):
     icon = None
     additional_icons = None
     status = None
-
-    @property
-    def bank(self):
-        """The corresponding BankContact object for this account."""
-        return self.session.get_bank(self.bank_id)
 
     @property
     def payments(self):

@@ -61,6 +61,10 @@ class FigoObject:
         self.language = language
         self.api_endpoint = api_endpoint
 
+    @staticmethod
+    def _has_error(response):
+        return "error" in response and response["error"]
+
     def _request_api(
         self, path, data=None, method="GET", raise_exception=False
     ):
@@ -76,7 +80,7 @@ class FigoObject:
         Returns:
             the JSON-parsed result body
         """
-        complete_path = self.api_endpoint + path
+        complete_path = f"{self.api_endpoint}{path}"
 
         session = Session()
         session.headers.update(self.headers)
@@ -84,60 +88,67 @@ class FigoObject:
         try:
             response = session.request(method, complete_path, json=data)
         except Exception as err:
-            logger.error("Request Error was raised: {}".format(err))
+            response = None
+            status_code = 500
+            logger.error(
+                "Request {} '{}'  raise error: {}".format(
+                    method, complete_path, err
+                )
+            )
         else:
+            status_code = response.status_code
             logger.debug(
                 "{} '{}' result with status {} and text: {}".format(
-                    method,
-                    complete_path,
-                    response.status_code,
-                    response.text[:2000],
+                    method, complete_path, status_code, response.text[:2000],
                 )
             )
         finally:
             session.close()
 
-        if response.text == "":
-            data = {}
+        if response is None or response.text == "":
+            res_data = {}
         else:
             try:
-                data = response.json()
+                res_data = response.json()
             except Exception as err:
                 logger.error(
                     "Convert data to JSON format failed: {}".format(err)
                 )
-                data = {}
+                # TODO: should we return here also error or raise this
+                #  exception?
+                res_data = {}
 
-        if 200 <= response.status_code < 300:
-            return data
-        elif self._has_error(data):
+        if 200 <= status_code < 300:
+            logger.debug("Response data returned: {}".format(res_data))
+        elif self._has_error(res_data):
             if raise_exception:
+                logger.error(
+                    "Raise FigoException for response status code {}".format(
+                        status_code,
+                    ),
+                )
                 raise FigoException.from_dict(data)
-            return data
-        elif response.status_code in ERROR_MESSAGES:
-            return {"error": ERROR_MESSAGES[response.status_code]}
+            logger.debug(
+                "Response data with errors returned: {}".format(res_data)
+            )
+        elif status_code == 500:
+            logger.error(
+                "Querying the API failed when accessing {}: {}".format(
+                    complete_path, status_code,
+                ),
+            )
+            res_data = {"error": ERROR_MESSAGES[status_code]}
+        elif status_code in ERROR_MESSAGES:
+            logger.debug(
+                "Error dict returned for status: {}".format(status_code)
+            )
+            res_data = {"error": ERROR_MESSAGES[response.status_code]}
 
-        logger.warning(
-            "Querying the API failed when accessing '%s': %d",
-            complete_path,
-            response.status_code,
-        )
-
-        return {
-            "error": {
-                "message": "internal_server_error",
-                "description": "We are very sorry, but something went wrong",
-                "code": 90000,
-            }
-        }
+        return res_data
 
     def _request_with_exception(self, path, data=None, method="GET"):
         """Helper to trigger raise exception on _request_api"""
         return self._request_api(path, data, method, raise_exception=True)
-
-    @staticmethod
-    def _has_error(response):
-        return "error" in response and response["error"]
 
     def _query_api_object(
         self, model, path, data=None, method="GET", collection_name=None
@@ -145,21 +156,21 @@ class FigoObject:
         """Helper method using _request_with_exception but encapsulating the
         result as an object.
         """
-        response = self._request_with_exception(path, data, method)
-        if response is None:
+        res_data = self._request_with_exception(path, data, method)
+        if not res_data:
             return None
         elif collection_name is None:
-            return model.from_dict(self, response)
+            return model.from_dict(self, res_data)
         elif collection_name == "collection":
             # Some collections in the API response ARE NOT embedded in
             # collection name. (Ex: challenges, accesses)
             return [
-                model.from_dict(self, dict_entry) for dict_entry in response
+                model.from_dict(self, dict_entry) for dict_entry in res_data
             ]
         else:
             return [
                 model.from_dict(self, dict_entry)
-                for dict_entry in response[collection_name]
+                for dict_entry in res_data[collection_name]
             ]
 
     @property
@@ -1697,36 +1708,6 @@ class FigoSession(FigoObject):
     def remove_user(self):
         """Delete figo Account."""
         return self._request_with_exception("/rest/user", method="DELETE")
-
-    def get_sync_url(self, state, redirect_uri):
-        """URL to trigger a synchronization.
-
-        The user should open this URL in a web browser to synchronize his/her
-        accounts with the respective bank servers. When the process is
-        finished, the user is redirected to the provided URL.
-
-        Args:
-            state: String passed on through the complete synchronization
-                process and to the redirect target at the end. It should be
-                used to validate the authenticity of the call to the redirect
-                URL
-            redirect_uri: URI the user is redirected to after the process
-                completes
-
-        Returns:
-            the URL to be opened by the user.
-        """
-        response = self._request_with_exception(
-            "/rest/sync",
-            {"state": state, "redirect_uri": redirect_uri},
-            method="POST",
-        )
-        if response is None:
-            return None
-        else:
-            return (
-                self.api_endpoint + "/task/start?id=" + response["task_token"]
-            )
 
     def parse_webhook_notification(self, message_body):
         """Parse a webhook notification and get a WebhookNotification object.

@@ -25,6 +25,11 @@ ERROR_MESSAGES = {
         "description": "Resource locked",
         "code": 1008,
     },
+    500: {
+        "message": "internal_server_error",
+        "description": "We are very sorry, but something went wrong",
+        "code": 90000,
+    },
     503: {
         "message": "service_unavailable",
         "description": "Exceeded rate limit.",

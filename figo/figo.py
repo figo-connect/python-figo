@@ -227,19 +227,6 @@ class FigoConnection(FigoObject):
         basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
         self.headers.update({"Authorization": f"Basic {basic_auth_encoded}"})
 
-    def _query_api(self, path, data=None):
-        """Helper method for making a OAuth2-compliant API call.
-
-        Args:
-            path: path on the server to call
-            data: dictionary of data to send to the server in message body
-
-        Returns:
-            the JSON-parsed result body
-        """
-
-        return self._request_api(path=path, data=data)
-
     def login_url(self, scope, state):
         """The URL a user should open in his/her web browser to start the
         login process.
@@ -425,7 +412,9 @@ class FigoConnection(FigoObject):
                 dict with lists of supported banks and payment services
         """
         options = filter_none({"country": country_code, "q": q})
-        catalog = self._query_api("/catalog?" + urlencode(options))
+        catalog = self._request_with_exception(
+            "/catalog?" + urlencode(options)
+        )
 
         for k, v in catalog.items():
             if k == "banks":
@@ -1685,7 +1674,7 @@ class FigoSession(FigoObject):
 
         notification = WebhookNotification.from_dict(self, message_body)
 
-        data = self._query_api(notification.observe_key)
+        data = self._request_with_exception(notification.observe_key)
 
         if re.match("/rest/transactions", notification.observe_key):
             notification.data = [

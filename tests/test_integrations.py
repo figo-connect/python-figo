@@ -3,7 +3,8 @@ import time
 import pytest
 from dotenv import load_dotenv
 
-from figo import FigoSession
+from figo.exceptions import FigoException
+from figo.figo import FigoSession
 from figo.models import Account, Challenge, Sync
 
 from .conftest import PASSWORD
@@ -69,12 +70,21 @@ def test_add_access():
 
 def test_add_access_with_wrong_access_id():
     access_method_id = "pipopipo-pipo-pipo-pipo-pipopipopipo"
-    response = pytest.session.add_access(
-        access_method_id, CREDENTIALS, CONSENT
-    )
-    assert "error" in response
-    err_data = response["error"]["data"]
-    assert err_data["access_method_id"] == ["Unknown method identifier."]
+    try:
+        response = pytest.session.add_access(
+            access_method_id, CREDENTIALS, CONSENT
+        )
+    except FigoException as err:
+        response = None
+        assert err is not None
+        assert err.error is None
+        assert err.status_code == 400
+        assert err.data["access_method_id"] == ["Unknown method identifier."]
+        assert err.error_description == (
+            "Request body doesn't match input schema."
+        )
+
+    assert response is None
 
 
 def test_get_accesses():

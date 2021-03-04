@@ -50,7 +50,7 @@ class FigoObject:
         self.headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "python_figo/{0}".format(__version__),
+            "User-Agent": f"python_figo/{__version__}",
         }
         self.language = language
         self.api_endpoint = api_endpoint
@@ -121,7 +121,9 @@ class FigoObject:
                         status_code,
                     ),
                 )
-                raise FigoException.from_dict(data)
+                raise FigoException.from_dict(
+                    res_data, status_code=status_code
+                )
             logger.debug(
                 "Response data with errors returned: {}".format(res_data)
             )
@@ -452,9 +454,7 @@ class FigoSession(FigoObject):
         super().__init__(api_endpoint, language)
 
         self.access_token = access_token
-        self.headers.update(
-            {"Authorization": "Bearer {0}".format(self.access_token)}
-        )
+        self.headers.update({"Authorization": f"Bearer {self.access_token}"})
         self.sync_poll_retry = sync_poll_retry
 
     # User management
@@ -524,14 +524,13 @@ class FigoSession(FigoObject):
         # now the catalog returns matches for all possible banks
         response = self._query_api_object(
             LoginSettings,
-            "/catalog/banks?{}".format(query_params),
+            f"/catalog/banks?{query_params}",
             collection_name="collection",
         )
         if len(response) > 0:
             return response[0]
 
-        err_msg = "Login settings for bank {} were not found".format(item_id)
-
+        err_msg = f"Login settings for bank {item_id} were not found"
         raise FigoException(
             error="login_settings_not_found", error_description=err_msg
         )
@@ -559,9 +558,7 @@ class FigoSession(FigoObject):
                 "consent": consent,
             }
         )
-        return self._request_api(
-            path="/rest/accesses", data=data, method="POST"
-        )
+        return self._request_with_exception("/rest/accesses", data, "POST")
 
     def get_accesses(self):
         """List all connected provider accesses of user.
@@ -581,9 +578,7 @@ class FigoSession(FigoObject):
         Returns:
             Access object matching the access_id
         """
-        return self._request_with_exception(
-            "/rest/accesses/{0}".format(access_id), method="GET"
-        )
+        return self._request_with_exception(f"/rest/accesses/{access_id}")
 
     def remove_pin(self, access_id):
         """Remove a PIN from the API backend that has been previously stored
@@ -595,8 +590,8 @@ class FigoSession(FigoObject):
         Returns:
             Access object for which the PIN was removed
         """
-        return self._request_api(
-            path="/rest/accesses/%s/remove_pin" % access_id, method="POST"
+        return self._request_with_exception(
+            f"/rest/accesses/{access_id}/remove_pin", method="POST"
         )
 
     # Synchronizations
@@ -639,13 +634,8 @@ class FigoSession(FigoObject):
                 "save_secrets": save_secrets,
             }
         )
-
-        return self._query_api_object(
-            Sync,
-            "/rest/accesses/{0}/syncs".format(access_id),
-            data=data,
-            method="POST",
-        )
+        path = f"/rest/accesses/{access_id}/syncs"
+        return self._query_api_object(Sync, path, data=data, method="POST")
 
     def get_synchronization_status(self, access_id, sync_id):
         """Get synchronization status.
@@ -658,9 +648,7 @@ class FigoSession(FigoObject):
             Object: synchronization operation.
         """
         return self._query_api_object(
-            Sync,
-            "/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id),
-            method="GET",
+            Sync, f"/rest/accesses/{access_id}/syncs/{sync_id}"
         )
 
     # Strong Customer Authentication - SCA / 2FA
@@ -679,10 +667,7 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(
             Challenge,
-            "/rest/accesses/{0}/syncs/{1}/challenges".format(
-                access_id, sync_id
-            ),
-            method="GET",
+            f"/rest/accesses/{access_id}/syncs/{sync_id}/challenges",
             collection_name="collection",
         )
 
@@ -697,13 +682,11 @@ class FigoSession(FigoObject):
         Returns:
             Object: Challenge associated with synchronization operation.
         """
-        return self._query_api_object(
-            Challenge,
-            "/rest/accesses/{0}/syncs/{1}/challenges/{2}".format(
-                access_id, sync_id, challenge_id
-            ),
-            method="GET",
+        path = (
+            f"/rest/accesses/{access_id}/syncs/{sync_id}/challenges/"
+            f"{challenge_id}"
         )
+        return self._query_api_object(Challenge, path)
 
     def solve_synchronization_challenge(
         self, access_id, sync_id, challenge_id, data
@@ -718,13 +701,11 @@ class FigoSession(FigoObject):
         Returns:
             Successful response or error dict.
         """
-        return self._request_api(
-            path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response".format(
-                access_id, sync_id, challenge_id
-            ),
-            data=data,
-            method="POST",
+        path = (
+            f"/rest/accesses/{access_id}/syncs/{sync_id}/challenges/"
+            f"{challenge_id}/response"
         )
+        return self._request_with_exception(path, data, "POST")
 
     # Accounts (https://docs.finx.finleap.cloud/stable/#tag/Accounts):
 
@@ -746,13 +727,8 @@ class FigoSession(FigoObject):
         Returns:
             Account: An account accessible from Token
         """
-        return self._query_api_object(
-            Account,
-            path="/rest/accounts/{0}".format(
-                get_account_id(account_or_account_id)
-            ),
-            method="GET",
-        )
+        account_id = get_account_id(account_or_account_id)
+        return self._query_api_object(Account, f"/rest/accounts/{account_id}")
 
     def get_accounts(self):
         """Get list of bank accounts.
@@ -761,10 +737,7 @@ class FigoSession(FigoObject):
             List of Accounts accessible from Token
         """
         return self._query_api_object(
-            Account,
-            path="/rest/accounts",
-            method="GET",
-            collection_name="accounts",
+            Account, "/rest/accounts", collection_name="accounts",
         )
 
     def modify_account(self, account):
@@ -778,7 +751,7 @@ class FigoSession(FigoObject):
         """
         return self._query_api_object(
             Account,
-            "/rest/accounts/%s" % account.account_id,
+            f"/rest/accounts/{account.account_id}",
             account.dump(),
             "PUT",
         )
@@ -802,32 +775,9 @@ class FigoSession(FigoObject):
         Returns:
             AccountBalance object for the respective account
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/balance".format(account_or_account_id)
-        return self._query_api_object(AccountBalance, query)
-
-    # TODO: verify if this method works with new finxX API
-    #  (missing in documentation)
-    def modify_account_balance(self, account_or_account_id, account_balance):
-        """Modify balance or account limits.
-
-        Args:
-            account_or_account_id: account to be modified or its ID
-            account_balance: modified AccountBalance object to be saved
-
-        Returns:
-            AccountBalance object for the updated account as returned by the
-                server
-        """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/balance".format(account_or_account_id)
-        return self._query_api_object(
-            AccountBalance, query, account_balance.dump(), "PUT"
-        )
+        account_id = get_account_id(account_or_account_id)
+        path = f"/rest/accounts/{account_id}/balance"
+        return self._query_api_object(AccountBalance, path)
 
     # Transactions (https://docs.finx.finleap.cloud/stable/#tag/Transactions):
 
@@ -899,15 +849,13 @@ class FigoSession(FigoObject):
             "include_pending",
             "include_statistics",
         ]
-        options = filter_none(filter_keys(options, allowed_keys))
+        options = urlencode(filter_none(filter_keys(options, allowed_keys)))
 
         account_id = get_account_id(account_or_account_id)
         if account_id is not None:
-            path = "/rest/accounts/{0}/transactions?{1}".format(
-                account_id, urlencode(options)
-            )
+            path = f"/rest/accounts/{account_id}/transactions?{options}"
         else:
-            path = "/rest/transactions?{0}".format(urlencode(options))
+            path = f"/rest/transactions?{options}"
 
         return self._query_api_object(
             Transaction, path, collection_name="transactions"
@@ -926,16 +874,16 @@ class FigoSession(FigoObject):
             Transaction object representing the transaction to be retrieved
         """
         options = {"cents": cents} if cents else {}
+        options = urlencode(options)
 
         account_id = get_account_id(account_or_account_id)
         if account_id is not None:
-            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(
-                account_or_account_id, transaction_id, urlencode(options)
+            path = (
+                f"/rest/accounts/{account_id}/transactions/{transaction_id}"
+                f"?{options}"
             )
         else:
-            path = "/rest/transactions/{0}?{1}".format(
-                transaction_id, urlencode(options)
-            )
+            path = f"/rest/transactions/{transaction_id}?{options}"
 
         return self._query_api_object(Transaction, path)
 
@@ -949,11 +897,9 @@ class FigoSession(FigoObject):
         Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/transactions".format(account_or_account_id)
-        return self._request_with_exception(query, {"visited": visited}, "PUT")
+        account_id = get_account_id(account_or_account_id)
+        path = f"/rest/accounts/{account_id}/transactions"
+        return self._request_with_exception(path, {"visited": visited}, "PUT")
 
     def modify_user_transactions(self, visited=None):
         """Modify all transactions of the current user.
@@ -964,9 +910,8 @@ class FigoSession(FigoObject):
         Returns:
             Nothing if the request was successful
         """
-        return self._request_with_exception(
-            "/rest/transactions", {"visited": visited}, "PUT"
-        )
+        path = "/rest/transactions"
+        return self._request_with_exception(path, {"visited": visited}, "PUT")
 
     def delete_transaction(
         self, account_or_account_id, transaction_or_transaction_id
@@ -980,17 +925,17 @@ class FigoSession(FigoObject):
         Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
+        account_id = get_account_id(account_or_account_id)
         if isinstance(transaction_or_transaction_id, Transaction):
             transaction_or_transaction_id = (
                 transaction_or_transaction_id.transaction_id
             )
 
-        query = "/rest/accounts/{0}/transactions/{1}".format(
-            account_or_account_id, transaction_or_transaction_id
+        path = (
+            f"/rest/accounts/{account_id}/transactions/"
+            f"{transaction_or_transaction_id}"
         )
-        return self._request_with_exception(query, method="DELETE")
+        return self._request_with_exception(path, method="DELETE")
 
     # Payments (https://docs.finx.finleap.cloud/stable/#tag/Payments):
 
@@ -1032,18 +977,15 @@ class FigoSession(FigoObject):
                 "cents": cents,
             }
         )
+        options = urlencode(options)
 
         account_id = get_account_id(account_or_account_id)
         if account_id:
-            query = "/rest/accounts/{0}/payments?{1}".format(
-                account_id, urlencode(options)
-            )
+            uri = f"/rest/accounts/{account_id}/payments?{options}"
         else:
-            query = "/rest/payments?{0}".format(urlencode(options))
+            uri = f"/rest/payments?{options}"
 
-        return self._query_api_object(
-            Payment, query, collection_name="payments"
-        )
+        return self._query_api_object(Payment, uri, collection_name="payments")
 
     def get_payment(self, account_or_account_id, payment_id, cents):
         """Get a single `Payment` object.
@@ -1058,13 +1000,10 @@ class FigoSession(FigoObject):
             Payment object
         """
         options = {"cents": cents} if cents else {}
-
-        query = "/rest/accounts/{0}/payments/{1}?{2}".format(
-            get_account_id(account_or_account_id),
-            payment_id,
-            urlencode(options),
-        )
-        return self._query_api_object(Payment, query)
+        options = urlencode(options)
+        account_id = get_account_id(account_or_account_id)
+        path = f"/rest/accounts/{account_id}/payments/{payment_id}?{options}"
+        return self._query_api_object(Payment, path)
 
     def add_payment(self, payment):
         """Create a new payment.
@@ -1077,12 +1016,9 @@ class FigoSession(FigoObject):
             Payment object of the newly created payment as returned by the
                 server
         """
-        return self._query_api_object(
-            Payment,
-            "/rest/accounts/{0}/payments".format(payment.account_id),
-            payment.dump(),
-            "POST",
-        )
+        data = payment.dump()
+        path = f"/rest/accounts/{payment.account_id}/payments"
+        return self._query_api_object(Payment, path, data, "POST")
 
     def modify_payment(self, payment):
         """Modify a payment.
@@ -1093,13 +1029,12 @@ class FigoSession(FigoObject):
         Returns:
             Payment object for the updated payment
         """
-        return self._query_api_object(
-            Payment,
-            "/rest/accounts/%s/payments/%s"
-            % (payment.account_id, payment.payment_id),
-            payment.dump(),
-            "PUT",
+        data = payment.dump()
+        path = (
+            f"/rest/accounts/{payment.account_id}/payments/"
+            f"{payment.payment_id}"
         )
+        return self._query_api_object(Payment, path, data, "PUT")
 
     def remove_payment(self, payment):
         """Remove a payment.
@@ -1107,11 +1042,11 @@ class FigoSession(FigoObject):
         Args:
             payment: payment to be removed
         """
-        self._request_with_exception(
-            "/rest/accounts/%s/payments/%s"
-            % (payment.account_id, payment.payment_id),
-            method="DELETE",
+        path = (
+            f"/rest/accounts/{payment.account_id}/payments/"
+            f"{payment.payment_id}"
         )
+        self._request_with_exception(path, method="DELETE")
 
     def submit_payment(self, payment, tan_scheme_id, state, redirect_uri=None):
         """Submit payment to bank server.
@@ -1131,12 +1066,11 @@ class FigoSession(FigoObject):
         if redirect_uri is not None:
             params["redirect_uri"] = redirect_uri
 
-        response = self._request_with_exception(
-            "/rest/accounts/%s/payments/%s/init"
-            % (payment.account_id, payment.payment_id),
-            params,
-            "POST",
+        path = (
+            f"/rest/accounts/{payment.account_id}/payments/"
+            f"{payment.payment_id}/init"
         )
+        response = self._request_with_exception(path, params, "POST")
         return response
 
     def get_payment_status(self, payment, init_id):
@@ -1149,13 +1083,11 @@ class FigoSession(FigoObject):
         Returns:
             the initiation status of the payment
         """
-        response = self._request_with_exception(
-            "/rest/accounts/%s/payments/%s/init/%s"
-            % (payment.account_id, payment.payment_id, init_id),
-            None,
-            "GET",
+        path = (
+            f"/rest/accounts/{payment.account_id}/payments/"
+            f"{payment.payment_id}/init/{init_id}"
         )
-        return response
+        return self._request_with_exception(path)
 
     def get_payment_challenges(
         self, account_or_account_id, payment_id, init_id
@@ -1172,14 +1104,11 @@ class FigoSession(FigoObject):
             List of challenges for the required payment
         """
         account_id = get_account_id(account_or_account_id)
-
-        return self._query_api_object(
-            Challenge,
-            "/rest/accounts/{0}/payments/{1}/init/{2}/challenges".format(
-                account_id, payment_id, init_id
-            ),
-            "GET",
+        path = (
+            f"/rest/accounts/{account_id}/payments/{payment_id}/init/{init_id}"
+            f"/challenges"
         )
+        return self._query_api_object(Challenge, path)
 
     def get_payment_challenge(
         self, account_or_account_id, payment_id, init_id, challenge_id
@@ -1197,14 +1126,11 @@ class FigoSession(FigoObject):
             Challenge: The required challenge for the payment
         """
         account_id = get_account_id(account_or_account_id)
-
-        return self._query_api_object(
-            Challenge,
-            "/rest/accounts/{0}/payments/{1}/init/{2}/challenges/{3}".format(
-                account_id, payment_id, init_id, challenge_id
-            ),
-            "GET",
+        path = (
+            f"/rest/accounts/{account_id}/payments/{payment_id}/init/{init_id}"
+            f"/challenges/{challenge_id}"
         )
+        return self._query_api_object(Challenge, path)
 
     def solve_payment_challenges(
         self, account_or_account_id, payment_id, init_id, challenge_id, payload
@@ -1274,17 +1200,16 @@ class FigoSession(FigoObject):
                 "cents": cents,
             }
         )
+        options = urlencode(options)
 
         account_id = get_account_id(account_or_account_id)
         if account_id:
-            query = "/rest/accounts/{0}/standing_orders?{1}".format(
-                account_id, urlencode(options)
-            )
+            path = f"/rest/accounts/{account_id}/standing_orders?{options}"
         else:
-            query = "/rest/standing_orders?{0}".format(urlencode(options))
+            path = f"/rest/standing_orders?{options}"
 
         return self._query_api_object(
-            StandingOrder, query, collection_name="standing_orders"
+            StandingOrder, path, collection_name="standing_orders"
         )
 
     def get_standing_order(
@@ -1307,18 +1232,17 @@ class FigoSession(FigoObject):
             standing order object
         """
         options = filter_none({"accounts": accounts, "cents": cents})
-
+        options = urlencode(options)
         account_id = get_account_id(account_or_account_id)
         if account_id:
-            query = "/rest/accounts/{0}/standing_orders/{1}?{2}".format(
-                account_id, standing_order_id, urlencode(options)
+            path = (
+                f"/rest/accounts/{account_id}/standing_orders/"
+                f"{standing_order_id}?{options}"
             )
         else:
-            query = "/rest/standing_orders/{0}?{1}".format(
-                standing_order_id, urlencode(options)
-            )
+            path = f"/rest/standing_orders/{standing_order_id}?{options}"
 
-        return self._query_api_object(StandingOrder, query)
+        return self._query_api_object(StandingOrder, path)
 
     def remove_standing_order(
         self, standing_order_id, account_or_account_id=None
@@ -1331,11 +1255,12 @@ class FigoSession(FigoObject):
         """
         account_id = get_account_id(account_or_account_id)
         if account_id:
-            path = "/rest/accounts/{0}/standing_orders/{1}".format(
-                account_id, standing_order_id
+            path = (
+                f"/rest/accounts/{account_id}/standing_orders/"
+                f"{standing_order_id}"
             )
         else:
-            path = "/rest/standing_orders/{0}".format(standing_order_id)
+            path = f"/rest/standing_orders/{standing_order_id}"
 
         self._request_with_exception(path, method="DELETE")
 
@@ -1375,24 +1300,23 @@ class FigoSession(FigoObject):
         Returns:
             List of Security objects
         """
-        params = {"count": count, "offset": offset}
-        if accounts is not None and type(accounts) == list:
-            params["accounts"] = ",".join(accounts)
-
-        if since is not None:
-            params["since"] = since
-
-        params = urlencode(params)
+        accounts = ",".join(accounts) if isinstance(accounts, list) else None
+        options = {
+            "count": count,
+            "offset": offset,
+            "since": since,
+            "accounts": accounts,
+        }
+        options = filter_none(options)
+        options = urlencode(options)
         account_id = get_account_id(account_or_account_id)
         if account_id:
-            query = "/rest/accounts/{0}/securities?{1}".format(
-                account_id, params
-            )
+            path = f"/rest/accounts/{account_id}/securities?{options}"
         else:
-            query = "/rest/securities?{0}".format(params)
+            path = f"/rest/securities?{options}"
 
         return self._query_api_object(
-            Security, query, collection_name="securities"
+            Security, path, collection_name="securities"
         )
 
     def get_security(self, account_or_account_id, security_id):
@@ -1405,10 +1329,8 @@ class FigoSession(FigoObject):
         Returns:
             Security object representing the transaction to be retrieved
         """
-
-        query = "/rest/accounts/{0}/securities/{1}".format(
-            get_account_id(account_or_account_id), security_id
-        )
+        account_id = get_account_id(account_or_account_id)
+        query = f"/rest/accounts/{account_id}/securities/{security_id}"
         return self._query_api_object(Security, query)
 
     def modify_security(
@@ -1424,15 +1346,14 @@ class FigoSession(FigoObject):
         Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
+        account_id = get_account_id(account_or_account_id)
         if isinstance(security_or_security_id, Security):
             security_or_security_id = security_or_security_id.security_id
 
-        query = "/rest/accounts/{0}/securities/{1}".format(
-            account_or_account_id, security_or_security_id
+        path = (
+            f"/rest/accounts/{account_id}/securities/{security_or_security_id}"
         )
-        return self._request_with_exception(query, {"visited": visited}, "PUT")
+        return self._request_with_exception(path, {"visited": visited}, "PUT")
 
     def modify_account_securities(self, account_or_account_id, visited=None):
         """
@@ -1445,11 +1366,9 @@ class FigoSession(FigoObject):
         Returns:
             Nothing if the request was successful
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/securities".format(account_or_account_id)
-        return self._request_with_exception(query, {"visited": visited}, "PUT")
+        account_id = get_account_id(account_or_account_id)
+        path = f"/rest/accounts/{account_id}/securities"
+        return self._request_with_exception(path, {"visited": visited}, "PUT")
 
     def modify_user_securities(self, visited=None):
         """Modify all securities from the current user.
@@ -1546,10 +1465,8 @@ class FigoSession(FigoObject):
                 notification_or_notification_id.notification_id
             )
 
-        query = "/rest/notifications/{0}".format(
-            notification_or_notification_id
-        )
-        self._request_with_exception(query, method="DELETE")
+        path = f"/rest/notifications/{notification_or_notification_id}"
+        self._request_with_exception(path, method="DELETE")
 
     def parse_webhook_notification(self, message_body):
         """Parse a webhook notification and get a WebhookNotification object.

@@ -269,12 +269,8 @@ class AccountBalance(ModelBase):
         status: synchronization status object
     """
 
-    __dump_attributes__ = ["credit_line", "monthly_spending_limit"]
-
     balance = None
     balance_date = None
-    credit_line = None
-    monthly_spending_limit = None
     status = None
 
     def __str__(self):

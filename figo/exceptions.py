@@ -50,11 +50,15 @@ class FigoException(Exception):
     `error_description`.
     """
 
-    def __init__(self, error, error_description, code=None):
+    def __init__(
+        self, error, error_description, code=None, data=None, status_code=None
+    ):
         """Create a Exception with a error code and error description."""
         self.error = error
         self.error_description = error_description
         self.code = code
+        self.data = data
+        self.status_code = status_code
 
     def __str__(self):
         """String representation of the FigoException."""
@@ -64,12 +68,14 @@ class FigoException(Exception):
         )
 
     @classmethod
-    def from_dict(cls, dictionary):
+    def from_dict(cls, dictionary, status_code=None):
         """Helper function creating an exception instance from the dictionary
         returned by the server.
         """
         return cls(
             dictionary["error"].get("message"),
             dictionary["error"].get("description"),
-            dictionary["error"].get("code"),
+            code=dictionary["error"].get("code"),
+            data=dictionary["error"].get("data"),
+            status_code=status_code,
         )

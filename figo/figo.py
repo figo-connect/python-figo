@@ -20,7 +20,6 @@ from .models import (  # noqa: F401
     LoginSettings,
     Notification,
     Payment,
-    PaymentProposal,
     Security,
     StandingOrder,
     Sync,
@@ -422,6 +421,11 @@ class FigoConnection(FigoObject):
 
         return catalog
 
+    # Custom Categories
+    # (https://docs.finx.finleap.cloud/stable/#tag/Custom-Categories):
+
+    # TODO: Custom Categories are not implemented - do we need them?
+
 
 class FigoSession(FigoObject):
     """Represents a user-bound connection to the figo connect API and allows
@@ -532,6 +536,198 @@ class FigoSession(FigoObject):
             error="login_settings_not_found", error_description=err_msg
         )
 
+    # Accesses (https://docs.finx.finleap.cloud/stable/#tag/Accesses):
+
+    def add_access(self, access_method_id, credentials, consent):
+        """Add provider access
+
+        Args:
+            access_method_id (str): figo ID of the provider access method.
+                [required]
+            credentials (Crendentials object): Credentials used for
+                authentication with the financial service provider.
+            consent (Consent object): Configuration of the PSD2 consents.
+                Is ignored for non-PSD2 accesses.
+
+        Returns:
+            Access object added
+        """
+        data = filter_none(
+            {
+                "access_method_id": access_method_id,
+                "credentials": credentials,
+                "consent": consent,
+            }
+        )
+        return self._request_api(
+            path="/rest/accesses", data=data, method="POST"
+        )
+
+    def get_accesses(self):
+        """List all connected provider accesses of user.
+
+        Returns:
+            Array of Access objects
+        """
+        return self._request_with_exception("/rest/accesses")
+
+    def get_access(self, access_id):
+        """Retrieve the details of a specific provider access identified by
+        its ID.
+
+        Args:
+            access_id (str): figo ID of the provider access. [required]
+
+        Returns:
+            Access object matching the access_id
+        """
+        return self._request_with_exception(
+            "/rest/accesses/{0}".format(access_id), method="GET"
+        )
+
+    def remove_pin(self, access_id):
+        """Remove a PIN from the API backend that has been previously stored
+        for automatic synchronization or ease of use.
+
+        Args:
+            access_id (str): figo ID of the provider access. [required]
+
+        Returns:
+            Access object for which the PIN was removed
+        """
+        return self._request_api(
+            path="/rest/accesses/%s/remove_pin" % access_id, method="POST"
+        )
+
+    # Synchronizations
+    # (https://docs.finx.finleap.cloud/stable/#tag/Synchronizations):
+
+    def add_sync(
+        self,
+        access_id,
+        disable_notifications,
+        redirect_uri,
+        state,
+        credentials,
+        save_secrets,
+    ):
+        """Start synchronization process.
+
+        Args:
+            access_id (str): figo ID of the provider access, Required
+            disable_notifications (bool): This flag indicates whether
+                notifications should be sent to your application, Optional,
+                default: False
+            redirect_uri (str): The URI to which the end user is redirected in
+                OAuth cases, Optional
+            state (str): Arbitrary string to maintain state between this
+                request and the callback
+            credentials (obj): Credentials used for authentication with the
+                financial service provider.
+            save_secrets (bool): Indicates whether the confidential parts of
+                the credentials should be saved, default: False
+
+        Returns:
+          Object: synchronization operation.
+        """
+        data = filter_none(
+            {
+                "disable_notifications": disable_notifications,
+                "redirect_uri": redirect_uri,
+                "state": state,
+                "credentials": credentials,
+                "save_secrets": save_secrets,
+            }
+        )
+
+        return self._query_api_object(
+            Sync,
+            "/rest/accesses/{0}/syncs".format(access_id),
+            data=data,
+            method="POST",
+        )
+
+    def get_synchronization_status(self, access_id, sync_id):
+        """Get synchronization status.
+
+        Args:
+            access_id (str): figo ID of the provider access, Required
+            sync_id (str): figo ID of the synchronization operation, Required
+
+        Returns:
+            Object: synchronization operation.
+        """
+        return self._query_api_object(
+            Sync,
+            "/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id),
+            method="GET",
+        )
+
+    # Strong Customer Authentication - SCA / 2FA
+    # (https://docs.finx.finleap.cloud/stable/#tag/Strong-Customer-Authentication):
+
+    def get_synchronization_challenges(self, access_id, sync_id):
+        """Get synchronization challenges.
+
+        Args:
+            access_id (str): figo ID of the provider access, Required
+            sync_id (str): figo ID of the synchronization operation, Required
+
+        Returns:
+            Object: List of challenges associated with synchronization
+                operation.
+        """
+        return self._query_api_object(
+            Challenge,
+            "/rest/accesses/{0}/syncs/{1}/challenges".format(
+                access_id, sync_id
+            ),
+            method="GET",
+            collection_name="collection",
+        )
+
+    def get_synchronization_challenge(self, access_id, sync_id, challenge_id):
+        """Get synchronization challenge.
+
+        Args:
+            access_id (str): figo ID of the provider access, Required
+            sync_id (str): figo ID of the synchronization operation, Required
+            challenge_id (str): figo ID of the challenge, Required
+
+        Returns:
+            Object: Challenge associated with synchronization operation.
+        """
+        return self._query_api_object(
+            Challenge,
+            "/rest/accesses/{0}/syncs/{1}/challenges/{2}".format(
+                access_id, sync_id, challenge_id
+            ),
+            method="GET",
+        )
+
+    def solve_synchronization_challenge(
+        self, access_id, sync_id, challenge_id, data
+    ):
+        """Solve synchronization challenge.
+
+        Args:
+            access_id (str): figo ID of the provider access, Required
+            sync_id (str): figo ID of the synchronization operation, Required
+            challenge_id (str): figo ID of the challenge, Required
+
+        Returns:
+            Successful response or error dict.
+        """
+        return self._request_api(
+            path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response".format(
+                access_id, sync_id, challenge_id
+            ),
+            data=data,
+            method="POST",
+        )
+
+    # Accounts (https://docs.finx.finleap.cloud/stable/#tag/Accounts):
+
     @property
     def accounts(self):
         """An array of `Account` objects, one for each account the user has
@@ -597,127 +793,6 @@ class FigoSession(FigoObject):
         path = f"/rest/accounts/{account_id}"
         return self._request_with_exception(path, method="DELETE")
 
-    def add_sync(
-        self,
-        access_id,
-        disable_notifications,
-        redirect_uri,
-        state,
-        credentials,
-        save_secrets,
-    ):
-        """Start synchronization process.
-
-        Args:
-            access_id (str): figo ID of the provider access, Required
-            disable_notifications (bool): This flag indicates whether
-                notifications should be sent to your application, Optional,
-                default: False
-            redirect_uri (str): The URI to which the end user is redirected in
-                OAuth cases, Optional
-            state (str): Arbitrary string to maintain state between this
-                request and the callback
-            credentials (obj): Credentials used for authentication with the
-                financial service provider.
-            save_secrets (bool): Indicates whether the confidential parts of
-                the credentials should be saved, default: False
-
-        Returns:
-          Object: synchronization operation.
-        """
-        data = filter_none(
-            {
-                "disable_notifications": disable_notifications,
-                "redirect_uri": redirect_uri,
-                "state": state,
-                "credentials": credentials,
-                "save_secrets": save_secrets,
-            }
-        )
-
-        return self._query_api_object(
-            Sync,
-            "/rest/accesses/{0}/syncs".format(access_id),
-            data=data,
-            method="POST",
-        )
-
-    def get_synchronization_status(self, access_id, sync_id):
-        """Get synchronization status.
-
-        Args:
-            access_id (str): figo ID of the provider access, Required
-            sync_id (str): figo ID of the synchronization operation, Required
-
-        Returns:
-            Object: synchronization operation.
-        """
-        return self._query_api_object(
-            Sync,
-            "/rest/accesses/{0}/syncs/{1}".format(access_id, sync_id),
-            method="GET",
-        )
-
-    def get_synchronization_challenges(self, access_id, sync_id):
-        """Get synchronization challenges.
-
-        Args:
-            access_id (str): figo ID of the provider access, Required
-            sync_id (str): figo ID of the synchronization operation, Required
-
-        Returns:
-            Object: List of challenges associated with synchronization
-                operation.
-        """
-        return self._query_api_object(
-            Challenge,
-            "/rest/accesses/{0}/syncs/{1}/challenges".format(
-                access_id, sync_id
-            ),
-            method="GET",
-            collection_name="collection",
-        )
-
-    def get_synchronization_challenge(self, access_id, sync_id, challenge_id):
-        """Get synchronization challenge.
-
-        Args:
-            access_id (str): figo ID of the provider access, Required
-            sync_id (str): figo ID of the synchronization operation, Required
-            challenge_id (str): figo ID of the challenge, Required
-
-        Returns:
-            Object: Challenge associated with synchronization operation.
-        """
-        return self._query_api_object(
-            Challenge,
-            "/rest/accesses/{0}/syncs/{1}/challenges/{2}".format(
-                access_id, sync_id, challenge_id
-            ),
-            method="GET",
-        )
-
-    def solve_synchronization_challenge(
-        self, access_id, sync_id, challenge_id, data
-    ):
-        """Solve synchronization challenge.
-
-        Args:
-            access_id (str): figo ID of the provider access, Required
-            sync_id (str): figo ID of the synchronization operation, Required
-            challenge_id (str): figo ID of the challenge, Required
-
-        Returns:
-            Successful response or error dict.
-        """
-        return self._request_api(
-            path="/rest/accesses/{0}/syncs/{1}/challenges/{2}/response".format(
-                access_id, sync_id, challenge_id
-            ),
-            data=data,
-            method="POST",
-        )
-
     def get_account_balance(self, account_or_account_id):
         """Get balance and account limits.
 
@@ -733,6 +808,8 @@ class FigoSession(FigoObject):
         query = "/rest/accounts/{0}/balance".format(account_or_account_id)
         return self._query_api_object(AccountBalance, query)
 
+    # TODO: verify if this method works with new finxX API
+    #  (missing in documentation)
     def modify_account_balance(self, account_or_account_id, account_balance):
         """Modify balance or account limits.
 
@@ -752,181 +829,170 @@ class FigoSession(FigoObject):
             AccountBalance, query, account_balance.dump(), "PUT"
         )
 
-    def add_access(self, access_method_id, credentials, consent):
-        """Add provider access
+    # Transactions (https://docs.finx.finleap.cloud/stable/#tag/Transactions):
+
+    @property
+    def transactions(self):
+        """An array of `Transaction` objects, one for each transaction of
+        the user.
+        """
+        return self._query_api_object(
+            Transaction, "/rest/transactions", collection_name="transactions"
+        )
+
+    def get_transactions(self, account_or_account_id, options):
+        """Get an array of Transaction, one for each transaction of the user.
 
         Args:
-            access_method_id (str): figo ID of the provider access method.
-                [required]
-            credentials (Crendentials object): Credentials used for
-                authentication with the financial service provider.
-            consent (Consent object): Configuration of the PSD2 consents.
-                Is ignored for non-PSD2 accesses.
+            account_or_account_id (str): ID of the account for which to list
+                the transactions OR account object.
+            options (obj): further optional options
+                accounts: comma separated list of account IDs.
+                filter (obj) - Can take 4 possible keys:
+                    - date (ISO date) - Transaction date
+                    - person (str) - Payer or payee name
+                    - purpose (str)
+                    - amount (num)
+                sync_id (str): Show only those items that have been created
+                    within this synchronization.
+                count (int): Limit the number of returned transactions.
+                offset (int): Which offset into the result set should be used
+                    to determine the first transaction to return (useful in
+                    combination with count)
+                sort (enum): ASC or DESC
+                since (ISO date): Return only transactions after this date
+                    based on since_type
+                until (ISO date): This parameter can either be a transaction
+                    ID or a date. Return only transactions which were booked
+                    on or before
+                since_type (enum): This parameter defines how the parameter
+                    since will be interpreted. Possible values: "booked",
+                    "created", "modified".
+                types (enum): Comma separated list of transaction types used
+                    for filtering. Possible values: "Transfer",
+                    "Standing order", "Direct debit", "Salary or rent",
+                    "GeldKarte", "Charges or interest".
+                cents (bool): If true amounts will be shown in cents, Optional,
+                    default: False
+                include_pending (bool): This flag indicates whether pending
+                    transactions should be included in the response. Pending
+                    transactions are always included as a complete set,
+                    regardless of the `since` parameter.
+                include_statistics (bool): Includes statistics on the returned
+                    transactions if true, Default: false.
 
         Returns:
-            Access object added
+            List of Transaction
         """
-        data = filter_none(
-            {
-                "access_method_id": access_method_id,
-                "credentials": credentials,
-                "consent": consent,
-            }
-        )
-        return self._request_api(
-            path="/rest/accesses", data=data, method="POST"
-        )
-
-    def get_accesses(self):
-        """List all connected provider accesses of user.
-
-        Returns:
-            Array of Access objects
-        """
-        return self._request_with_exception("/rest/accesses")
-
-    def get_access(self, access_id):
-        """Retrieve the details of a specific provider access identified by
-        its ID.
-
-        Args:
-            access_id (str): figo ID of the provider access. [required]
-
-        Returns:
-            Access object matching the access_id
-        """
-        return self._request_with_exception(
-            "/rest/accesses/{0}".format(access_id), method="GET"
-        )
-
-    def remove_pin(self, access_id):
-        """Remove a PIN from the API backend that has been previously stored
-        for automatic synchronization or ease of use.
-
-        Args:
-            access_id (str): figo ID of the provider access. [required]
-
-        Returns:
-            Access object for which the PIN was removed
-        """
-        return self._request_api(
-            path="/rest/accesses/%s/remove_pin" % access_id, method="POST"
-        )
-
-    def get_standing_orders(
-        self,
-        account_or_account_id=None,
-        accounts=None,
-        count=None,
-        offset=None,
-        cents=None,
-    ):
-        """Get an array of `StandingOrder` objects, one for each standing
-        order of the user on the specified account.
-
-        Args:
-            account_or_account_id: account to be queried or its ID, Optional
-            accounts: Comma separated list of account IDs, Optional
-            count: Limit the number of returned items, Optional
-            offset: Skip this number of transactions in the response, Optional
-            cents: If true amounts will be shown in cents, Optional, default:
-                False
-
-        Returns:
-            List of standing order objects
-        """
-
-        options = filter_none(
-            {
-                "accounts": accounts,
-                "count": count,
-                "offset": offset,
-                "cents": cents,
-            }
-        )
+        allowed_keys = [
+            "accounts",
+            "filter",
+            "sync_id",
+            "count",
+            "offset",
+            "sort",
+            "since",
+            "until",
+            "since_type",
+            "types",
+            "cents",
+            "include_pending",
+            "include_statistics",
+        ]
+        options = filter_none(filter_keys(options, allowed_keys))
 
         account_id = get_account_id(account_or_account_id)
-        if account_id:
-            query = "/rest/accounts/{0}/standing_orders?{1}".format(
+        if account_id is not None:
+            path = "/rest/accounts/{0}/transactions?{1}".format(
                 account_id, urlencode(options)
             )
         else:
-            query = "/rest/standing_orders?{0}".format(urlencode(options))
+            path = "/rest/transactions?{0}".format(urlencode(options))
 
         return self._query_api_object(
-            StandingOrder, query, collection_name="standing_orders"
+            Transaction, path, collection_name="transactions"
         )
 
-    @property
-    def notifications(self):
-        """An array of `Notification` objects, one for each registered
-        notification.
-        """
-        return self._query_api_object(
-            Notification,
-            "/rest/notifications",
-            collection_name="notifications",
-        )
-
-    def get_notification(self, notification_id):
-        """Retrieve a specific notification.
+    def get_transaction(self, account_or_account_id, transaction_id, cents):
+        """Retrieve a specific transaction.
 
         Args:
-            notification_id: ID of the notification to be retrieved
+            account_or_account_id: account to be queried or its ID
+            transaction_id: ID of the transaction to be retrieved
+            cents (bool): If true amounts will be shown in cents, Optional,
+                default: False
 
         Returns:
-            Notification object for the respective notification
+            Transaction object representing the transaction to be retrieved
         """
-        return self._query_api_object(
-            Notification, "/rest/notifications/" + str(notification_id)
-        )
+        options = {"cents": cents} if cents else {}
 
-    def add_notification(self, notification):
-        """Create a new notification.
-
-        Args:
-            notification: new notification to be created. It should have no
-                notification_id set
-
-        Returns:
-            Notification object for the newly created notification
-        """
-        return self._query_api_object(
-            Notification, "/rest/notifications", notification.dump(), "POST"
-        )
-
-    def modify_notification(self, notification):
-        """Modify a notification.
-
-        Args:
-            notification: modified notification object to be saved
-
-        Returns:
-            Notification object for the modified notification
-        """
-        return self._query_api_object(
-            Notification,
-            "/rest/notifications/" + notification.notification_id,
-            notification.dump(),
-            "PUT",
-        )
-
-    def remove_notification(self, notification_or_notification_id):
-        """Remove a notification.
-
-        Args:
-            notification_or_notification_id: notification to be removed or its
-                ID
-        """
-        if isinstance(notification_or_notification_id, Notification):
-            notification_or_notification_id = (
-                notification_or_notification_id.notification_id
+        account_id = get_account_id(account_or_account_id)
+        if account_id is not None:
+            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(
+                account_or_account_id, transaction_id, urlencode(options)
+            )
+        else:
+            path = "/rest/transactions/{0}?{1}".format(
+                transaction_id, urlencode(options)
             )
 
-        query = "/rest/notifications/{0}".format(
-            notification_or_notification_id
+        return self._query_api_object(Transaction, path)
+
+    def modify_account_transactions(self, account_or_account_id, visited=None):
+        """Modify all transactions of a specific account.
+
+        Args:
+            account_or_account_id: account to be modified or its ID
+            visited: new value of the visited field for the transactions
+
+        Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+
+        query = "/rest/accounts/{0}/transactions".format(account_or_account_id)
+        return self._request_with_exception(query, {"visited": visited}, "PUT")
+
+    def modify_user_transactions(self, visited=None):
+        """Modify all transactions of the current user.
+
+        Args:
+            visited: new value of the visited field for the transactions
+
+        Returns:
+            Nothing if the request was successful
+        """
+        return self._request_with_exception(
+            "/rest/transactions", {"visited": visited}, "PUT"
         )
-        self._request_with_exception(query, method="DELETE")
+
+    def delete_transaction(
+        self, account_or_account_id, transaction_or_transaction_id
+    ):
+        """Delete a specific transaction.
+
+        Args:
+            account_or_account_id: account to be modified or its ID
+            transaction_or_transaction_id: Transaction or its ID to be deleted
+
+        Returns:
+            Nothing if the request was successful
+        """
+        if isinstance(account_or_account_id, Account):
+            account_or_account_id = account_or_account_id.account_id
+        if isinstance(transaction_or_transaction_id, Transaction):
+            transaction_or_transaction_id = (
+                transaction_or_transaction_id.transaction_id
+            )
+
+        query = "/rest/accounts/{0}/transactions/{1}".format(
+            account_or_account_id, transaction_or_transaction_id
+        )
+        return self._request_with_exception(query, method="DELETE")
+
+    # Payments (https://docs.finx.finleap.cloud/stable/#tag/Payments):
 
     @property
     def payments(self):
@@ -1094,7 +1160,8 @@ class FigoSession(FigoObject):
     def get_payment_challenges(
         self, account_or_account_id, payment_id, init_id
     ):
-        """List payment challenges
+        """List payment challenges.
+        https://docs.finx.finleap.cloud/stable/#operation/listPaymentChallenges
 
         Args:
             account_or_account_id: account to be queried or its ID, Required
@@ -1117,7 +1184,8 @@ class FigoSession(FigoObject):
     def get_payment_challenge(
         self, account_or_account_id, payment_id, init_id, challenge_id
     ):
-        """Get payment challenge
+        """Get payment challenge.
+        https://docs.finx.finleap.cloud/stable/#operation/getPaymentChallenge
 
         Args:
             account_or_account_id: account to be queried or its ID, Required
@@ -1141,7 +1209,8 @@ class FigoSession(FigoObject):
     def solve_payment_challenges(
         self, account_or_account_id, payment_id, init_id, challenge_id, payload
     ):
-        """Get payment challenge
+        """Get payment challenge.
+        https://docs.finx.finleap.cloud/stable/#operation/solvePaymentChallenge
 
         Args:
             account_or_account_id (str): account to be queried or its ID,
@@ -1170,6 +1239,53 @@ class FigoSession(FigoObject):
             f"/challenges/{challenge_id}/response"
         )
         return self._query_api_object(Challenge, path, payload, "POST",)
+
+    # Standing Orders
+    # (https://docs.finx.finleap.cloud/stable/#tag/Standing-Orders):
+
+    def get_standing_orders(
+        self,
+        account_or_account_id=None,
+        accounts=None,
+        count=None,
+        offset=None,
+        cents=None,
+    ):
+        """Get an array of `StandingOrder` objects, one for each standing
+        order of the user on the specified account.
+
+        Args:
+            account_or_account_id: account to be queried or its ID, Optional
+            accounts: Comma separated list of account IDs, Optional
+            count: Limit the number of returned items, Optional
+            offset: Skip this number of transactions in the response, Optional
+            cents: If true amounts will be shown in cents, Optional, default:
+                False
+
+        Returns:
+            List of standing order objects
+        """
+
+        options = filter_none(
+            {
+                "accounts": accounts,
+                "count": count,
+                "offset": offset,
+                "cents": cents,
+            }
+        )
+
+        account_id = get_account_id(account_or_account_id)
+        if account_id:
+            query = "/rest/accounts/{0}/standing_orders?{1}".format(
+                account_id, urlencode(options)
+            )
+        else:
+            query = "/rest/standing_orders?{0}".format(urlencode(options))
+
+        return self._query_api_object(
+            StandingOrder, query, collection_name="standing_orders"
+        )
 
     def get_standing_order(
         self,
@@ -1223,124 +1339,7 @@ class FigoSession(FigoObject):
 
         self._request_with_exception(path, method="DELETE")
 
-    @property
-    def payment_proposals(self):
-        """List of payment proposal object."""
-        return self.get_payment_proposals()
-
-    def get_payment_proposals(self):
-        """Provide a address book-like list of proposed wire transfer partners.
-        """
-        res_data = self._request_with_exception("/rest/address_book")
-        return self._process_model_list(res_data, PaymentProposal)
-
-    @property
-    def transactions(self):
-        """An array of `Transaction` objects, one for each transaction of
-        the user.
-        """
-        return self._query_api_object(
-            Transaction, "/rest/transactions", collection_name="transactions"
-        )
-
-    def get_transactions(self, account_or_account_id, options):
-        """Get an array of Transaction, one for each transaction of the user.
-
-        Args:
-            account_or_account_id (str): ID of the account for which to list
-                the transactions OR account object.
-            options (obj): further optional options
-                accounts: comma separated list of account IDs.
-                filter (obj) - Can take 4 possible keys:
-                    - date (ISO date) - Transaction date
-                    - person (str) - Payer or payee name
-                    - purpose (str)
-                    - amount (num)
-                sync_id (str): Show only those items that have been created
-                    within this synchronization.
-                count (int): Limit the number of returned transactions.
-                offset (int): Which offset into the result set should be used
-                    to determine the first transaction to return (useful in
-                    combination with count)
-                sort (enum): ASC or DESC
-                since (ISO date): Return only transactions after this date
-                    based on since_type
-                until (ISO date): This parameter can either be a transaction
-                    ID or a date. Return only transactions which were booked
-                    on or before
-                since_type (enum): This parameter defines how the parameter
-                    since will be interpreted. Possible values: "booked",
-                    "created", "modified".
-                types (enum): Comma separated list of transaction types used
-                    for filtering. Possible values: "Transfer",
-                    "Standing order", "Direct debit", "Salary or rent",
-                    "GeldKarte", "Charges or interest".
-                cents (bool): If true amounts will be shown in cents, Optional,
-                    default: False
-                include_pending (bool): This flag indicates whether pending
-                    transactions should be included in the response. Pending
-                    transactions are always included as a complete set,
-                    regardless of the `since` parameter.
-                include_statistics (bool): Includes statistics on the returned
-                    transactions if true, Default: false.
-
-        Returns:
-            List of Transaction
-        """
-        allowed_keys = [
-            "accounts",
-            "filter",
-            "sync_id",
-            "count",
-            "offset",
-            "sort",
-            "since",
-            "until",
-            "since_type",
-            "types",
-            "cents",
-            "include_pending",
-            "include_statistics",
-        ]
-        options = filter_none(filter_keys(options, allowed_keys))
-
-        account_id = get_account_id(account_or_account_id)
-        if account_id is not None:
-            path = "/rest/accounts/{0}/transactions?{1}".format(
-                account_id, urlencode(options)
-            )
-        else:
-            path = "/rest/transactions?{0}".format(urlencode(options))
-
-        return self._query_api_object(
-            Transaction, path, collection_name="transactions"
-        )
-
-    def get_transaction(self, account_or_account_id, transaction_id, cents):
-        """Retrieve a specific transaction.
-
-        Args:
-            account_or_account_id: account to be queried or its ID
-            transaction_id: ID of the transaction to be retrieved
-            cents (bool): If true amounts will be shown in cents, Optional,
-                default: False
-
-        Returns:
-            Transaction object representing the transaction to be retrieved
-        """
-        options = {"cents": cents} if cents else {}
-
-        account_id = get_account_id(account_or_account_id)
-        if account_id is not None:
-            path = "/rest/accounts/{0}/transactions/{1}?{2}".format(
-                account_or_account_id, transaction_id, urlencode(options)
-            )
-        else:
-            path = "/rest/transactions/{0}?{1}".format(
-                transaction_id, urlencode(options)
-            )
-
-        return self._query_api_object(Transaction, path)
+    # Securities (https://docs.finx.finleap.cloud/stable/#tag/Securities):
 
     @property
     def securities(self):
@@ -1465,58 +1464,92 @@ class FigoSession(FigoObject):
             "/rest/securities", {"visited": visited}, "PUT"
         )
 
-    def modify_account_transactions(self, account_or_account_id, visited=None):
-        """Modify all transactions of a specific account.
+    # Financial Timeline
+    # (https://docs.finx.finleap.cloud/stable/#tag/Financial-Timeline):
 
-        Args:
-            account_or_account_id: account to be modified or its ID
-            visited: new value of the visited field for the transactions
+    # TODO: Financial Timeline is not implemented - do we need them?
 
-        Returns:
-            Nothing if the request was successful
+    # Aggregations (https://docs.finx.finleap.cloud/stable/#tag/Aggregations):
+
+    # TODO: Aggregations are not implemented - do we need them?
+
+    # Contracts (https://docs.finx.finleap.cloud/stable/#tag/Contracts):
+
+    # TODO: Contracts are not implemented - do we need them?
+
+    # Notifications
+    # (https://docs.finx.finleap.cloud/stable/#tag/Notifications):
+
+    @property
+    def notifications(self):
+        """An array of `Notification` objects, one for each registered
+        notification.
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-
-        query = "/rest/accounts/{0}/transactions".format(account_or_account_id)
-        return self._request_with_exception(query, {"visited": visited}, "PUT")
-
-    def modify_user_transactions(self, visited=None):
-        """Modify all transactions of the current user.
-
-        Args:
-            visited: new value of the visited field for the transactions
-
-        Returns:
-            Nothing if the request was successful
-        """
-        return self._request_with_exception(
-            "/rest/transactions", {"visited": visited}, "PUT"
+        return self._query_api_object(
+            Notification,
+            "/rest/notifications",
+            collection_name="notifications",
         )
 
-    def delete_transaction(
-        self, account_or_account_id, transaction_or_transaction_id
-    ):
-        """Delete a specific transaction.
+    def get_notification(self, notification_id):
+        """Retrieve a specific notification.
 
         Args:
-            account_or_account_id: account to be modified or its ID
-            transaction_or_transaction_id: Transaction or its ID to be deleted
+            notification_id: ID of the notification to be retrieved
 
         Returns:
-            Nothing if the request was successful
+            Notification object for the respective notification
         """
-        if isinstance(account_or_account_id, Account):
-            account_or_account_id = account_or_account_id.account_id
-        if isinstance(transaction_or_transaction_id, Transaction):
-            transaction_or_transaction_id = (
-                transaction_or_transaction_id.transaction_id
+        return self._query_api_object(
+            Notification, "/rest/notifications/" + str(notification_id)
+        )
+
+    def add_notification(self, notification):
+        """Create a new notification.
+
+        Args:
+            notification: new notification to be created. It should have no
+                notification_id set
+
+        Returns:
+            Notification object for the newly created notification
+        """
+        return self._query_api_object(
+            Notification, "/rest/notifications", notification.dump(), "POST"
+        )
+
+    def modify_notification(self, notification):
+        """Modify a notification.
+
+        Args:
+            notification: modified notification object to be saved
+
+        Returns:
+            Notification object for the modified notification
+        """
+        return self._query_api_object(
+            Notification,
+            "/rest/notifications/" + notification.notification_id,
+            notification.dump(),
+            "PUT",
+        )
+
+    def remove_notification(self, notification_or_notification_id):
+        """Remove a notification.
+
+        Args:
+            notification_or_notification_id: notification to be removed or its
+                ID
+        """
+        if isinstance(notification_or_notification_id, Notification):
+            notification_or_notification_id = (
+                notification_or_notification_id.notification_id
             )
 
-        query = "/rest/accounts/{0}/transactions/{1}".format(
-            account_or_account_id, transaction_or_transaction_id
+        query = "/rest/notifications/{0}".format(
+            notification_or_notification_id
         )
-        return self._request_with_exception(query, method="DELETE")
+        self._request_with_exception(query, method="DELETE")
 
     def parse_webhook_notification(self, message_body):
         """Parse a webhook notification and get a WebhookNotification object.

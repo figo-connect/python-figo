@@ -770,25 +770,6 @@ class Challenge(ModelBase):
         return f"Challenge: {self.title}"
 
 
-class PaymentProposal(ModelBase):
-    """Object representing a payment proposal.
-
-    Attributes:
-        account_number: Account number or IBAN
-        bank_code: bank code or BIC
-        name: Name of the payment proposal
-    """
-
-    __dump_attributes__ = ["account_number", "bank_code", "name"]
-
-    account_number = None
-    bank_code = None
-    name = None
-
-    def __str__(self, *args, **kwargs):
-        return f"Payment Proposal: {self.name}"
-
-
 class Security(ModelBase):
     """Object representing one bank security on a certain bank account of the
     user.

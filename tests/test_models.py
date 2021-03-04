@@ -11,7 +11,6 @@ from figo.models import (  # noqa: F401
     LoginSettings,
     Notification,
     Payment,
-    PaymentProposal,
     Security,
     StandingOrder,
     Sync,
@@ -258,17 +257,6 @@ def test_create_challenge_from_dict(figo_session):
     challenge = Challenge.from_dict(figo_session, data)
     assert isinstance(challenge, Challenge)
     print(challenge)
-
-
-def test_create_payment_proposal_from_dict(figo_session):
-    data = {
-        "account_number": "DE67900900424711951500",
-        "bank_code": "DEMODE01",
-        "name": "Girokonto",
-    }
-    payment_proposal = PaymentProposal.from_dict(figo_session, data)
-    assert isinstance(payment_proposal, PaymentProposal)
-    print(payment_proposal)
 
 
 def test_create_security_from_dict(figo_session):

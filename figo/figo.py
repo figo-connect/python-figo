@@ -223,13 +223,9 @@ class FigoConnection(FigoObject):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        basic_auth = "{0}:{1}".format(
-            self.client_id, self.client_secret
-        ).encode("ascii")
+        basic_auth = f"{self.client_id}:{self.client_secret}".encode("ascii")
         basic_auth_encoded = base64.b64encode(basic_auth).decode("utf-8")
-        self.headers.update(
-            {"Authorization": "Basic {0}".format(basic_auth_encoded)}
-        )
+        self.headers.update({"Authorization": f"Basic {basic_auth_encoded}"})
 
     def _query_api(self, path, data=None):
         """Helper method for making a OAuth2-compliant API call.
@@ -261,19 +257,16 @@ class FigoConnection(FigoObject):
         Returns:
             the URL of the first page of the login process
         """
-        return (
-            self.api_endpoint
-            + "/auth/code?"
-            + urlencode(
-                {
-                    "response_type": "code",
-                    "client_id": self.client_id,
-                    "redirect_uri": self.redirect_uri,
-                    "scope": scope,
-                    "state": state,
-                }
-            )
+        query = urlencode(
+            {
+                "response_type": "code",
+                "client_id": self.client_id,
+                "redirect_uri": self.redirect_uri,
+                "scope": scope,
+                "state": state,
+            }
         )
+        return f"{self.api_endpoint}/auth/code?{query}"
 
     def convert_authentication_code(self, authentication_code):
         """Convert the authentication code received as result of the login
@@ -296,7 +289,7 @@ class FigoConnection(FigoObject):
         if authentication_code[0] != "O":
             raise Exception("Invalid authentication code")
 
-        response = self._request_api(
+        res_data = self._request_with_exception(
             "/auth/token",
             data={
                 "code": authentication_code,
@@ -306,16 +299,11 @@ class FigoConnection(FigoObject):
             method="POST",
         )
 
-        if "error" in response:
-            raise FigoException.from_dict(response)
-
+        expire_dt = datetime.now() + timedelta(seconds=res_data["expires_in"])
         return {
-            "access_token": response["access_token"],
-            "refresh_token": response["refresh_token"]
-            if "refresh_token" in response
-            else None,
-            "expires": datetime.now()
-            + timedelta(seconds=response["expires_in"]),
+            "access_token": res_data["access_token"],
+            "refresh_token": res_data.get("refresh_token"),
+            "expires": expire_dt,
         }
 
     def credential_login(self, username, password, scope=None):
@@ -331,7 +319,6 @@ class FigoConnection(FigoObject):
         Returns:
             Dictionary which contains an access token and a refresh token.
         """
-
         data = filter_none(
             {
                 "grant_type": "password",
@@ -341,21 +328,19 @@ class FigoConnection(FigoObject):
             }
         )
 
-        response = self._request_api("/auth/token", data, method="POST")
+        res_data = self._request_with_exception(
+            "/auth/token", data, method="POST"
+        )
 
-        if "error" in response:
-            raise FigoException.from_dict(response)
-
+        expire_dt = datetime.now() + timedelta(seconds=res_data["expires_in"])
         return {
-            "access_token": response["access_token"],
-            "refresh_token": response["refresh_token"]
-            if "refresh_token" in response
-            else None,
-            "expires": datetime.now()
-            + timedelta(seconds=response["expires_in"]),
-            "scope": response["scope"],
+            "access_token": res_data["access_token"],
+            "refresh_token": res_data.get("refresh_token"),
+            "expires": expire_dt,
+            "scope": res_data["scope"],
         }
 
+    # TODO: Missing unit test but used in ownly-backend
     def convert_refresh_token(self, refresh_token):
         """Convert a refresh token (granted for offline access and returned by
         `convert_authentication_code`) into an access token usable for data
@@ -380,17 +365,17 @@ class FigoConnection(FigoObject):
             "redirect_uri": self.redirect_uri,
             "grant_type": "refresh_token",
         }
-        response = self._request_api("/auth/token", data=data, method="POST")
+        res_data = self._request_with_exception(
+            "/auth/token", data=data, method="POST"
+        )
 
-        if "error" in response:
-            raise FigoException.from_dict(response)
-
+        expire_dt = datetime.now() + timedelta(seconds=res_data["expires_in"])
         return {
-            "access_token": response["access_token"],
-            "expires": datetime.now()
-            + timedelta(seconds=response["expires_in"]),
+            "access_token": res_data["access_token"],
+            "expires": expire_dt,
         }
 
+    # TODO: Missing unit test but used in ownly-backend
     def revoke_token(self, token):
         """Revoke a granted access or refresh token and thereby invalidate it.
 
@@ -400,17 +385,14 @@ class FigoConnection(FigoObject):
         Args:
             token: access or refresh token to be revoked
         """
-        response = self._request_api(
-            "/auth/revoke?" + urlencode({"token": token})
-        )
-        if "error" in response:
-            raise FigoException.from_dict(response)
+        options = urlencode({"token": token})
+        return self._request_with_exception(f"/auth/revoke?{options}")
 
     def add_user(self, name, email, password, language="de"):
         """Create a new figo Account.
 
         Args:
-            name: First and last name
+            name: Full name
             email: Email address; It must obey the figo username & password
                 policy
             password: New figo Account password; It must obey the figo
@@ -420,47 +402,19 @@ class FigoConnection(FigoObject):
         Returns:
             Auto-generated recovery password.
         """
-        response = self._request_api(
-            path="/auth/user",
-            data={
-                "full_name": name,
-                "email": email,
-                "password": password,
-                "language": language,
-            },
-            method="POST",
+        data = {
+            "full_name": name,
+            "email": email,
+            "password": password,
+            "language": language,
+        }
+        return self._request_with_exception(
+            "/auth/user", data=data, method="POST",
         )
 
-        if response is None:
-            return None
-        elif "error" in response:
-            raise FigoException.from_dict(response)
-        else:
-            return response
-
-    def add_user_and_login(self, name, email, password, language="de"):
-        """Create a new figo account and get a session token for the new
-        account.
-
-        Args:
-            name: First and last name
-            email: Email address; It must obey the figo username & password
-                policy
-            password: New figo Account password; It must obey the figo
-                username & password policy
-            language: Two-letter code of preferred language
-
-        Returns:
-            Token dictionary for further API access
-        """
-        self.add_user(name, email, password, language)
-        return self.credential_login(email, password)
-
     def get_version(self):
-        """
-        Returns the version of the API.
-        """
-        return self._request_api(path="/version", method="GET")
+        """Returns the version of the API."""
+        return self._request_with_exception("/version")
 
     def get_catalog(self, q=None, country_code=None):
         """Return a dict with lists of supported banks and payment services,

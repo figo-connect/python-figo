@@ -12,15 +12,10 @@ from figo.models import (  # noqa: F401
     Notification,
     Payment,
     PaymentProposal,
-    Process,
-    ProcessOptions,
-    ProcessStep,
     Security,
     StandingOrder,
     Sync,
     SynchronizationStatus,
-    TaskState,
-    TaskToken,
     Transaction,
     User,
     WebhookNotification,
@@ -253,32 +248,6 @@ def test_create_credential_from_dict(figo_session):
     print(credential)
 
 
-def test_create_task_token_from_dict(figo_session):
-    data = {
-        "task_token": (
-            "YmB-BtvbWufLnbwgAVfP7XfLatwhrtu0sATfnZNR7LGP-aLXiZ7BKzLdZI--"
-            "EqEPnwh_h6mCxToLEBhtA7LVd4uM4gTcZG8F6UJs47g6kWJ0"
-        )
-    }
-    task_token = TaskToken.from_dict(figo_session, data)
-    assert isinstance(task_token, TaskToken)
-    print(task_token)
-
-
-def test_create_task_state_from_dict(figo_session):
-    data = {
-        "account_id": "A1.2",
-        "is_ended": False,
-        "is_erroneous": False,
-        "is_waiting_for_pin": False,
-        "is_waiting_for_response": False,
-        "message": "Getting balance...",
-    }
-    task_state = TaskState.from_dict(figo_session, data)
-    assert isinstance(task_state, TaskState)
-    print(task_state)
-
-
 def test_create_challenge_from_dict(figo_session):
     data = {
         "title": "Pin Eingabe",
@@ -300,77 +269,6 @@ def test_create_payment_proposal_from_dict(figo_session):
     payment_proposal = PaymentProposal.from_dict(figo_session, data)
     assert isinstance(payment_proposal, PaymentProposal)
     print(payment_proposal)
-
-
-def test_create_process_from_dict(figo_session):
-    data = {
-        "email": "process.1@demo.figo.io",
-        "password": "figofigo",
-        "state": "123",
-        "steps": [
-            {"options": {}, "type": "figo.steps.account.create"},
-            {
-                "options": {
-                    "account_number": "100100100",
-                    "amount": 99,
-                    "bank_code": "82051000",
-                    "currency": "EUR",
-                    "name": "Figo GmbH",
-                    "purpose": "Yearly contribution",
-                    "type": "Transfer",
-                },
-                "type": "figo.steps.payment.submit",
-            },
-        ],
-    }
-    process = Process.from_dict(figo_session, data)
-    assert isinstance(process, Process)
-    print(process)
-
-
-def test_create_process_step_from_dict(figo_session):
-    data = {
-        "options": {
-            "account_number": "100100100",
-            "amount": 99,
-            "bank_code": "82051000",
-            "currency": "EUR",
-            "name": "Figo GmbH",
-            "purpose": "Yearly contribution",
-            "type": "Transfer",
-        },
-        "type": "figo.steps.payment.submit",
-    }
-    process_step = ProcessStep.from_dict(figo_session, data)
-    assert isinstance(process_step, ProcessStep)
-    print(process_step)
-
-
-def test_create_process_options_from_dict(figo_session):
-    data = {
-        "account_number": "100100100",
-        "amount": 99,
-        "bank_code": "82051000",
-        "currency": "EUR",
-        "name": "Figo GmbH",
-        "purpose": "Yearly contribution",
-        "type": "Transfer",
-    }
-    process_options = ProcessOptions.from_dict(figo_session, data)
-    assert isinstance(process_options, ProcessOptions)
-    print(process_options)
-
-
-def test_create_process_token_from_dict(figo_session):
-    data = {
-        "task_token": (
-            "YmB-BtvbWufLnbwgAVfP7XfLatwhrtu0sATfnZNR7LGP-aLXiZ7BKzLdZI--"
-            "EqEPnwh_h6mCxToLEBhtA7LVd4uM4gTcZG8F6UJs47g6kWJ0"
-        )
-    }
-    task_token = TaskToken.from_dict(figo_session, data)
-    assert isinstance(task_token, TaskToken)
-    print(task_token)
 
 
 def test_create_security_from_dict(figo_session):

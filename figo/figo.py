@@ -21,15 +21,10 @@ from .models import (  # noqa: F401
     Notification,
     Payment,
     PaymentProposal,
-    Process,
-    ProcessOptions,
-    ProcessStep,
     Security,
     StandingOrder,
     Sync,
     SynchronizationStatus,
-    TaskState,
-    TaskToken,
     Transaction,
     User,
     WebhookNotification,
@@ -400,6 +395,7 @@ class FigoConnection(FigoObject):
         """Returns the version of the API."""
         return self._request_with_exception("/version")
 
+    # TODO: Review test cases and extend them about entity_type
     def get_catalog(self, q=None, country_code='de', entity_type=None):
         """Return a dict with lists of supported banks and payment services,
         with client auth.
@@ -457,6 +453,105 @@ class FigoSession(FigoObject):
             {"Authorization": "Bearer {0}".format(self.access_token)}
         )
         self.sync_poll_retry = sync_poll_retry
+
+    @property
+    def user(self):
+        """Get the current figo Account.
+
+        Returns:
+            User object for the current figo Account
+        """
+        return self._query_api_object(User, "/rest/user")
+
+    # TODO: Missing test cases
+    def modify_user(self, user):
+        """Modify figo Account.
+
+        Args:
+            user: modified user object to be saved
+
+        Return:
+            User object for the updated figo Account
+        """
+        return self._query_api_object(User, "/rest/user", user.dump(), "PUT")
+
+    def remove_user(self):
+        """Delete figo Account."""
+        return self._request_with_exception("/rest/user", method="DELETE")
+
+    def get_supported_payment_services(self, country_code):
+        """Return a list of supported credit cards and other payment services.
+
+        Args:
+            country_code (str): country code of the requested payment services
+
+        Returns:
+            [LoginSettings]: list of supported credit cards and other payment
+                services
+        """
+        services = self._request_with_exception(
+            "/rest/catalog/services/%s" % country_code
+        )["services"]
+        return self._process_catalog_list(services)
+
+    def get_supported_banks(self, country_code):
+        """Return a list of supported banks.
+
+        Args:
+            country_code (str): country code of the requested banks
+
+        Returns:
+            [LoginSettings]: list of supported banks
+        """
+        banks = self._request_with_exception(
+            "/rest/catalog/banks/%s" % country_code
+        )["banks"]
+        return self._process_catalog_list(banks)
+
+    def get_login_settings(self, country_code, item_id):
+        """Return the login settings of a bank.
+
+        Args:
+            country_code (str): country code of the requested bank
+            item_id (str): bank code or fake bank code of the requested bank
+
+        Returns:
+            LoginSettings: Object that contains information which are needed
+                for logging in to the bank
+        """
+        query_params = urlencode({"country": country_code, "q": item_id})
+
+        # now the catalog returns matches for all possible banks
+        response = self._query_api_object(
+            LoginSettings,
+            "/catalog/banks?{}".format(query_params),
+            collection_name="collection",
+        )
+        if len(response) > 0:
+            return response[0]
+
+        err_msg = "Login settings for bank {} were not found".format(item_id)
+
+        raise FigoException(
+            error="login_settings_not_found", error_description=err_msg
+        )
+
+    def get_service_login_settings(self, country_code, item_id):
+        """Return the login settings of a payment service.
+
+        Args:
+            country_code (str): country code of the requested payment service
+            item_id (str): bank code or fake bank code of the requested
+                payment service
+
+        Returns:
+            LoginSettings: Object that contains information which are needed
+                for logging in to the payment service.
+        """
+        return self._query_api_object(
+            LoginSettings,
+            "/rest/catalog/services/%s/%s" % (country_code, item_id),
+        )
 
     @property
     def accounts(self):
@@ -754,80 +849,6 @@ class FigoSession(FigoObject):
         """
         return self._request_api(
             path="/rest/accesses/%s/remove_pin" % access_id, method="POST"
-        )
-
-    def get_supported_payment_services(self, country_code):
-        """Return a list of supported credit cards and other payment services.
-
-        Args:
-            country_code (str): country code of the requested payment services
-
-        Returns:
-            [LoginSettings]: list of supported credit cards and other payment
-                services
-        """
-        services = self._request_with_exception(
-            "/rest/catalog/services/%s" % country_code
-        )["services"]
-        return self._process_catalog_list(services)
-
-    def get_supported_banks(self, country_code):
-        """Return a list of supported banks.
-
-        Args:
-            country_code (str): country code of the requested banks
-
-        Returns:
-            [LoginSettings]: list of supported banks
-        """
-        banks = self._request_with_exception(
-            "/rest/catalog/banks/%s" % country_code
-        )["banks"]
-        return self._process_catalog_list(banks)
-
-    def get_login_settings(self, country_code, item_id):
-        """Return the login settings of a bank.
-
-        Args:
-            country_code (str): country code of the requested bank
-            item_id (str): bank code or fake bank code of the requested bank
-
-        Returns:
-            LoginSettings: Object that contains information which are needed
-                for logging in to the bank
-        """
-        query_params = urlencode({"country": country_code, "q": item_id})
-
-        # now the catalog returns matches for all possible banks
-        response = self._query_api_object(
-            LoginSettings,
-            "/catalog/banks?{}".format(query_params),
-            collection_name="collection",
-        )
-        if len(response) > 0:
-            return response[0]
-
-        err_msg = "Login settings for bank {} were not found".format(item_id)
-
-        raise FigoException(
-            error="login_settings_not_found", error_description=err_msg
-        )
-
-    def get_service_login_settings(self, country_code, item_id):
-        """Return the login settings of a payment service.
-
-        Args:
-            country_code (str): country code of the requested payment service
-            item_id (str): bank code or fake bank code of the requested
-                payment service
-
-        Returns:
-            LoginSettings: Object that contains information which are needed
-                for logging in to the payment service.
-        """
-        return self._query_api_object(
-            LoginSettings,
-            "/rest/catalog/services/%s/%s" % (country_code, item_id),
         )
 
     def get_standing_orders(
@@ -1254,65 +1275,6 @@ class FigoSession(FigoObject):
             for payment_proposal in response
         ]
 
-    def get_task_state(
-        self,
-        task_token_obj,
-        pin=None,
-        continue_=None,
-        save_pin=None,
-        response=None,
-    ):
-        """Return the progress of the given task. The kwargs are used to
-        submit additional content for the task.
-
-        Args:
-            task_token_obj (TaskToken): Token of the task to poll.
-            pin (str): Submit PIN. If this parameter is set, then the
-                parameter save_pin must be set, too.
-            continue_ (bool): This flag signals to continue after an error
-                condition or to skip a PIN or challenge-response entry
-            save_pin (bool): This flag indicates whether the user has chosen
-                to save the PIN on the figo Connect server
-            response (dict): Submit response to challenge.
-
-        Returns:
-            TaskState: Object that indicates the current status of the queried
-                task
-        """
-        logger.debug("Getting task state for: %s", task_token_obj)
-
-        data = {
-            "id": task_token_obj.task_token,
-            "pin": pin,
-            "continue": continue_,
-            "save_pin": save_pin,
-            "response": response,
-        }
-
-        # TODO: What is this comment?
-        data = dict(
-            (k, v) for k, v in data.items() if v is not None
-        )  # noqa, py26 compatibility
-
-        return self._query_api_object(
-            TaskState,
-            "/task/progress?id=%s" % task_token_obj.task_token,
-            data,
-            "POST",
-        )
-
-    def cancel_task(self, task_token_obj):
-        """Cancel a task if possible.
-
-        Args:
-            task_token_obj: TaskToken object of the task to cancel
-        """
-        return self._request_with_exception(
-            path="/task/cancel?id=%s" % task_token_obj.task_token,
-            data={"id": task_token_obj.task_token},
-            method="POST",
-        )
-
     @property
     def transactions(self):
         """An array of `Transaction` objects, one for each transaction of
@@ -1596,30 +1558,6 @@ class FigoSession(FigoObject):
             account_or_account_id, transaction_or_transaction_id
         )
         return self._request_with_exception(query, method="DELETE")
-
-    @property
-    def user(self):
-        """Get the current figo Account.
-
-        Returns:
-            User object for the current figo Account
-        """
-        return self._query_api_object(User, "/rest/user")
-
-    def modify_user(self, user):
-        """Modify figo Account.
-
-        Args:
-            user: modified user object to be saved
-
-        Return:
-            User object for the updated figo Account
-        """
-        return self._query_api_object(User, "/rest/user", user.dump(), "PUT")
-
-    def remove_user(self):
-        """Delete figo Account."""
-        return self._request_with_exception("/rest/user", method="DELETE")
 
     def parse_webhook_notification(self, message_body):
         """Parse a webhook notification and get a WebhookNotification object.

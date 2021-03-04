@@ -59,6 +59,103 @@ class User(ModelBase):
         return f"User: {self.full_name} ({self.id}, {self.email})"
 
 
+class BankContact(ModelBase):
+    """Object representing a BankContact.
+
+    Attributes:
+        bank_id: figo internal bank id
+        sepa_creditor_id: SEPA direct debit creditor id
+        save_pin: boolean, indicates whether user has chosen to save PIN
+    """
+
+    __dump_attributes__ = ["sepa_creditor_id"]
+
+    bank_id = None
+    sepa_creditor_id = None
+    save_pin = None
+
+    def __str__(self):
+        return f"BankContact: {self.bank_id}"
+
+
+class Service(ModelBase):
+    """Object representing a payment service.
+
+    Attributes:
+        name: human readable name of the service
+        bank_code: surrogate bank code used for this service
+        state: URL to a logo of the bank
+        additional_icons: dictionary that maps resolutions to icon URLs
+        language: the language the service description is in
+        available_languages: list of other available languages
+    """
+
+    __dump_attributes__ = [
+        "name",
+        "bank_code",
+        "icon",
+        "additional_icons",
+        "language",
+    ]
+
+    name = None
+    bank_code = None
+    state = None
+    additional_icons = None
+    language = None
+    available_languages = []
+
+    def __init__(self, session, **kwargs):
+        super(Service, self).__init__(session, **kwargs)
+        if self.language:
+            self.available_languages = [
+                lang for lang in self.language["available"]
+            ]
+            self.language = self.language["current"]
+
+    def __str__(self, *args, **kwargs):
+        return f"Service: {self.bank_code}"
+
+
+class LoginSettings(ModelBase):
+    """Object representing login settings for a banking service.
+
+    Attributes:
+        bank_name: human readable bank of the bank
+        supported: boolean, if set bank is supported
+        icon: URL to the logo of the bank
+        additional_icons: dictionary that maps resolutions to icon URLs
+        credentials: list of credentials needed to connect to the bank
+        auth_type: kind of authentication used by the bank
+        advice: any additional advice useful to locate the required credentials
+    """
+
+    __dump_attributes__ = [
+        "id",
+        "name",
+        "icon",
+        "supported",
+        "country",
+        "language",
+        "bic",
+        "access_methods",
+        "bank_code",
+    ]
+
+    id = None
+    name = None
+    icon = None
+    supported = None
+    country = None
+    language = None
+    bic = None
+    access_methods = None
+    bank_code = None
+
+    def __str__(self, *args, **kwargs):
+        return f"LoginSettings: {self.name}"
+
+
 class Account(ModelBase):
     """Object representing one bank account of the user, independent of the
     exact account type.
@@ -221,25 +318,6 @@ class Account(ModelBase):
             )
         if self.balance:
             self.balance = AccountBalance.from_dict(self.session, self.balance)
-
-
-class BankContact(ModelBase):
-    """Object representing a BankContact.
-
-    Attributes:
-        bank_id: figo internal bank id
-        sepa_creditor_id: SEPA direct debit creditor id
-        save_pin: boolean, indicates whether user has chosen to save PIN
-    """
-
-    __dump_attributes__ = ["sepa_creditor_id"]
-
-    bank_id = None
-    sepa_creditor_id = None
-    save_pin = None
-
-    def __str__(self):
-        return f"BankContact: {self.bank_id}"
 
 
 class AccountBalance(ModelBase):
@@ -697,84 +775,6 @@ class WebhookNotification(ModelBase):
 
     def __str__(self):
         return f"WebhookNotification: {self.notification_id}"
-
-
-class Service(ModelBase):
-    """Object representing a payment service.
-
-    Attributes:
-        name: human readable name of the service
-        bank_code: surrogate bank code used for this service
-        state: URL to a logo of the bank
-        additional_icons: dictionary that maps resolutions to icon URLs
-        language: the language the service description is in
-        available_languages: list of other available languages
-    """
-
-    __dump_attributes__ = [
-        "name",
-        "bank_code",
-        "icon",
-        "additional_icons",
-        "language",
-    ]
-
-    name = None
-    bank_code = None
-    state = None
-    additional_icons = None
-    language = None
-    available_languages = []
-
-    def __init__(self, session, **kwargs):
-        super(Service, self).__init__(session, **kwargs)
-        if self.language:
-            self.available_languages = [
-                lang for lang in self.language["available"]
-            ]
-            self.language = self.language["current"]
-
-    def __str__(self, *args, **kwargs):
-        return f"Service: {self.bank_code}"
-
-
-class LoginSettings(ModelBase):
-    """Object representing login settings for a banking service.
-
-    Attributes:
-        bank_name: human readable bank of the bank
-        supported: boolean, if set bank is supported
-        icon: URL to the logo of the bank
-        additional_icons: dictionary that maps resolutions to icon URLs
-        credentials: list of credentials needed to connect to the bank
-        auth_type: kind of authentication used by the bank
-        advice: any additional advice useful to locate the required credentials
-    """
-
-    __dump_attributes__ = [
-        "id",
-        "name",
-        "icon",
-        "supported",
-        "country",
-        "language",
-        "bic",
-        "access_methods",
-        "bank_code",
-    ]
-
-    id = None
-    name = None
-    icon = None
-    supported = None
-    country = None
-    language = None
-    bic = None
-    access_methods = None
-    bank_code = None
-
-    def __str__(self, *args, **kwargs):
-        return f"LoginSettings: {self.name}"
 
 
 class Credential(ModelBase):

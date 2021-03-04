@@ -1,7 +1,8 @@
 import pytest
 
-from figo import FigoException
-from figo.models import (
+# TODO: We need create test case this unused import
+from figo.exceptions import FigoException
+from figo.models import (  # noqa: F401
     Account,
     AccountBalance,
     BankContact,
@@ -18,11 +19,13 @@ from figo.models import (
     Security,
     Service,
     StandingOrder,
+    Sync,
     SynchronizationStatus,
     TaskState,
     TaskToken,
     Transaction,
     User,
+    WebhookNotification,
 )
 
 HTTP_NOT_ACCEPTABLE = 406

@@ -9,27 +9,34 @@ from urllib.parse import urlencode
 from dotenv import load_dotenv
 from requests import Session
 
-# TODO: FigoPinException is used by figo_connection/utils.py (ownly-backend)
-#   we need to verify if it is required
+# TODO: We need verify which of this unused import can be remove from SDK
+#  for example FigoPinException is used by figo_connection/utils.py
 from .exceptions import (  # noqa: F401
     ERROR_MESSAGES,
     FigoException,
     FigoPinException,
 )
-from .models import (
+from .models import (  # noqa: F401
     Account,
     AccountBalance,
     BankContact,
+    Category,
     Challenge,
+    Credential,
     LoginSettings,
     Notification,
     Payment,
     PaymentProposal,
+    Process,
+    ProcessOptions,
+    ProcessStep,
     Security,
     Service,
     StandingOrder,
     Sync,
+    SynchronizationStatus,
     TaskState,
+    TaskToken,
     Transaction,
     User,
     WebhookNotification,

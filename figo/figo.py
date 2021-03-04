@@ -145,6 +145,17 @@ class FigoObject:
         """Helper to trigger raise exception on _request_api"""
         return self._request_api(path, data, method, raise_exception=True)
 
+    def _process_model_list(self, entities, model, is_session=True):
+        """Helper to proceed lost of entities for target model using
+        `from_dict` method
+        """
+        session = self if is_session else None
+        return [model.from_dict(session, entity) for entity in entities]
+
+    def _process_catalog_list(self, entities, is_session=True):
+        """Helper to proceed list of entities for catalog."""
+        return self._process_model_list(entities, LoginSettings, is_session)
+
     def _query_api_object(
         self, model, path, data=None, method="GET", collection_name=None
     ):
@@ -159,18 +170,9 @@ class FigoObject:
         elif collection_name == "collection":
             # Some collections in the API response ARE NOT embedded in
             # collection name. (Ex: challenges, accesses)
-            return [
-                model.from_dict(self, dict_entry) for dict_entry in res_data
-            ]
+            return self._process_model_list(res_data, model)
         else:
-            return [
-                model.from_dict(self, dict_entry)
-                for dict_entry in res_data[collection_name]
-            ]
-
-    def _process_catalog_list(self, entities):
-        """Helper to proceed list of entities for catalog."""
-        return [LoginSettings.from_dict(self, entity) for entity in entities]
+            return self._process_model_list(res_data[collection_name], model)
 
     @property
     def language(self):
@@ -413,13 +415,10 @@ class FigoConnection(FigoObject):
             # working with "banks" and "services"
             entities = catalog.get(entity_type)
             if entities:
-                return self._process_catalog_list(entities)
+                return self._process_catalog_list(entities, is_session=False)
 
         for k, v in catalog.items():
-            if k == "banks":
-                catalog[k] = self._process_catalog_list(v)
-            elif k == "services":
-                catalog[k] = self._process_catalog_list(v)
+            catalog[k] = self._process_catalog_list(v, is_session=False)
 
         return catalog
 
@@ -1232,11 +1231,8 @@ class FigoSession(FigoObject):
     def get_payment_proposals(self):
         """Provide a address book-like list of proposed wire transfer partners.
         """
-        response = self._request_with_exception("/rest/address_book")
-        return [
-            PaymentProposal.from_dict(self, payment_proposal)
-            for payment_proposal in response
-        ]
+        res_data = self._request_with_exception("/rest/address_book")
+        return self._process_model_list(res_data, PaymentProposal)
 
     @property
     def transactions(self):
@@ -1540,19 +1536,16 @@ class FigoSession(FigoObject):
         data = self._request_with_exception(notification.observe_key)
 
         if re.match("/rest/transactions", notification.observe_key):
-            notification.data = [
-                Transaction.from_dict(self, transaction_dict)
-                for transaction_dict in data["transactions"]
-            ]
-
+            notification.data = self._process_model_list(
+                data["transactions"], Transaction
+            )
         elif re.match(
             "/rest/accounts/(.*)/transactions", notification.observe_key
         ):
-            notification.data = [
-                Transaction.from_dict(self, transaction_dict)
-                for transaction_dict in data["transactions"]
-            ]
 
+            notification.data = self._process_model_list(
+                data["transactions"], Transaction
+            )
         elif re.match("/rest/accounts/(.*)/balance", notification.observe_key):
             notification.data = AccountBalance.from_dict(data)
 

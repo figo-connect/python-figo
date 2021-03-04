@@ -537,6 +537,8 @@ class FigoSession(FigoObject):
 
     # Accesses (https://docs.finx.finleap.cloud/stable/#tag/Accesses):
 
+    # TODO: because request method was changed to _request_with_exception ->
+    #  we need to verify how this works with wrong data
     def add_access(self, access_method_id, credentials, consent):
         """Add provider access
 
@@ -580,6 +582,8 @@ class FigoSession(FigoObject):
         """
         return self._request_with_exception(f"/rest/accesses/{access_id}")
 
+    # TODO: because request method was changed to _request_with_exception ->
+    #  we need to verify how this works with wrong data
     def remove_pin(self, access_id):
         """Remove a PIN from the API backend that has been previously stored
         for automatic synchronization or ease of use.
@@ -688,6 +692,8 @@ class FigoSession(FigoObject):
         )
         return self._query_api_object(Challenge, path)
 
+    # TODO: because request method was changed to _request_with_exception ->
+    #  we need to verify how this works with wrong data
     def solve_synchronization_challenge(
         self, access_id, sync_id, challenge_id, data
     ):

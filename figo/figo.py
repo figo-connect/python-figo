@@ -112,9 +112,7 @@ class FigoObject:
                 #  exception?
                 res_data = {}
 
-        if 200 <= status_code < 300:
-            logger.debug("Response data returned: {}".format(res_data))
-        elif self._has_error(res_data):
+        if self._has_error(res_data):
             if raise_exception:
                 logger.error(
                     "Raise FigoException for response status code {}".format(
@@ -139,6 +137,16 @@ class FigoObject:
                 "Error dict returned for status: {}".format(status_code)
             )
             res_data = {"error": ERROR_MESSAGES[response.status_code]}
+        elif 200 <= status_code < 300:
+            logger.debug(
+                "Successful response - status: {} and  data returned: {}"
+                "".format(status_code, res_data)
+            )
+        else:
+            logger.warning(
+                "Unrecognized problem with status {} and response data "
+                "returned: {}".format(status_code, res_data)
+            )
 
         return res_data
 

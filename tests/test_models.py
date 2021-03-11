@@ -26,6 +26,17 @@ ICONS = {
     "48x48": "https://api.figo.me/assets/images/accounts/default-small@2x.png",
     "60x60": "https://api.figo.me/assets/images/accounts/default@2x.png",
 }
+ICONS_RES = {
+    "48x48": "https://finx-s.finleap.cloud/images/accounts/default_48.png",
+    "60x60": "https://finx-s.finleap.cloud/images/accounts/default_60.png",
+    "72x72": "https://finx-s.finleap.cloud/images/accounts/default_72.png",
+    "84x84": "https://finx-s.finleap.cloud/images/accounts/default_84.png",
+    "96x96": "https://finx-s.finleap.cloud/images/accounts/default_96.png",
+    "120x120": "https://finx-s.finleap.cloud/images/accounts/default_120.png",
+    "144x144": "https://finx-s.finleap.cloud/images/accounts/default_144.png",
+    "192x192": "https://finx-s.finleap.cloud/images/accounts/default_192.png",
+    "256x256": "https://finx-s.finleap.cloud/images/accounts/default_256.png",
+}
 DEMOBANK_ICON = "https://api.figo.me/assets/images/accounts/demokonto.png"
 
 
@@ -45,34 +56,38 @@ def test_create_user_from_dict(figo_session):
 
 def test_create_account_from_dict(figo_session):
     data = {
-        "account_id": "A1.1",
-        "name": "Girokonto",
-        "bank_id": "B1.1",
-        "owner": "figo",
-        "auto_sync": False,
-        "account_number": "4711951500",
+        "account_id": "A12345.6",
+        "account_number": "0123456789",
         "bank_code": "90090042",
-        "bank_name": "Demobank",
-        "currency": "EUR",
-        "iban": "DE67900900424711951500",
-        "bic": "DEMODE01",
-        "type": "Unknown",
-        "icon": "https://api.figo.me/assets/images/accounts/default.png",
-        "additional_icons": ICONS,
-        "status": {
-            "code": -1,
-            "message": (
-                "Cannot load credential 8f084858-e1c6-4642-87f8-540b530b6e0f: "
-                "UUID does not exist."
-            ),
-            "success_timestamp": "2013-09-11T00:00:00.000Z",
-            "sync_timestamp": "2014-07-09T10:04:40.000Z",
+        "iban": "DE99012345678910020030",
+        "bic": "DEMOBANKXXX",
+        "access_id": "X12345.6",
+        "bank_name": "Bank XYZ",
+        "icon": {
+            "url": "https://finx-s.finleap.cloud/images/accounts/default.png",
+            "resolutions": ICONS_RES,
         },
+        "currency": "EUR",
         "balance": {
-            "balance": 3250.30,
-            "balance_date": "2013-09-11T00:00:00.000Z",
-            "credit_line": 0.0,
-            "monthly_spending_limit": 0.0,
+            "balance": 13.37,
+            "balance_date": "2018-04-01T00:00:00.000Z",
+            "status": {
+                "synced_at": "2018-08-30T00:00:00.000Z",
+                "succeeded_at": "2018-08-30T00:00:00.000Z",
+                "message": "string",
+            },
+        },
+        "type": "Giro account",
+        "name": "Giro account",
+        "owner": "John Doe",
+        "auto_sync": False,
+        "save_pin": True,
+        "supported_payments": {"SEPA transfer": {}, "SEPA standing order": {}},
+        "is_jointly_managed": True,
+        "status": {
+            "synced_at": "2018-08-30T00:00:00.000Z",
+            "succeeded_at": "2018-08-30T00:00:00.000Z",
+            "message": "string",
         },
     }
     account = Account.from_dict(figo_session, data)

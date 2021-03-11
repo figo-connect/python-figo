@@ -65,8 +65,7 @@ class LoginSettings(ModelBase):
     Attributes:
         bank_name: human readable bank of the bank
         supported: boolean, if set bank is supported
-        icon: URL to the logo of the bank
-        additional_icons: dictionary that maps resolutions to icon URLs
+        icon: JSON list with icons (different resolutions)
         credentials: list of credentials needed to connect to the bank
         auth_type: kind of authentication used by the bank
         advice: any additional advice useful to locate the required credentials
@@ -104,45 +103,47 @@ class Account(ModelBase):
 
     Attributes:
         account_id: internal figo connect account id
+        account_number: account number
+        bank_code: bank code (BLZ)
+        iban: iban code
+        bic: bic code
+        access_id: finX ID of the provider access
+        bank_name: name of bank or financial provider.
+        icon: JSON list with bank icons (different resolutions)
+        currency: three character currency code
         balance: account balance
-        bank_id: internal figo connect bank id
+        type: account type, one of (Giro account, Savings account,
+            Credit card, Loan account, PayPal, Cash book, Unknown)
         name: account name
         owner: account owner
         auto_sync: boolean value that indicates whether the account is
             automatically synchronized
-        account_number: account number
-        bank_code: bank code
-        currency: three character currency code
-        iban: iban code
-        bic: bic code
-        type: account type, one of (Giro account, Savings account,
-            Credit card, Loan account, PayPal, Cash book, Unknown)
-        supported_tan_schemes: List of supported tan schemes
-        preferred_tan_scheme: id of preferred tan scheme
-        icon: account icon URL
-        additional_icons: dictionary that maps resolutions to icon URLs
+        save_pin: indicates if the provider credentials are saved for this
+            account (Default: false).
+        supported_payments: mapping of payment types to payment parameters
+            supported by this account.
+        is_jointly_managed: indicates that the account has been opened by two
+            or more individuals or entities.
         status: synchronization status object
     """
 
-    __dump_attributes__ = ["name", "owner", "auto_sync"]
-
     account_id = None
+    account_number = None
+    bank_code = None
+    iban = None
+    bic = None
+    access_id = None
+    bank_name = None
+    icon = None
+    currency = None
     balance = None
-    bank_id = None
+    type = None
     name = None
     owner = None
     auto_sync = None
-    account_number = None
-    bank_code = None
-    bank_name = None
-    currency = None
-    iban = None
-    bic = None
-    type = None
-    supported_tan_schemes = None
-    preferred_tan_scheme = None
-    icon = None
-    additional_icons = None
+    save_pin = None
+    supported_payments = None
+    is_jointly_managed = None
     status = None
 
     @property

@@ -754,22 +754,6 @@ class FigoSession(FigoObject):
             Account, "/rest/accounts", collection_name="accounts",
         )
 
-    def modify_account(self, account):
-        """Modify an account.
-
-        Args:
-            account: the modified account to be saved
-
-        Returns:
-            Account object for the updated account returned by server
-        """
-        return self._query_api_object(
-            Account,
-            f"/rest/accounts/{account.account_id}",
-            account.dump(),
-            "PUT",
-        )
-
     def remove_account(self, account_or_account_id):
         """Remove an account.
 

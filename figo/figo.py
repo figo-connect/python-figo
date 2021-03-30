@@ -133,7 +133,7 @@ class FigoObject:
             )
             res_data = {"error": ERROR_MESSAGES[status_code]}
         elif status_code in ERROR_MESSAGES:
-            logger.debug(
+            logger.error(
                 "Error dict returned for status: {}".format(status_code)
             )
             res_data = {"error": ERROR_MESSAGES[response.status_code]}
@@ -365,7 +365,7 @@ class FigoConnection(FigoObject):
             "expires": expire_dt,
         }
 
-    # TODO: Missing unit test but used in ownly-backend
+    # TODO: Missing unit test
     def revoke_token(self, token):
         """Revoke a granted access or refresh token and thereby invalidate it.
 
@@ -627,7 +627,7 @@ class FigoSession(FigoObject):
                 default: False
             redirect_uri (str): The URI to which the end user is redirected in
                 OAuth cases, Optional
-            state (str): Arbitrary string to maintain state between this
+            state (str | None): Arbitrary string to maintain state between this
                 request and the callback
             credentials (obj): Credentials used for authentication with the
                 financial service provider.

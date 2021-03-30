@@ -62,9 +62,15 @@ class FigoException(Exception):
 
     def __str__(self):
         """String representation of the FigoException."""
-        code_err = "- code: {}".format(self.code) if self.code else ""
+        code_err = " - code: {}".format(self.code) if self.code else ""
+        status_code = (
+            " - HTTP status: {}".format(self.status_code)
+            if self.status_code
+            else ""
+        )
         return (
             f"FigoException: {self.error_description} ({self.error}){code_err}"
+            f"{status_code}"
         )
 
     @classmethod
